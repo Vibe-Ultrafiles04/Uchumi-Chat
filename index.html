@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#3b6dc6" />
+  <title>Smart Inventory</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#3b6dc6" />
+<link rel="apple-touch-icon" href="icons/icon-192x192.png" />
+
+</head>
+<body>
+  <div class="main-container">
+
+    <!-- Product Display Section -->
+    <div class="products-area" id="productsArea">
+      <div class="product-card">
+        <div class="product-image">Product image appears here</div>
+        <div class="product-name">SOFFA</div>
+
+        <div class="info-row">
+          <label>SELLING PRICE</label>
+          <input type="text" value="800" readonly />
+        </div>
+
+        <div class="info-row">
+          <label>Quantity remaining</label>
+          <input type="text" value="10" readonly />
+        </div>
+
+        <div class="info-row">
+          <label>Profit made</label>
+          <input type="text" value="0%" readonly />
+        </div>
+
+        <button class="sell-btn">sell</button>
+      </div>
+
+      <div class="placeholder">OTHER PRODUCT CONTAINERS WILL APPEAR HERE</div>
+    </div>
+
+    <!-- Add Product Section -->
+    <div class="add-product">
+      <div class="form-left">
+        <div class="form-row">
+          <label>ADD PRODUCT</label>
+          <input type="text" placeholder="Product name appears here" id="productName" />
+        </div>
+
+        <div class="form-row">
+          <label>Quantity</label>
+          <input type="number" placeholder="Number of products" id="quantity" />
+        </div>
+
+        <div class="form-row">
+          <label>BUYING PRICE</label>
+          <input type="number" placeholder="Buying price appears here" id="buyingPrice" />
+        </div>
+
+        <div class="form-row">
+          <label>SELLING PRICE</label>
+          <input type="number" placeholder="Selling price appears here" id="sellingPrice" />
+        </div>
+      </div>
+
+      <div class="form-right">
+        <label>ADD PRODUCT IMAGE</label>
+        <div class="image-box" id="previewImage">Product image appears here</div>
+        <input type="file" id="uploadImage" accept="image/*" />
+        <button class="upload-btn" id="uploadBtn">upload</button>
+      </div>
+    </div>
+
+  </div>
+
+ 
+
+<script>
+  // ✅ Register the Service Worker
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("service-worker.js")
+      .then(() => console.log("✅ Service Worker registered successfully."))
+      .catch((err) => console.error("❌ Service Worker registration failed:", err));
+  }
+
+  // ✅ Handle PWA Install Prompt
+  let deferredPrompt;
+  const installBtn = document.createElement("button");
+  installBtn.textContent = "📲 Install App";
+  installBtn.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #3b6dc6;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    display: none;
+    z-index: 9999;
+  `;
+  document.body.appendChild(installBtn);
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    // Prevent the mini-infobar from appearing
+    e.preventDefault();
+    deferredPrompt = e;
+
+    // Show the install button
+    installBtn.style.display = "block";
+    console.log("📦 PWA install prompt ready.");
+
+    installBtn.addEventListener("click", async () => {
+      installBtn.style.display = "none";
+      deferredPrompt.prompt(); // Show the native prompt
+
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to install: ${outcome}`);
+
+      deferredPrompt = null;
+    });
+  });
+
+  // Optional: Notify if app is already installed
+  window.addEventListener("appinstalled", () => {
+    console.log("✅ App installed successfully!");
+    installBtn.remove();
+  });
+</script>
+ <!-- Placeholder for JS (later we’ll add Google Sheets integration & PWA features) -->
+  <script src="script.js"></script>
+
+</body>
+</html>

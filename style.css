@@ -1,0 +1,148 @@
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: #fff;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.main-container {
+  width: 90%;
+  max-width: 1200px;
+}
+
+/* PRODUCT CARD */
+.products-area {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.product-card {
+  background: #4573c8;
+  border-radius: 30px;
+  padding: 20px;
+  width: 250px;
+  text-align: center;
+  color: white;
+}
+
+.product-image {
+  background: white;
+  color: gray;
+  border-radius: 20px;
+  padding: 40px 10px;
+  margin-bottom: 10px;
+}
+
+.product-name {
+  background: black;
+  padding: 5px;
+  border-radius: 5px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #000;
+  padding: 4px;
+  margin: 5px 0;
+  border-radius: 4px;
+}
+
+.info-row label {
+  color: white;
+  font-size: 14px;
+}
+
+.info-row input {
+  width: 60px;
+  text-align: center;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+.sell-btn {
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px;
+  width: 100%;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.placeholder {
+  color: gray;
+  align-self: center;
+}
+
+/* ADD PRODUCT SECTION */
+.add-product {
+  background: #4573c8;
+  padding: 20px;
+  border-radius: 30px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.form-left, .form-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+label {
+  background: black;
+  color: white;
+  font-weight: bold;
+  padding: 6px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+input[type="text"],
+input[type="number"] {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.image-box {
+  background: white;
+  color: gray;
+  border-radius: 20px;
+  padding: 40px 10px;
+  text-align: center;
+}
+
+.upload-btn {
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#uploadImage {
+  display: none;
+}

@@ -1,0 +1,29 @@
+{
+  "name": "Smart Inventory",
+  "short_name": "Inventory",
+  "description": "A smart PWA for managing business inventory in real-time using Google Sheets as the backend.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b6dc6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "inventory192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "inventory512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "inventory512maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
