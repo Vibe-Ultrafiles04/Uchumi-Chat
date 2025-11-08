@@ -2,33 +2,30 @@
    SMART INVENTORY SYSTEM SCRIPT
    ============================== */
 
-const scriptURL = "https://script.google.com/macros/s/AKfycbwc1XMpu7W5qeyfDzr0dS-JIEUi8i7Ph2SL3z7Q9cJSTwuZJb5wiwMalGFsvzgkZow/exec"; // 🔹 Replace this with your deployed web app URL
+const scriptURL = "https://script.google.com/macros/s/AKfycbwc1XMpu7W5qeyfDzr0dS-JIEUi8i7Ph2SL3z7Q9cJSTwuZJb5wiwMalGFsvzgkZow/exec";
 
-const nameInput = document.getElementById("productName");
-const quantityInput = document.getElementById("quantity");
+const nameInput        = document.getElementById("productName");
+const quantityInput    = document.getElementById("quantity");
 const buyingPriceInput = document.getElementById("buyingPrice");
-const sellingPriceInput = document.getElementById("sellingPrice");
-const uploadInput = document.getElementById("uploadImage");
-const uploadBtn = document.getElementById("uploadBtn");
-const previewBox = document.getElementById("previewImage");
-const productsArea = document.getElementById("productsArea");
+const sellingPriceInput= document.getElementById("sellingPrice");
+const uploadInput      = document.getElementById("uploadImage");
+const uploadBtn        = document.getElementById("uploadBtn");
+const previewBox       = document.getElementById("previewImage");
+const productsArea     = document.getElementById("productsArea");
 
 let uploadedImageBase64 = "";
 
 /* -------------------------------
    IMAGE UPLOAD & PREVIEW
 --------------------------------*/
-uploadBtn.addEventListener("click", () => {
-  uploadInput.click();
-});
+uploadBtn.addEventListener("click", () => uploadInput.click());
 
-uploadInput.addEventListener("change", (event) => {
-  const file = event.target.files[0];
+uploadInput.addEventListener("change", e => {
+  const file = e.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
-  reader.onload = function (e) {
-    uploadedImageBase64 = e.target.result;
+  reader.onload = ev => {
+    uploadedImageBase64 = ev.target.result;
     previewBox.textContent = "";
     previewBox.style.backgroundImage = `url(${uploadedImageBase64})`;
     previewBox.style.backgroundSize = "cover";
@@ -38,120 +35,93 @@ uploadInput.addEventListener("change", (event) => {
 });
 
 /* -------------------------------
-   ADD NEW PRODUCT
+   CREATE PRODUCT CARD
 --------------------------------*/
-function createProductCard(product) {
+function createProductCard(p) {
   const div = document.createElement("div");
   div.className = "product-card";
 
   div.innerHTML = `
-    <div class="product-image" style="background-image: url(${product.image}); background-size: cover; background-position: center;"></div>
-    <div class="product-name">${product.name}</div>
+    <div class="product-image" style="background-image:url('${p.image}');background-size:cover;background-position:center;"></div>
+    <div class="product-name">${p.name}</div>
 
-    <div class="info-row">
-      <label>SELLING PRICE</label>
-      <input type="text" value="${product.selling}" readonly />
-    </div>
-
-    <div class="info-row">
-      <label>Quantity remaining</label>
-      <input type="text" value="${product.quantity}" readonly />
-    </div>
-
-    <div class="info-row">
-      <label>Profit made</label>
-      <input type="text" value="${product.profit || '0%'}" readonly />
-    </div>
+    <div class="info-row"><label>SELLING PRICE</label><input type="text" value="${p.selling}" readonly></div>
+    <div class="info-row"><label>Quantity remaining</label><input type="text" value="${p.quantity}" readonly></div>
+    <div class="info-row"><label>Profit made</label><input type="text" value="${p.profit}" readonly></div>
 
     <button class="sell-btn">sell</button>
   `;
 
-  const sellBtn = div.querySelector(".sell-btn");
-  sellBtn.addEventListener("click", () => {
-    handleSell(product);
-  });
-
+  div.querySelector(".sell-btn").addEventListener("click", () => handleSell(p));
   return div;
 }
 
 /* -------------------------------
-   HANDLE SELL ACTION
+   HANDLE SELL
 --------------------------------*/
-function handleSell(product) {
-  if (product.quantity <= 0) {
-    alert("Out of stock!");
-    return;
-  }
+function handleSell(p) {
+  if (p.quantity <= 0) { alert("Out of stock!"); return; }
 
-  product.quantity -= 1;
-  const profit =
-    ((product.selling - product.buying) / product.buying) * 100;
-  product.profit = profit.toFixed(1) + "%";
+  p.quantity--;
+  const profit = ((p.selling - p.buying) / p.buying) * 100;
+  p.profit = profit.toFixed(1) + "%";
 
-  saveProductToSheet(product, "update");
-  renderProducts();
+  saveProductToSheet(p, "update");
+  renderProducts();               // update UI instantly
 }
 
 /* -------------------------------
-   SAVE PRODUCT TO GOOGLE SHEETS
+   SAVE TO SHEET
 --------------------------------*/
 async function saveProductToSheet(product, mode = "add") {
   try {
-    await fetch(scriptURL, {
+    const resp = await fetch(scriptURL, {
       method: "POST",
       mode: "cors",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode,
-        data: product,
-      }),
+      body: JSON.stringify({ mode, data: product })
     });
-    console.log("Saved to Google Sheets:", product);
+    const json = await resp.json();
+    if (json.status !== "success") throw new Error(json.message || "unknown");
+    console.log("Sheet:", json);
   } catch (err) {
-    console.error("Error saving product:", err);
+    console.error("saveProductToSheet error:", err);
+    alert("Failed to save – check console");
   }
 }
 
 /* -------------------------------
-   SUBMIT NEW PRODUCT
+   VALIDATE & ADD PRODUCT
 --------------------------------*/
 function validateInputs() {
-  return (
-    nameInput.value &&
-    buyingPriceInput.value &&
-    sellingPriceInput.value &&
-    quantityInput.value
-  );
+  return nameInput.value.trim() &&
+         quantityInput.value && !isNaN(quantityInput.value) &&
+         buyingPriceInput.value && !isNaN(buyingPriceInput.value) &&
+         sellingPriceInput.value && !isNaN(sellingPriceInput.value);
 }
 
 async function addProduct() {
-  if (!validateInputs()) {
-    alert("Please fill all fields!");
-    return;
-  }
+  if (!validateInputs()) { alert("Please fill all fields correctly!"); return; }
 
   const product = {
     name: nameInput.value.trim(),
-    quantity: parseInt(quantityInput.value),
+    quantity: parseInt(quantityInput.value, 10),
     buying: parseFloat(buyingPriceInput.value),
     selling: parseFloat(sellingPriceInput.value),
     image: uploadedImageBase64 || "",
-    profit: "0%",
+    profit: "0%"
   };
 
   await saveProductToSheet(product, "add");
-  renderProducts();
+  await loadProducts();          // refresh list from sheet
   clearForm();
 }
 
 /* -------------------------------
-   CLEAR FORM AFTER ADD
+   CLEAR FORM
 --------------------------------*/
 function clearForm() {
-  nameInput.value = "";
-  quantityInput.value = "";
-  buyingPriceInput.value = "";
-  sellingPriceInput.value = "";
+  nameInput.value = quantityInput.value = buyingPriceInput.value = sellingPriceInput.value = "";
   previewBox.style.backgroundImage = "";
   previewBox.textContent = "Product image appears here";
   uploadedImageBase64 = "";
@@ -162,15 +132,15 @@ function clearForm() {
 --------------------------------*/
 async function loadProducts() {
   try {
-    const res = await fetch(scriptURL + "?mode=get");
-    const data = await res.json();
+    const resp = await fetch(`${scriptURL}?mode=get`);
+    const data = await resp.json();
     localStorage.setItem("products", JSON.stringify(data));
     renderProducts();
   } catch (err) {
-    console.error("Error loading products:", err);
-    // Offline fallback
-    const offlineData = localStorage.getItem("products");
-    if (offlineData) renderProducts();
+    console.error("loadProducts error:", err);
+    // fallback to cached data
+    const cached = localStorage.getItem("products");
+    if (cached) renderProducts();
   }
 }
 
@@ -179,29 +149,34 @@ async function loadProducts() {
 --------------------------------*/
 function renderProducts() {
   productsArea.innerHTML = "";
-  const products = JSON.parse(localStorage.getItem("products") || "[]");
-  if (products.length === 0) {
+  const list = JSON.parse(localStorage.getItem("products") || "[]");
+
+  if (!list.length) {
     const ph = document.createElement("div");
     ph.className = "placeholder";
     ph.textContent = "No products added yet.";
     productsArea.appendChild(ph);
     return;
   }
-  products.forEach((p) => productsArea.appendChild(createProductCard(p)));
+
+  list.forEach(p => productsArea.appendChild(createProductCard(p)));
 }
 
 /* -------------------------------
    INITIALIZATION
 --------------------------------*/
 document.addEventListener("DOMContentLoaded", () => {
-  // Add a click event to add product form
-  const addBtn = document.createElement("button");
-  addBtn.textContent = "Add Product";
-  addBtn.className = "upload-btn";
-  addBtn.style.marginTop = "10px";
-  document.querySelector(".form-left").appendChild(addBtn);
+  // ---- Add “Add Product” button (if it isn’t already in HTML) ----
+  const container = document.querySelector(".form-left");
+  if (!container.querySelector(".add-product-btn")) {
+    const btn = document.createElement("button");
+    btn.textContent = "Add Product";
+    btn.className = "upload-btn add-product-btn";
+    btn.style.marginTop = "10px";
+    btn.addEventListener("click", addProduct);
+    container.appendChild(btn);
+  }
 
-  addBtn.addEventListener("click", addProduct);
-
-  loadProducts();
+  loadProducts();          // first load
+  setInterval(loadProducts, 30000); // optional auto-refresh every 30s
 });
