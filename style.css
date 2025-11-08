@@ -139,6 +139,7 @@ body {
   gap: 10px;
   flex:1 1 220px;
   min-width:160px;
+  background-color: #4573c8;
 }
 
 .form-row {

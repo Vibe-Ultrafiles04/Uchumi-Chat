@@ -10,6 +10,7 @@ const buyingPriceInput = document.getElementById("buyingPrice");
 const sellingPriceInput= document.getElementById("sellingPrice");
 const uploadInput      = document.getElementById("uploadImage");
 const uploadBtn        = document.getElementById("uploadBtn");
+const addProductBtn = document.getElementById("addProductBtn");
 const previewBox       = document.getElementById("previewImage");
 const productsArea     = document.getElementById("productsArea");
 
@@ -73,8 +74,29 @@ function handleSell(p) {
 /* -------------------------------
    SAVE TO SHEET – FIXED VERSION
 --------------------------------*/
+/* -------------------------------
+   SAVE TO SHEET – WITH DRIVE IMAGE UPLOAD
+--------------------------------*/
+const DRIVE_FOLDER_ID = "1V-5KvdzgJxsRkBSyY4Nj6Kew3rmue4WY"; // ← CHANGE THIS
+
 async function saveProductToSheet(product, mode = "add") {
   try {
+    let imageUrl = product.image;
+
+    // If image is base64, upload to Drive first
+    if (imageUrl && imageUrl.startsWith("data:image")) {
+      const blob = dataURLtoBlob(imageUrl);
+      const form = new FormData();
+      form.append("mode", "uploadImage");
+      form.append("folderId", DRIVE_FOLDER_ID);
+      form.append("image", blob, "product.jpg");
+
+      const upResp = await fetch(scriptURL, { method: "POST", body: form });
+      const upJson = await upResp.json();
+      if (upJson.status !== "success") throw new Error("Image upload failed: " + (upJson.message || ""));
+      imageUrl = upJson.url;
+    }
+
     const payload = {
       mode: mode,
       data: {
@@ -83,38 +105,53 @@ async function saveProductToSheet(product, mode = "add") {
         buying:   product.buying,
         selling:  product.selling,
         profit:   product.profit,
-        image:    product.image
+        image:    imageUrl || ""
       }
     };
 
     const resp = await fetch(scriptURL, {
       method: "POST",
-      mode: "cors",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
     const json = await resp.json();
-    if (json.status !== "success") throw new Error(json.message || "unknown error");
+    if (json.status !== "success") throw new Error(json.message || "Save failed");
+    return json;
 
-    console.log("Saved:", json);
-    return json;                 // success
   } catch (err) {
-    console.error("saveProductToSheet error:", err);
-    alert("Save failed – open console (F12) and copy the error for support.");
+    console.error("save error:", err);
+    alert("Save failed: " + err.message);
     throw err;
   }
 }
 
+// Helper: base64 → Blob
+function dataURLtoBlob(dataURL) {
+  const [header, b64] = dataURL.split(",");
+  const mime = header.match(/:(.*?);/)[1];
+  const binary = atob(b64);
+  const arr = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
 /* -------------------------------
    VALIDATE & ADD PRODUCT
 --------------------------------*/
 function validateInputs() {
-  return nameInput.value.trim() &&
-         quantityInput.value && !isNaN(quantityInput.value) &&
-         buyingPriceInput.value && !isNaN(buyingPriceInput.value) &&
-         sellingPriceInput.value && !isNaN(sellingPriceInput.value);
+  const name = nameInput.value.trim();
+  const qty  = parseInt(quantityInput.value, 10);
+  const buy  = parseFloat(buyingPriceInput.value);
+  const sell = parseFloat(sellingPriceInput.value);
+
+  if (!name) return false;
+  if (isNaN(qty) || qty < 0) return false;
+  if (isNaN(buy) || buy < 0) return false;
+  if (isNaN(sell) || sell < 0) return false;
+
+  return true;
 }
+
 
 async function addProduct() {
   if (!validateInputs()) { alert("Please fill all fields correctly!"); return; }
@@ -150,11 +187,16 @@ async function loadProducts() {
   try {
     const resp = await fetch(`${scriptURL}?mode=get`);
     const data = await resp.json();
-    localStorage.setItem("products", JSON.stringify(data));
+
+    // If server returns empty, clear cache
+    if (!data || data.length === 0) {
+      localStorage.removeItem("products");
+    } else {
+      localStorage.setItem("products", JSON.stringify(data));
+    }
     renderProducts();
   } catch (err) {
     console.error("loadProducts error:", err);
-    // fallback to cached data
     const cached = localStorage.getItem("products");
     if (cached) renderProducts();
   }
@@ -182,17 +224,7 @@ function renderProducts() {
    INITIALIZATION
 --------------------------------*/
 document.addEventListener("DOMContentLoaded", () => {
-  // ---- Add “Add Product” button (if it isn’t already in HTML) ----
-  const container = document.querySelector(".form-left");
-  if (!container.querySelector(".add-product-btn")) {
-    const btn = document.createElement("button");
-    btn.textContent = "Add Product";
-    btn.className = "upload-btn add-product-btn";
-    btn.style.marginTop = "10px";
-    btn.addEventListener("click", addProduct);
-    container.appendChild(btn);
-  }
-
-  loadProducts();          // first load
-  setInterval(loadProducts, 30000); // optional auto-refresh every 30s
+  addProductBtn.addEventListener("click", addProduct); // ← Just attach
+  loadProducts();
+  setInterval(loadProducts, 30000);
 });
