@@ -1,3 +1,13 @@
+:root{
+  --primary:#4573c8;
+  --fg-white:#fff;
+  --fg-black:#000;
+  --card-radius:30px;
+  --card-padding:20px;
+}
+
+/* Reset / base */
+*{box-sizing:border-box}
 body {
   font-family: "Segoe UI", sans-serif;
   background: #fff;
@@ -6,45 +16,66 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
 .main-container {
-  width: 90%;
+  width: 95%;
   max-width: 1200px;
+  margin: 20px 0;
 }
 
-/* PRODUCT CARD */
+/* PRODUCTS - use grid for better control */
 .products-area {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
+  display: grid;
+  gap: 1rem;
+  /* auto-fit will create as many columns of min 160px as fit */
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   justify-content: center;
   margin-bottom: 2rem;
 }
 
+/* PRODUCT CARD (no fixed width) */
 .product-card {
-  background: #4573c8;
-  border-radius: 30px;
-  padding: 20px;
-  width: 250px;
+  background: var(--primary);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
+  width: 100%;
   text-align: center;
-  color: white;
+  color: var(--fg-white);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-height: 140px;
 }
 
+/* internal blocks */
 .product-image {
-  background: white;
+  background: var(--fg-white);
   color: gray;
   border-radius: 20px;
-  padding: 40px 10px;
-  margin-bottom: 10px;
+  padding: 28px 8px;
+  margin-bottom: 4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:64px;
 }
 
 .product-name {
-  background: black;
-  padding: 5px;
+  background: var(--fg-black);
+  padding: 6px;
   border-radius: 5px;
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+  color:var(--fg-white);
+  align-self:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
 }
 
 .info-row {
@@ -52,14 +83,17 @@ body {
   justify-content: space-between;
   align-items: center;
   background: #000;
-  padding: 4px;
+  padding: 6px;
   margin: 5px 0;
   border-radius: 4px;
+  gap:8px;
+  color:var(--fg-white);
 }
 
 .info-row label {
   color: white;
   font-size: 14px;
+  flex:1 1 auto;
 }
 
 .info-row input {
@@ -67,7 +101,8 @@ body {
   text-align: center;
   border: none;
   border-radius: 3px;
-  padding: 2px 4px;
+  padding: 4px;
+  flex:0 0 auto;
 }
 
 .sell-btn {
@@ -87,26 +122,30 @@ body {
   align-self: center;
 }
 
-/* ADD PRODUCT SECTION */
+/* ADD PRODUCT SECTION - flexible layout */
 .add-product {
-  background: #4573c8;
+  background: var(--primary);
   padding: 20px;
-  border-radius: 30px;
+  border-radius: var(--card-radius);
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
+  gap: 16px;
 }
 
 .form-left, .form-right {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex:1 1 220px;
+  min-width:160px;
 }
 
 .form-row {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap:wrap;
 }
 
 label {
@@ -120,16 +159,18 @@ label {
 
 input[type="text"],
 input[type="number"] {
-  padding: 5px 10px;
+  padding: 6px 10px;
   border-radius: 4px;
   border: 1px solid #ccc;
+  flex:1 1 auto;
+  min-width:80px;
 }
 
 .image-box {
   background: white;
   color: gray;
   border-radius: 20px;
-  padding: 40px 10px;
+  padding: 24px 10px;
   text-align: center;
 }
 
@@ -143,6 +184,63 @@ input[type="number"] {
   font-weight: bold;
 }
 
-#uploadImage {
-  display: none;
+#uploadImage { display: none; }
+
+/* ------------------------------
+   MOBILE / SMALL SCREEN RULES
+   Force 4 columns on small screens as requested
+   ------------------------------ */
+@media (max-width: 480px) {
+  body {
+    padding: 8px;
+    align-items: flex-start;
+  }
+
+  .main-container { width:100%; }
+
+  /* Force four equal columns on phone */
+  .products-area {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .product-card {
+    padding: 8px;
+    border-radius: 12px;
+    min-height: 90px;
+  }
+
+  .product-image { padding: 8px 6px; min-height:40px; }
+  .product-name { font-size: 12px; padding: 4px 6px; margin-bottom:4px;}
+  .info-row {
+    padding: 4px;
+    font-size: 11px;
+    gap:4px;
+  }
+
+  .info-row input { width: 44px; padding:4px; font-size:12px; }
+  .sell-btn { padding: 6px; font-size:12px; border-radius:6px; }
+
+  .add-product {
+    padding: 10px;
+    border-radius: 12px;
+    flex-direction: column;
+    gap:10px;
+  }
+
+  label { font-size: 12px; padding: 6px; white-space:normal; text-align:center; width:100%; }
+  input[type="text"], input[type="number"] { font-size: 12px; padding:6px; }
+  .upload-btn { width:100%; padding:8px; font-size:12px }
+}
+
+/* Tablet: two columns layout (comfortable) */
+@media (min-width: 481px) and (max-width: 899px) {
+  .products-area { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .product-card { padding:12px; border-radius:16px; }
+}
+
+/* Desktop: 3-4 columns depending on width */
+@media (min-width: 900px) {
+  .products-area { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; }
+  .product-card { padding: 18px; border-radius: 20px; }
 }
