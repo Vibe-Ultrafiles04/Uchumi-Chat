@@ -71,22 +71,38 @@ function handleSell(p) {
 }
 
 /* -------------------------------
-   SAVE TO SHEET
+   SAVE TO SHEET – FIXED VERSION
 --------------------------------*/
 async function saveProductToSheet(product, mode = "add") {
   try {
+    const payload = {
+      mode: mode,
+      data: {
+        name:     product.name,
+        quantity: product.quantity,
+        buying:   product.buying,
+        selling:  product.selling,
+        profit:   product.profit,
+        image:    product.image
+      }
+    };
+
     const resp = await fetch(scriptURL, {
       method: "POST",
       mode: "cors",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode, data: product })
+      body: JSON.stringify(payload)
     });
+
     const json = await resp.json();
-    if (json.status !== "success") throw new Error(json.message || "unknown");
-    console.log("Sheet:", json);
+    if (json.status !== "success") throw new Error(json.message || "unknown error");
+
+    console.log("Saved:", json);
+    return json;                 // success
   } catch (err) {
     console.error("saveProductToSheet error:", err);
-    alert("Failed to save – check console");
+    alert("Save failed – open console (F12) and copy the error for support.");
+    throw err;
   }
 }
 
