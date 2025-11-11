@@ -91,50 +91,30 @@ function handleSell(p) {
    SAVE TO SHEET – WITH IMAGE UPLOAD
 --------------------------------*/
 async function saveProductToSheet(product, mode = "add") {
-  const hasImage = uploadInput.files && uploadInput.files[0];
-  let resp;
+  const form = new FormData();
+  form.append("mode", mode);
+  form.append("name", product.name);
+  form.append("quantity", product.quantity);
+  form.append("buying", product.buying);
+  form.append("selling", product.selling);
+  form.append("profit", product.profit || "0%");
 
-  if (hasImage) {
-    const form = new FormData();
-    form.append("mode", mode);
-    form.append("name", product.name);
-    form.append("quantity", product.quantity);
-    form.append("buying", product.buying);
-    form.append("selling", product.selling);
-    form.append("profit", product.profit || "0%");
+  if (uploadInput.files[0]) {
     form.append("image", uploadInput.files[0]);
     form.append("folderId", DRIVE_FOLDER_ID);
-
-    resp = await fetch(scriptURL, { method: "POST", body: form });
-  } else {
-    const payload = {
-      mode,
-      name: product.name,
-      quantity: product.quantity,
-      buying: product.buying,
-      selling: product.selling,
-      profit: product.profit || "0%"
-    };
-
-    resp = await fetch(scriptURL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
   }
 
+  const resp = await fetch(scriptURL, { method: "POST", body: form });
   const json = await resp.json();
-  if (json.status !== "success") {
-    throw new Error(json.message || "Save failed");
-  }
 
-  // Ensure we return the updated product with the correct image URL
+  if (json.status !== "success") throw new Error(json.message || "Save failed");
+
+  // RETURN THE NEW PRODUCT WITH IMAGE URL
   return {
     ...product,
-    image: json.imageUrl || "", // this will now hold the Drive link if an image was uploaded
+    image: json.imageUrl || product.image || ""
   };
 }
-
 
 /* -------------------------------
    ADD PRODUCT
@@ -154,13 +134,14 @@ async function addProduct() {
   };
 
   try {
-    await saveProductToSheet(product, "add");
-    await loadProducts(); // Refresh from sheet
+    const savedProduct = await saveProductToSheet(product, "add");
+    await loadProducts(); // REFRESH FROM SHEET
     clearForm();
   } catch (err) {
     alert("Failed to add product: " + err.message);
   }
 }
+
 /* -------------------------------
    VALIDATE INPUTS
 --------------------------------*/
