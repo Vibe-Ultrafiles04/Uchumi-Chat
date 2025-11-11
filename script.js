@@ -91,33 +91,45 @@ function handleSell(p) {
    SAVE TO SHEET – WITH IMAGE UPLOAD
 --------------------------------*/
 async function saveProductToSheet(product, mode = "add") {
-  const form = new FormData();
-  form.append("mode", mode);
-  form.append("name", product.name);
-  form.append("quantity", product.quantity);
-  form.append("buying", product.buying);
-  form.append("selling", product.selling);
-  form.append("profit", product.profit || "0%");
+  const hasImage = uploadInput.files && uploadInput.files[0];
+  let resp;
 
-  // Only append image and folderId if a file is selected
-  if (uploadInput.files && uploadInput.files[0]) {
+  if (hasImage) {
+    const form = new FormData();
+    form.append("mode", mode);
+    form.append("name", product.name);
+    form.append("quantity", product.quantity);
+    form.append("buying", product.buying);
+    form.append("selling", product.selling);
+    form.append("profit", product.profit || "0%");
     form.append("image", uploadInput.files[0]);
     form.append("folderId", DRIVE_FOLDER_ID);
+
+    resp = await fetch(scriptURL, { method: "POST", body: form });
+  } else {
+    const payload = {
+      mode,
+      name: product.name,
+      quantity: product.quantity,
+      buying: product.buying,
+      selling: product.selling,
+      profit: product.profit || "0%"
+    };
+
+    resp = await fetch(scriptURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
   }
 
-  const resp = await fetch(scriptURL, { method: "POST", body: form });
   const json = await resp.json();
-
   if (json.status !== "success") {
     throw new Error(json.message || "Save failed");
   }
 
-  return {
-    ...product,
-    image: json.imageUrl || ""
-  };
+  return { ...product, image: json.imageUrl || "" };
 }
-
 /* -------------------------------
    ADD PRODUCT
 --------------------------------*/
