@@ -3,7 +3,7 @@
    ============================== */
 
 const scriptURL = "https://script.google.com/macros/s/AKfycbxSZwAX4UaXdrhZAT1nx1YoS1Pv1pgTRYRxl01egj2rPFqXR5nsOu1j-izPCICLU7wwmg/exec";
-const DRIVE_FOLDER_ID = "1c4aUZRL8nupz264U8k6ODn89nAweKvrQ"; // CHANGE THIS
+const DRIVE_FOLDER_ID = "1V-5KvdzgJxsRkBSyY4Nj6Kew3rmue4WY"; // CHANGE THIS
 
 let nameInput, quantityInput, buyingPriceInput, sellingPriceInput;
 let uploadInput, uploadBtn, addProductBtn, previewBox, productsArea;
@@ -99,7 +99,7 @@ async function saveProductToSheet(product, mode = "add") {
   form.append("selling", product.selling);
   form.append("profit", product.profit || "0%");
 
-   if (uploadInput.files && uploadInput.files[0]) {
+  if (uploadInput.files[0]) {
     form.append("image", uploadInput.files[0]);
     form.append("folderId", DRIVE_FOLDER_ID);
   }
