@@ -128,8 +128,14 @@ async function saveProductToSheet(product, mode = "add") {
     throw new Error(json.message || "Save failed");
   }
 
-  return { ...product, image: json.imageUrl || "" };
+  // Ensure we return the updated product with the correct image URL
+  return {
+    ...product,
+    image: json.imageUrl || "", // this will now hold the Drive link if an image was uploaded
+  };
 }
+
+
 /* -------------------------------
    ADD PRODUCT
 --------------------------------*/
