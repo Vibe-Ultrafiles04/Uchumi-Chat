@@ -2,7 +2,7 @@
    SMART INVENTORY SYSTEM SCRIPT
    ============================== */
 
-const scriptURL = "https://script.google.com/macros/s/AKfycbwc1XMpu7W5qeyfDzr0dS-JIEUi8i7Ph2SL3z7Q9cJSTwuZJb5wiwMalGFsvzgkZow/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbxSZwAX4UaXdrhZAT1nx1YoS1Pv1pgTRYRxl01egj2rPFqXR5nsOu1j-izPCICLU7wwmg/exec";
 const DRIVE_FOLDER_ID = "1V-5KvdzgJxsRkBSyY4Nj6Kew3rmue4WY"; // CHANGE THIS
 
 let nameInput, quantityInput, buyingPriceInput, sellingPriceInput;
