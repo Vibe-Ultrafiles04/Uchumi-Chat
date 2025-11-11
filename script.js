@@ -99,7 +99,7 @@ async function saveProductToSheet(product, mode = "add") {
   form.append("selling", product.selling);
   form.append("profit", product.profit || "0%");
 
-  if (uploadInput.files[0]) {
+   if (uploadInput.files && uploadInput.files[0]) {
     form.append("image", uploadInput.files[0]);
     form.append("folderId", DRIVE_FOLDER_ID);
   }
