@@ -13,84 +13,76 @@
 </head>
 <body>
 
-  <div class="container">
-  <h2>Google Drive Image Loader</h2>
-  <input type="text" id="driveLink" placeholder="Paste your Google Drive link here..." />
-  <button onclick="showImage()">Display Image</button>
+   <main class="page">
 
-  <div class="image-box" id="previewBox">
-    Image will appear here
-  </div>
-</div>
-  <div class="main-container">
+    <!-- Top-left product display (selected thumbnail + controls) -->
+    <section class="product-panel selected">
+      <div id="selectedThumb" class="thumb-preview">The selected thumbnail image appears</div>
 
-    <!-- Product Display Section -->
-    <div class="products-area" id="productsArea">
-      <div class="product-card">
-        <div class="product-image">Product image appears here</div>
-        <div class="product-name">SOFFA</div>
+      <div class="field label-black">Product name</div>
+      <input id="selectedName" class="text-input" type="text" readonly />
 
-        <div class="info-row">
-          <label>SELLING PRICE</label>
-          <input type="text" value="800" readonly />
-        </div>
-
-        <div class="info-row">
-          <label>Quantity remaining</label>
-          <input type="text" value="10" readonly />
-        </div>
-
-        <div class="info-row">
-          <label>Profit made</label>
-          <input type="text" value="0%" readonly />
-        </div>
-
-        <button class="sell-btn">sell</button>
+      <div class="row">
+        <div class="label-black">SELLING PRICE</div>
+        <input id="selectedSell" class="small-input" type="number" readonly />
       </div>
 
-      <div class="placeholder">OTHER PRODUCT CONTAINERS WILL APPEAR HERE</div>
-    </div>
-
-<div class="form-left">
-  <div class="form-row">
-    <label>ADD PRODUCT</label>
-    <input type="text" placeholder="Product name appears here" id="productName" />
-  </div>
-
-  <div class="form-row">
-    <label>Quantity</label>
-    <input type="number" placeholder="Number of products" id="quantity" />
-  </div>
-
-  <div class="form-row">
-    <label>BUYING PRICE</label>
-    <input type="number" placeholder="Buying price appears here" id="buyingPrice" />
-  </div>
-
-  <div class="form-row">
-    <label>SELLING PRICE</label>
-    <input type="number" placeholder="Selling price appears here" id="sellingPrice" />
-  </div>
-
-  <!-- ADD PRODUCT BUTTON -->
-  <div class="form-row">
-    <button id="addProductBtn" class="upload-btn" style="margin-top: 15px; width: 100%; font-weight: bold;">
-      Add Product
-    </button>
-  </div>
-</div>
-
-      <div class="form-right">
-        <label>ADD PRODUCT IMAGE</label>
-        <div class="image-box" id="previewImage">Product image appears here</div>
-        <input type="file" id="uploadImage" accept="image/*" />
-        <button class="upload-btn" id="uploadBtn">upload</button>
+      <div class="row">
+        <div class="label-black">Quantity remaining</div>
+        <input id="selectedQty" class="small-input" type="number" readonly />
       </div>
-    </div>
 
-  </div>
+      <div class="row">
+        <div class="label-black">Profit made</div>
+        <input id="selectedProfit" class="small-input" type="text" readonly value="0%" />
+      </div>
 
- 
+      <div class="row action-row">
+        <button id="sellBtn" class="btn-black">sell</button>
+        <input id="sellQty" class="small-input" type="number" placeholder="Quantity to sell" min="1" />
+      </div>
+    </section>
+
+    <!-- area where fetched product containers will appear -->
+    <section id="productsContainer" class="products-area">
+      <div class="hint">OTHER PRODUCT CONTAINERS WILL APPEAR HERE</div>
+    </section>
+
+    <!-- bottom form to add product -->
+    <section class="product-panel add-panel">
+      <div class="form-row">
+        <div class="label-black">PRODUCT name</div>
+        <input id="productName" class="text-input" type="text" placeholder="Product name appears here" />
+      </div>
+
+      <div class="form-row">
+        <div class="label-black">Quantity</div>
+        <input id="productQuantity" class="text-input" type="number" placeholder="Number of products" min="0" />
+      </div>
+
+      <div class="form-row">
+        <div class="label-black">BUYING PRICE</div>
+        <input id="productBuy" class="text-input" type="number" placeholder="Buying price appears here" step="0.01" />
+      </div>
+
+      <div class="form-row">
+        <div class="label-black">SELLING PRICE</div>
+        <input id="productSell" class="text-input" type="number" placeholder="Selling price appears here" step="0.01" />
+      </div>
+
+      <div class="thumb-and-link">
+        <div id="newThumb" class="thumb-preview small">Thumbnail appears</div>
+        <div class="link-column">
+          <input id="driveLink" class="text-input" type="text" placeholder="Paste your google Drive Link" />
+          <button id="previewBtn" class="btn-black small">Preview</button>
+        </div>
+      </div>
+
+      <div class="add-row">
+        <button id="addProductBtn" class="btn-black big">Add product</button>
+      </div>
+    </section>
+
 
 <script>
   // ✅ Register the Service Worker
@@ -148,32 +140,7 @@
     installBtn.remove();
   });
 </script>
-<script>
-function showImage() {
-  const linkInput = document.getElementById("driveLink").value.trim();
-  const previewBox = document.getElementById("previewBox");
 
-  if (!linkInput) {
-    previewBox.innerHTML = "Please enter a link.";
-    return;
-  }
-
-  // Extract the file ID from the Google Drive link
-  const match = linkInput.match(/\/d\/([^/]+)\//);
-  if (!match) {
-    previewBox.innerHTML = "Invalid Google Drive link format.";
-    return;
-  }
-
-  const fileId = match[1];
-  
-  // ✅ Use Google Drive thumbnail endpoint for direct image loading
-  const imageURL = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
-
-  // Display the image
-  previewBox.innerHTML = `<img src="${imageURL}" alt="Loaded Image" />`;
-}
-</script>
 
  <!-- Placeholder for JS (later we’ll add Google Sheets integration & PWA features) -->
  <script src="script.js" defer></script>
