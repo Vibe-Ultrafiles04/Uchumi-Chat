@@ -12,6 +12,16 @@
 
 </head>
 <body>
+
+  <div class="container">
+  <h2>Google Drive Image Loader</h2>
+  <input type="text" id="driveLink" placeholder="Paste your Google Drive link here..." />
+  <button onclick="showImage()">Display Image</button>
+
+  <div class="image-box" id="previewBox">
+    Image will appear here
+  </div>
+</div>
   <div class="main-container">
 
     <!-- Product Display Section -->
@@ -138,6 +148,33 @@
     installBtn.remove();
   });
 </script>
+<script>
+function showImage() {
+  const linkInput = document.getElementById("driveLink").value.trim();
+  const previewBox = document.getElementById("previewBox");
+
+  if (!linkInput) {
+    previewBox.innerHTML = "Please enter a link.";
+    return;
+  }
+
+  // Extract the file ID from the Google Drive link
+  const match = linkInput.match(/\/d\/([^/]+)\//);
+  if (!match) {
+    previewBox.innerHTML = "Invalid Google Drive link format.";
+    return;
+  }
+
+  const fileId = match[1];
+  
+  // ✅ Use Google Drive thumbnail endpoint for direct image loading
+  const imageURL = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+
+  // Display the image
+  previewBox.innerHTML = `<img src="${imageURL}" alt="Loaded Image" />`;
+}
+</script>
+
  <!-- Placeholder for JS (later we’ll add Google Sheets integration & PWA features) -->
  <script src="script.js" defer></script>
 
