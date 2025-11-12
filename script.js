@@ -1,6 +1,6 @@
 /* inventory.js */
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxSZwAX4UaXdrhZAT1nx1YoS1Pv1pgTRYRxl01egj2rPFqXR5nsOu1j-izPCICLU7wwmg/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwRbwFafaxrBqfIl1DB2f7-XvukSeXezcWHvAYbyxndz-xdHehPlWG9geyk9qUoY4NV4w/exec"; // <- REPLACE THIS
 
 // DOM refs
 const driveLinkInput = document.getElementById("driveLink");
