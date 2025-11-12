@@ -1,6 +1,6 @@
 /* inventory.js */
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyWdwozAIRk6qggVXhHctjYsXvbRxo-lzu4PFzjiSYDLpv0H79MNEiXhQiq8LDqEy4dDA/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwRbwFafaxrBqfIl1DB2f7-XvukSeXezcWHvAYbyxndz-xdHehPlWG9geyk9qUoY4NV4w/exec"; // <- REPLACE THIS
 
 // DOM refs
 const driveLinkInput = document.getElementById("driveLink");
@@ -77,9 +77,9 @@ addProductBtn.addEventListener("click", async () => {
     const res = await fetch(WEB_APP_URL, {
       method: "POST",
       mode: "cors",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
+     headers: {"Content-Type":"text/plain"}, 
+      body: JSON.stringify(payload)
+    });
     const json = await res.json();
     if (json && json.result === "success") {
       // clear inputs
