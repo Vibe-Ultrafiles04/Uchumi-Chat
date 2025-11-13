@@ -129,12 +129,14 @@ previewBtn.addEventListener("click", () => {
 // **********************************************
 
 // Helper function to create a single product card DOM element
+// Helper function to create a single product card DOM element
 function createProductCard(r) {
     // Data extraction (copied from fetchAndRenderProducts)
-    const name = r.name || r[0] || "PRODUCT DETAILS";
+   // After the fix
+const name = r.name || "PRODUCT DETAILS";
     const quantity = parseInt(r.quantity ?? r[1] ?? r[2] ?? 0); // Convert to number
-    const buy = parseFloat(r.buy ?? r[3] ?? r[3] ?? 0);        // Convert to float
-    const sell = parseFloat(r.sell ?? r[4] ?? r[4] ?? 0);        // Convert to float
+    const buy = parseFloat(r.buy ?? r[3] ?? r[3] ?? 0);       // Convert to float
+    const sell = parseFloat(r.sell ?? r[4] ?? r[4] ?? 0);       // Convert to float
     const fileId = r.driveFileId || r.driveLinkFileId || (r.driveLink ? extractDriveId(r.driveLink) : null) || "";
     const driveLink = r.driveLink || "";
     const thumbUrl = fileId ? driveThumbnailUrl(fileId, 400) : (driveLink || "");
@@ -142,6 +144,18 @@ function createProductCard(r) {
     // Calculate profit
     const profit = sell - buy;
     const profitClass = profit > 0 ? 'profit-positive' : profit < 0 ? 'profit-negative' : 'profit-neutral';
+
+    // *** MODIFICATION START: Calculate Percentage Profit ***
+    let profitPercent = 0;
+    if (sell > 0) {
+        // Calculate Profit Margin: ((Sell - Buy) / Sell) * 100
+        profitPercent = (profit / sell) * 100;
+    } else if (profit > 0 && buy === 0) {
+        // Special case: If Cost Price is 0, the margin is 100%
+        profitPercent = 100; 
+    }
+    const profitDisplay = `${profitPercent.toFixed(1)}%`; // Display with one decimal place
+    // *** MODIFICATION END ***
 
     // --- MODERN CARD STRUCTURE ---
     const card = document.createElement("div");
@@ -186,11 +200,11 @@ function createProductCard(r) {
         </div>
     `;
 
-    // Profit Margin
+    // Profit Margin (MODIFIED SECTION)
    info.innerHTML += `
         <div class="profit-margin ${profitClass}">
-            <span class="label">Est. Profit:</span>
-            <span class="value">${CURRENCY_SYMBOL}${profit.toFixed(2)}</span>
+            <span class="label">Est. Profit Margin:</span>
+            <span class="value">${profitDisplay}</span>
         </div>
     `;
 
@@ -199,8 +213,6 @@ function createProductCard(r) {
     
     return card;
 }
-
-
 // add product: collect fields -> POST to Web App
 addProductBtn.addEventListener("click", async () => {
     // 1. COLLECT ALL DATA FROM INPUTS FIRST
