@@ -3,6 +3,12 @@
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwRbwFafaxrBqfIl1DB2f7-XvukSeXezcWHvAYbyxndz-xdHehPlWG9geyk9qUoY4NV4w/exec"; // <- REPLACE THIS
 
 // DOM refs
+// New Gallery DOM refs
+const linkGalleryDialog = document.getElementById("linkGalleryDialog");
+const openGalleryBtn = document.getElementById("openGalleryBtn");
+const closeGalleryBtn = document.getElementById("closeGalleryBtn");
+const galleryContainer = document.getElementById("galleryContainer");
+const saveLinkBtn = document.getElementById("saveLinkBtn");
 const driveLinkInput = document.getElementById("driveLink");
 const previewBtn = document.getElementById("previewBtn");
 const newThumb = document.getElementById("newThumb");
@@ -22,6 +28,74 @@ const selectedQty = document.getElementById("selectedQty");
 const selectedProfit = document.getElementById("selectedProfit");
 const sellBtn = document.getElementById("sellBtn");
 const sellQty = document.getElementById("sellQty");
+
+const STORAGE_KEY = 'savedProductLinks';
+
+// Load links from local storage
+function loadSavedLinks() {
+    const json = localStorage.getItem(STORAGE_KEY);
+    return json ? JSON.parse(json) : [];
+}
+
+// Save links to local storage
+function saveLinks(links) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+}
+
+// Render the gallery in the dialog
+function renderGallery() {
+    galleryContainer.innerHTML = '';
+    const links = loadSavedLinks();
+
+    if (links.length === 0) {
+        galleryContainer.innerHTML = '<div class="hint">No links saved yet.</div>';
+        return;
+    }
+
+    links.forEach((linkObj, index) => {
+        const fileId = extractDriveId(linkObj.driveLink);
+        const thumbUrl = fileId ? driveThumbnailUrl(fileId, 200) : null;
+
+        const card = document.createElement("div");
+        card.className = "gallery-card";
+        card.dataset.index = index; // Store the index for selection
+
+        const thumb = document.createElement("div");
+        thumb.className = "p-thumb";
+        thumb.innerHTML = thumbUrl
+            ? `<img src="${thumbUrl}" alt="preview" style="width:100%;height:100%;object-fit:cover"/>`
+            : `<span style="font-size:12px;color:#888">No Image</span>`;
+
+        const nameDisplay = document.createElement("p");
+        nameDisplay.textContent = linkObj.name || "Unnamed Link";
+        nameDisplay.style.fontWeight = 'bold';
+
+        // Add a 'Use' button to populate the main form
+        const useBtn = document.createElement("button");
+        useBtn.className = "btn-black small";
+        useBtn.textContent = "Use";
+        useBtn.style.marginRight = '5px';
+        useBtn.addEventListener("click", (e) => {
+            e.stopPropagation(); // Prevent card click
+            useLinkFromGallery(index);
+        });
+
+        // Add a 'Remove' button
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "btn-black small";
+        removeBtn.textContent = "Remove";
+        removeBtn.addEventListener("click", (e) => {
+            e.stopPropagation(); // Prevent card click
+            removeLinkFromGallery(index);
+        });
+
+        card.appendChild(thumb);
+        card.appendChild(nameDisplay);
+        card.appendChild(useBtn);
+        card.appendChild(removeBtn);
+        galleryContainer.appendChild(card);
+    });
+}
 
 // helper: extract drive id from multiple link formats
 function extractDriveId(link) {
@@ -182,6 +256,65 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"'`]/g, c=>({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;', '`':'&#96;'
   })[c]);
+}
+// Handler to save the current link in the form to the gallery
+saveLinkBtn.addEventListener("click", () => {
+    const link = driveLinkInput.value.trim();
+    const name = productNameInput.value.trim() || 'Untitled Link';
+    const id = extractDriveId(link);
+
+    if (!link || !id) {
+        alert("Please enter a valid Google Drive link and preview it first.");
+        return;
+    }
+
+    const links = loadSavedLinks();
+    links.push({ driveLink: link, name: name }); // Save the link and the current name
+    saveLinks(links);
+
+    alert(`Link for "${name}" saved to gallery!`);
+    
+    // Clear the link field only, keep the name/price fields
+    driveLinkInput.value = ""; 
+    newThumb.innerHTML = "Thumbnail appears";
+});
+
+// Open Gallery Dialog
+openGalleryBtn.addEventListener("click", () => {
+    renderGallery();
+    linkGalleryDialog.showModal();
+});
+
+// Close Gallery Dialog
+closeGalleryBtn.addEventListener("click", () => {
+    linkGalleryDialog.close();
+});
+
+// Function to populate the main form with a link from the gallery
+function useLinkFromGallery(index) {
+    const links = loadSavedLinks();
+    const linkObj = links[index];
+    if (linkObj) {
+        // Populate the drive link and product name in the main form
+        driveLinkInput.value = linkObj.driveLink;
+        productNameInput.value = linkObj.name || "";
+        
+        // Trigger the preview button function to show the thumbnail
+        previewBtn.click();
+
+        linkGalleryDialog.close();
+        alert(`Link for "${linkObj.name}" loaded into the Add Product form.`);
+    }
+}
+
+// Function to remove a link from the gallery
+function removeLinkFromGallery(index) {
+    if (confirm("Are you sure you want to remove this link from the gallery?")) {
+        const links = loadSavedLinks();
+        links.splice(index, 1); // Remove item at index
+        saveLinks(links);
+        renderGallery(); // Re-render the gallery
+    }
 }
 
 // initial load

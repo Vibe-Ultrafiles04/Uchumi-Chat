@@ -49,40 +49,48 @@
     </section>
 
     <!-- bottom form to add product -->
-    <section class="product-panel add-panel">
-      <div class="form-row">
+   <section class="product-panel add-panel">
+    <div class="form-row">
         <div class="label-black">PRODUCT name</div>
         <input id="productName" class="text-input" type="text" placeholder="Product name appears here" />
-      </div>
+    </div>
 
-      <div class="form-row">
+    <div class="form-row">
         <div class="label-black">Quantity</div>
         <input id="productQuantity" class="text-input" type="number" placeholder="Number of products" min="0" />
-      </div>
+    </div>
 
-      <div class="form-row">
+    <div class="form-row">
         <div class="label-black">BUYING PRICE</div>
         <input id="productBuy" class="text-input" type="number" placeholder="Buying price appears here" step="0.01" />
-      </div>
+    </div>
 
-      <div class="form-row">
+    <div class="form-row">
         <div class="label-black">SELLING PRICE</div>
         <input id="productSell" class="text-input" type="number" placeholder="Selling price appears here" step="0.01" />
-      </div>
-
-      <div class="thumb-and-link">
+    </div>
+    <div class="thumb-and-link">
         <div id="newThumb" class="thumb-preview small">Thumbnail appears</div>
         <div class="link-column">
-          <input id="driveLink" class="text-input" type="text" placeholder="Paste your google Drive Link" />
-          <button id="previewBtn" class="btn-black small">Preview</button>
+            <input id="driveLink" class="text-input" type="text" placeholder="Paste your google Drive Link" />
+            <button id="previewBtn" class="btn-black small">Preview</button>
+            <button id="saveLinkBtn" class="btn-black small">Save Link</button>
         </div>
-      </div>
+    </div>
 
-      <div class="add-row">
+    <div class="add-row">
+        <button id="openGalleryBtn" class="btn-black big">Open Link Gallery</button>
         <button id="addProductBtn" class="btn-black big">Add product</button>
-      </div>
-    </section>
+    </div>
+</section>
 
+<dialog id="linkGalleryDialog">
+    <div class="gallery-header">
+        <h2>Link Gallery</h2>
+        <button id="closeGalleryBtn" class="btn-black small">Close</button>
+    </div>
+    <section id="galleryContainer" class="products-area"></section>
+</dialog>
 
 <script>
   // ✅ Register the Service Worker

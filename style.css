@@ -330,3 +330,56 @@ body {
     font-size: 1.1rem;
   }
 }
+
+/* Add this to your style.css or a <style> block for the gallery dialog */
+#linkGalleryDialog {
+    width: 90%;
+    max-width: 800px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 20px;
+    z-index: 1000; /* Ensure it's on top */
+    background: white;
+}
+
+#linkGalleryDialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+#galleryContainer {
+    /* Make the gallery itself scrollable if many items */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 10px;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+/* Reusing your existing product-card style for gallery items */
+.gallery-card {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s;
+}
+
+.gallery-card:hover {
+    background-color: #f0f0f0;
+}
+
+.gallery-card .p-thumb {
+    height: 100px; /* fixed size for gallery preview */
+    margin-bottom: 5px;
+}
