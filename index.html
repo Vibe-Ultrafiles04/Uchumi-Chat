@@ -13,145 +13,161 @@
 </head>
 <body>
 
-   <main class="page">
+    <main class="page">
+        <button id="toggleFormBtn" class="btn-toggle">Toggle Input Form (Show)</button>
 
-    <!-- Top-left product display (selected thumbnail + controls) -->
-    <section class="product-panel selected">
-      <div id="selectedThumb" class="thumb-preview">The selected thumbnail image appears</div>
+        <section id="productsContainer" class="products-area">
+            <div class="hint">OTHER PRODUCT CONTAINERS WILL APPEAR HERE</div>
+        </section>
 
-      <div class="field label-black">Product name</div>
-      <input id="selectedName" class="text-input" type="text" readonly />
+        <div id="inputContainer" style="display: none;">
+            <section class="product-panel add-panel">
+                <div class="form-row">
+                    <div class="label-black">PRODUCT name</div>
+                    <input id="productName" class="text-input" type="text" placeholder="Product name appears here" />
+                </div>
 
-      <div class="row">
-        <div class="label-black">SELLING PRICE</div>
-        <input id="selectedSell" class="small-input" type="number" readonly />
-      </div>
+                <div class="form-row">
+                    <div class="label-black">Quantity</div>
+                    <input id="productQuantity" class="text-input" type="number" placeholder="Number of products" min="0" />
+                </div>
 
-      <div class="row">
-        <div class="label-black">Quantity remaining</div>
-        <input id="selectedQty" class="small-input" type="number" readonly />
-      </div>
+                <div class="form-row">
+                    <div class="label-black">BUYING PRICE</div>
+                    <input id="productBuy" class="text-input" type="number" placeholder="Buying price appears here" step="0.01" />
+                </div>
 
-      <div class="row">
-        <div class="label-black">Profit made</div>
-        <input id="selectedProfit" class="small-input" type="text" readonly value="0%" />
-      </div>
+                <div class="form-row">
+                    <div class="label-black">SELLING PRICE</div>
+                    <input id="productSell" class="text-input" type="number" placeholder="Selling price appears here" step="0.01" />
+                </div>
+                <div class="thumb-and-link">
+                    <div id="newThumb" class="thumb-preview small">Thumbnail appears</div>
+                    <div class="link-column">
+                        <input id="driveLink" class="text-input" type="text" placeholder="Paste your google Drive Link" />
+                        <button id="previewBtn" class="btn-black small">Preview</button>
+                        <button id="saveLinkBtn" class="btn-black small">Save Link</button>
+                    </div>
+                </div>
 
-      <div class="row action-row">
-        <button id="sellBtn" class="btn-black">sell</button>
-        <input id="sellQty" class="small-input" type="number" placeholder="Quantity to sell" min="1" />
-      </div>
-    </section>
-
-    <!-- area where fetched product containers will appear -->
-    <section id="productsContainer" class="products-area">
-      <div class="hint">OTHER PRODUCT CONTAINERS WILL APPEAR HERE</div>
-    </section>
-
-    <!-- bottom form to add product -->
-   <section class="product-panel add-panel">
-    <div class="form-row">
-        <div class="label-black">PRODUCT name</div>
-        <input id="productName" class="text-input" type="text" placeholder="Product name appears here" />
-    </div>
-
-    <div class="form-row">
-        <div class="label-black">Quantity</div>
-        <input id="productQuantity" class="text-input" type="number" placeholder="Number of products" min="0" />
-    </div>
-
-    <div class="form-row">
-        <div class="label-black">BUYING PRICE</div>
-        <input id="productBuy" class="text-input" type="number" placeholder="Buying price appears here" step="0.01" />
-    </div>
-
-    <div class="form-row">
-        <div class="label-black">SELLING PRICE</div>
-        <input id="productSell" class="text-input" type="number" placeholder="Selling price appears here" step="0.01" />
-    </div>
-    <div class="thumb-and-link">
-        <div id="newThumb" class="thumb-preview small">Thumbnail appears</div>
-        <div class="link-column">
-            <input id="driveLink" class="text-input" type="text" placeholder="Paste your google Drive Link" />
-            <button id="previewBtn" class="btn-black small">Preview</button>
-            <button id="saveLinkBtn" class="btn-black small">Save Link</button>
+                <div class="add-row">
+                    <button id="openGalleryBtn" class="btn-black big">Open Link Gallery</button>
+                    <button id="addProductBtn" class="btn-black big">Add product</button>
+                </div>
+            </section>
         </div>
-    </div>
 
-    <div class="add-row">
-        <button id="openGalleryBtn" class="btn-black big">Open Link Gallery</button>
-        <button id="addProductBtn" class="btn-black big">Add product</button>
-    </div>
-</section>
+        <dialog id="linkGalleryDialog">
+            <div class="gallery-header">
+                <h2>Link Gallery</h2>
+                <button id="closeGalleryBtn" class="btn-black small">Close</button>
+            </div>
+            <section id="galleryContainer" class="products-area"></section>
+        </dialog>
 
-<dialog id="linkGalleryDialog">
-    <div class="gallery-header">
-        <h2>Link Gallery</h2>
-        <button id="closeGalleryBtn" class="btn-black small">Close</button>
-    </div>
-    <section id="galleryContainer" class="products-area"></section>
-</dialog>
+        <script>
+            // ✅ Register the Service Worker
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker
+                    .register("service-worker.js")
+                    .then(() => console.log("✅ Service Worker registered successfully."))
+                    .catch((err) => console.error("❌ Service Worker registration failed:", err));
+            }
 
-<script>
-  // ✅ Register the Service Worker
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker
-      .register("service-worker.js")
-      .then(() => console.log("✅ Service Worker registered successfully."))
-      .catch((err) => console.error("❌ Service Worker registration failed:", err));
-  }
+            // ✅ Handle PWA Install Prompt
+            let deferredPrompt;
+            const installBtn = document.createElement("button");
+            installBtn.textContent = "📲 Install App";
+            installBtn.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #3b6dc6;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 10px;
+                font-size: 16px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                cursor: pointer;
+                display: none;
+                z-index: 9999;
+            `;
+            document.body.appendChild(installBtn);
 
-  // ✅ Handle PWA Install Prompt
-  let deferredPrompt;
-  const installBtn = document.createElement("button");
-  installBtn.textContent = "📲 Install App";
-  installBtn.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #3b6dc6;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-size: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    cursor: pointer;
-    display: none;
-    z-index: 9999;
-  `;
-  document.body.appendChild(installBtn);
+            window.addEventListener("beforeinstallprompt", (e) => {
+                // Prevent the mini-infobar from appearing
+                e.preventDefault();
+                deferredPrompt = e;
 
-  window.addEventListener("beforeinstallprompt", (e) => {
-    // Prevent the mini-infobar from appearing
-    e.preventDefault();
-    deferredPrompt = e;
+                // Show the install button
+                installBtn.style.display = "block";
+                console.log("📦 PWA install prompt ready.");
 
-    // Show the install button
-    installBtn.style.display = "block";
-    console.log("📦 PWA install prompt ready.");
+                installBtn.addEventListener("click", async () => {
+                    installBtn.style.display = "none";
+                    deferredPrompt.prompt(); // Show the native prompt
 
-    installBtn.addEventListener("click", async () => {
-      installBtn.style.display = "none";
-      deferredPrompt.prompt(); // Show the native prompt
+                    const {
+                        outcome
+                    } = await deferredPrompt.userChoice;
+                    console.log(`User response to install: ${outcome}`);
 
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to install: ${outcome}`);
+                    deferredPrompt = null;
+                });
+            });
 
-      deferredPrompt = null;
+            // Optional: Notify if app is already installed
+            window.addEventListener("appinstalled", () => {
+                console.log("✅ App installed successfully!");
+                installBtn.remove();
+            });
+        </script>
+
+       
+
+        <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleBtn = document.getElementById('toggleFormBtn');
+        const inputContainer = document.getElementById('inputContainer');
+        const content = inputContainer.querySelector('.product-panel.add-panel');
+        
+        // 1. Set initial state for smooth toggle (Hidden by default)
+        // inputContainer must be styled with overflow: hidden; and max-height: 0;
+        inputContainer.style.maxHeight = '0';
+        inputContainer.style.opacity = '0';
+        // Ensure it's not display: none, or transition won't work
+        inputContainer.style.display = 'block'; 
+
+        // Set initial button text to 'Show'
+        toggleBtn.textContent = 'Toggle Input Form (Show)';
+
+        toggleBtn.addEventListener('click', () => {
+            // Check if the container is visually hidden (max-height is 0)
+            const isHidden = inputContainer.style.maxHeight === '0px';
+
+            if (isHidden) {
+                // SHOW: Temporarily set max-height to its content height (plus a buffer)
+                // This forces the transition from 0 to the actual height.
+                const scrollHeight = content.scrollHeight; 
+                inputContainer.style.maxHeight = scrollHeight + 40 + 'px'; // + buffer for padding/margin
+                inputContainer.style.opacity = '1';
+                toggleBtn.textContent = 'Toggle Input Form (Hide)';
+
+            } else {
+                // HIDE: First set max-height to its current scrollHeight, 
+                // then set it to 0 after a tiny delay. This ensures the transition works.
+                // We also set the max-height to 0 directly, as it's the target.
+                inputContainer.style.maxHeight = '0';
+                inputContainer.style.opacity = '0';
+                toggleBtn.textContent = 'Toggle Input Form (Show)';
+            }
+        });
     });
-  });
-
-  // Optional: Notify if app is already installed
-  window.addEventListener("appinstalled", () => {
-    console.log("✅ App installed successfully!");
-    installBtn.remove();
-  });
 </script>
 
+        <script src="script.js" defer></script>
 
- <!-- Placeholder for JS (later we’ll add Google Sheets integration & PWA features) -->
- <script src="script.js" defer></script>
-
+    </main>
 </body>
 </html>
