@@ -39,6 +39,13 @@ function generateUniqueId() {
     return 'prod-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
 }
 
+// *** MISSING HELPER FUNCTION (REQUIRED FOR NUMBER INPUTS) ***
+function unformatNumber(value) {
+    if (typeof value !== 'string') return value;
+    // Remove all commas from the string
+    return value.replace(/,/g, ''); 
+}
+
 // Load links from local storage
 function loadSavedLinks() {
     const json = localStorage.getItem(STORAGE_KEY);
@@ -233,19 +240,18 @@ function createProductCard(r) {
     info.innerHTML += `<h4 class="product-name">${escapeHtml(name)}</h4>`;
 
     // Prices Grid
-   info.innerHTML += `
+  info.innerHTML += `
         <div class="price-grid">
             <div class="price-item">
                 <span class="label">Cost Price:</span>
-                <span class="value buy-price">${CURRENCY_SYMBOL}${buy.toFixed(2)}</span>
+                <span class="value buy-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(buy)}</span>
             </div>
             <div class="price-item">
                 <span class="label">Sell Price:</span>
-                <span class="value sell-price">${CURRENCY_SYMBOL}${sell.toFixed(2)}</span>
+                <span class="value sell-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(sell)}</span>
             </div>
         </div>
     `;
-
     // Profit Margin
    info.innerHTML += `
         <div class="profit-margin ${profitClass}">
@@ -271,6 +277,24 @@ function createProductCard(r) {
     return card;
 }
 
+// NEW HELPER FUNCTION: Formats a number with commas and two decimal places
+function formatNumberWithCommas(number) {
+    const num = parseFloat(number);
+    if (isNaN(num)) return '0.00';
+    
+    // Convert to a string with two decimal places
+    const fixedNum = num.toFixed(2);
+    
+    // Separate integer and decimal parts
+    const parts = fixedNum.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts.length > 1 ? '.' + parts[1] : '';
+
+    // Add commas to the integer part
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    
+    return formattedInteger + decimalPart;
+}
 // Handler to open the update dialog (NEW)
 function openUpdateDialog(product) {
     // Store the product data globally
@@ -294,8 +318,8 @@ if (closeUpdateDialogBtn) {
 // Handler to execute the stock update (NEW)
 if (executeUpdateButton) {
     executeUpdateButton.addEventListener("click", async () => {
-        const sellAmount = parseInt(sellQuantityInput.value || "0", 10);
-        const restockAmount = parseInt(restockQuantityInput.value || "0", 10);
+       const sellAmount = parseInt(unformatNumber(sellQuantityInput.value) || "0", 10);
+        const restockAmount = parseInt(unformatNumber(restockQuantityInput.value) || "0", 10);
         
         if (sellAmount === 0 && restockAmount === 0) {
             alert("Enter a quantity to sell or restock.");
@@ -375,9 +399,9 @@ if (executeUpdateButton) {
 addProductBtn.addEventListener("click", async () => {
     // 1. COLLECT ALL DATA FROM INPUTS FIRST
     const name = productNameInput.value.trim(); 
-    const quantity = parseInt(productQuantityInput.value || "0", 10);
-    const buy = parseFloat(productBuyInput.value || "0");
-    const sell = parseFloat(productSellInput.value || "0");
+   const quantity = parseInt(unformatNumber(productQuantityInput.value) || "0", 10);
+   const buy = parseFloat(unformatNumber(productBuyInput.value) || "0");
+    const sell = parseFloat(unformatNumber(productSellInput.value) || "0");
     const link = driveLinkInput.value.trim();
     const fileId = extractDriveId(link);
 
