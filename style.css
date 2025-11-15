@@ -498,6 +498,92 @@ body {
     overflow: hidden;
     text-overflow: ellipsis; 
 }
+
+/* Styling the native <dialog> element */
+.modal {
+    /* Centering the dialog content and setting basic size/style */
+    border: none;
+    padding: 0;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 450px;
+    background-color: #ffffff;
+    
+    /* Ensure it's centered when shown via dialog.showModal() */
+    margin: auto;
+}
+
+/* Style for the semi-transparent overlay when the dialog is open */
+.modal::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px); /* Modern subtle blur effect */
+}
+
+/* --- Layout and Component Styling --- */
+.modal-header {
+    display: flex;
+    justify-content: space-between; /* Puts title and button far apart */
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eeeeee;
+    background-color: #f7f7f7;
+    border-radius: 12px 12px 0 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+    line-height: 1;
+    padding: 0; /* Remove default button padding */
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.product-title {
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 15px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box; /* Crucial for padding/border within width */
+    font-size: 1rem;
+}
+
+.button-container {
+    padding-top: 10px;
+    text-align: right;
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background-color: #007bff; /* Primary action color */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
 /* ---------- RESPONSIVE ADJUSTMENTS ---------- */
 
 /* Tablets and small laptops */

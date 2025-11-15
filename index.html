@@ -65,6 +65,45 @@
             <section id="galleryContainer" class="products-area"></section>
         </dialog>
 
+        <dialog id="updateDialog" class="modal">
+    <div class="modal-header">
+        <button id="closeUpdateDialogBtn" class="close-btn">&times;</button>
+        <h2>Update Stock</h2>
+    </div>
+
+    <div class="modal-body">
+        <p class="product-title">Product: <strong id="updateProductName"></strong></p>
+        
+        <div class="input-group">
+            <label for="sellQuantity">📉 Units Sold (Decrease Stock):</label>
+            <input 
+                type="number" 
+                id="sellQuantity" 
+                min="0" 
+                value="0" 
+                placeholder="Enter quantity sold"
+                class="input-field"
+            >
+        </div>
+        
+        <div class="input-group">
+            <label for="restockQuantity">📦 Units Restocked (Increase Stock):</label>
+            <input 
+                type="number" 
+                id="restockQuantity" 
+                min="0" 
+                value="0" 
+                placeholder="Enter quantity restocked"
+                class="input-field"
+            >
+        </div>
+
+        <div class="button-container">
+            <button id="executeUpdateButton" class="btn-primary">Execute Stock Update</button>
+        </div>
+    </div>
+</dialog>
+
         <script>
             // ✅ Register the Service Worker
             if ("serviceWorker" in navigator) {
