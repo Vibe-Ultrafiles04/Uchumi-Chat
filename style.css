@@ -227,82 +227,44 @@ body {
 }
 
 
-/* Product cards for fetched items */
-/* --- Products Grid Container --- */
-/* 1. Parent of #productsContainer (e.g., the main page content area) */
-/* This element should now only handle vertical overflow, if any. */
-.products-wrapper {
-    /* Set this to nullify the previous global horizontal scroll */
-    overflow-x: visible; 
-    overflow-y: auto; /* Allow vertical scrolling of the page content */
-    padding-bottom: 0; 
+html, body, .page, .products-wrapper, #productsContainer {
+    overflow-x: hidden !important;
     width: 100%;
-    
-    /* Remove scrollbar hiding rules from here as they are no longer necessary */
-    -ms-overflow-style: initial; 
-    scrollbar-width: initial;
-}
-.products-wrapper::-webkit-scrollbar {
-    display: initial;
+    max-width: 100%;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
 }
 
-
-/* 2. Main Product Container (holds all the swipeable rows) */
-#productsContainer {
-    /* Stacks the swipeable rows vertically, as before */
-    display: flex;
-    flex-direction: column;
-    gap: 20px; /* Vertical gap between the swipeable rows */
-    padding: 0; 
-    margin: 0 auto;
-    width: 100%; /* Ensure it occupies full width, but doesn't control the scroll */
-}
-
-/* 3. The New Swipeable Row (The key to horizontal scrolling) */
 .product-group-wrapper {
-    /* CRUCIAL FIX: This element now handles its own horizontal scrolling */
-    overflow-x: auto; 
-    overflow-y: hidden; /* Prevent vertical scrolling within the row */
-    
-    display: flex; 
-    flex-wrap: nowrap; /* Forces items onto a single line */
-    gap: 16px; 
-    
-    /* Add horizontal padding to the group wrapper, not the container */
-    padding: 0 20px 20px 20px; /* Added bottom padding for scrollbar visibility/space */
-    
-    /* Optional: Add snap points for smoother swiping */
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
-    
-    /* Optional: Hide the scrollbar for a cleaner look */
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 16px;
+    padding: 0 20px 20px 20px;
     -ms-overflow-style: none;
     scrollbar-width: none;
-}
-.product-group-wrapper::-webkit-scrollbar {
-    display: none;
+    cursor: grab;
+    touch-action: pan-x; /* CRITICAL: Allows horizontal pan, blocks vertical */
+    overscroll-behavior-x: contain; /* Prevents pull-to-refresh or chain scrolling */
 }
 
+.product-group-wrapper::-webkit-scrollbar { 
+    display: none; 
+}
 
-/* 4. Individual Product Card Adjustment */
+.product-group-wrapper:active { 
+    cursor: grabbing; 
+}
+
 .modern-product-card {
-    /* CRUCIAL: Prevents the card from shrinking and defines its width */
-    flex-shrink: 0; 
-    width: 280px; 
+    flex-shrink: 0;
+    width: 280px;
     max-width: 280px;
-    
-    /* Optional: Align the scroll snap to the start of the card */
     scroll-snap-align: start;
-    
-    /* ... (All other card styles maintained) ... */
-    background: var(--white);
-    border: 1px solid #e0e0e0;
-    border-radius: 16px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
-    transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
+    touch-action: pan-y; /* Allows vertical scroll inside card if needed */
 }
 /* Class applied by JS for the smooth transition */
 .newly-added {

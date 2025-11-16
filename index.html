@@ -12,7 +12,7 @@
 
 </head>
 <body>
-
+<p>jambo</p>
     <main class="page">
         <button id="toggleFormBtn" class="btn-toggle">Toggle Input Form (Show)</button>
 
@@ -175,7 +175,63 @@
        
 
         <script>
+// Prevent page swipe when swiping horizontally inside product rows
+document.querySelectorAll('.product-group-wrapper').forEach(wrapper => {
+    let startX = 0;
+    let startY = 0;
+    let isScrolling = false;
 
+    wrapper.addEventListener('touchstart', e => {
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        isScrolling = false;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchmove', e => {
+        if (!startX || !startY) return;
+
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - startX);
+        const deltaY = Math.abs(touch.clientY - startY);
+
+        // If horizontal movement is greater than vertical, prevent page scroll
+        if (deltaX > deltaY && deltaX > 10) {
+            e.stopPropagation(); // This stops body/page from scrolling
+            isScrolling = true;
+        }
+    }, { passive: false }); // Must be passive: false to allow preventDefault/stopPropagation
+});
+
+// After all groups are appended...
+// Re-attach touch handlers to newly created wrappers
+document.querySelectorAll('.product-group-wrapper').forEach(wrapper => {
+    // Remove old listeners to prevent duplicates
+    wrapper.removeEventListener('touchstart', wrapper._touchStartHandler);
+    wrapper.removeEventListener('touchmove', wrapper._touchMoveHandler);
+
+    let startX = 0, startY = 0;
+    const touchStartHandler = e => {
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+    };
+    const touchMoveHandler = e => {
+        if (!startX || !startY) return;
+        const deltaX = Math.abs(e.touches[0].clientX - startX);
+        const deltaY = Math.abs(e.touches[0].clientY - startY);
+        if (deltaX > deltaY && deltaX > 10) {
+            e.stopPropagation();
+        }
+    };
+
+    wrapper.addEventListener('touchstart', touchStartHandler, { passive: true });
+    wrapper.addEventListener('touchmove', touchMoveHandler, { passive: false });
+
+    // Store for cleanup
+    wrapper._touchStartHandler = touchStartHandler;
+    wrapper._touchMoveHandler = touchMoveHandler;
+});
             document.addEventListener('DOMContentLoaded', () => {
     // Select all inputs you want to format
     const numericInputs = document.querySelectorAll('input[data-numeric="true"]');
