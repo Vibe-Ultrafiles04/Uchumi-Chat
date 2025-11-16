@@ -318,8 +318,8 @@ if (closeUpdateDialogBtn) {
 // Handler to execute the stock update (NEW)
 if (executeUpdateButton) {
     executeUpdateButton.addEventListener("click", async () => {
-       const sellAmount = parseInt(unformatNumber(sellQuantityInput.value) || "0", 10);
-        const restockAmount = parseInt(unformatNumber(restockQuantityInput.value) || "0", 10);
+        const sellAmount = parseInt(unformatNumber(sellQuantityInput.value) || "0", 10);
+        const restockAmount = parseInt(unformatNumber(restockQuantityInput.value) || "0", 10);
         
         if (sellAmount === 0 && restockAmount === 0) {
             alert("Enter a quantity to sell or restock.");
@@ -364,7 +364,6 @@ if (executeUpdateButton) {
             
             if (json && json.result === "success") {
                 // 3. Update Front-End UI
-                // Search by rowId (assuming the backend returns the row number in 'rowId' or the unique ID in a field used for the card's data-row-id)
                 const card = productsContainer.querySelector(`[data-row-id="${product.rowId || productId}"]`); 
                 if (card) {
                     // Update dataset attribute
@@ -381,7 +380,8 @@ if (executeUpdateButton) {
                 
                 // 4. Update the currentProductData object for immediate re-updates
                 currentProductData.quantity = newQuantity; 
-                alert(`Stock for ${product.name} updated successfully to ${newQuantity}.`);
+                
+                // The success alert is REMOVED here to provide an instant, silent update.
                 
                 updateDialog.close();
             } else {
@@ -394,7 +394,6 @@ if (executeUpdateButton) {
         }
     });
 }
-
 // add product: collect fields -> POST to Web App (MODIFIED)
 addProductBtn.addEventListener("click", async () => {
     // 1. COLLECT ALL DATA FROM INPUTS FIRST
