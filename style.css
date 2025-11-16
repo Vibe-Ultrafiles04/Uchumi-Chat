@@ -246,7 +246,7 @@ body {
     /* We explicitly define 4 columns, each 260px wide (plus 14px gap).
        This calculated width (1082px) will always be wider than the 100% parent, 
        forcing the overflow to happen locally. */
-    grid-template-columns: repeat(4, 260px); 
+    grid-template-columns: repeat(4, 300px); 
     
     /* 3. Essential Scrolling Properties */
     overflow-x: auto; /* This creates the local scrollbar */
@@ -254,7 +254,7 @@ body {
     -webkit-overflow-scrolling: touch;
     
     /* 4. Spacing and Containment */
-    gap: 14px;
+    gap: 18px;
     padding: 10px;
     
     /* IMPORTANT: Ensure the wrapper itself does NOT expand the page, 
@@ -274,7 +274,7 @@ body {
     align-self: start; 
     
     /* Optional: Ensure card respects the column definition */
-    max-width: 260px;
+    max-width: 300px;
 }
 
 /* Class applied by JS for the smooth transition */
