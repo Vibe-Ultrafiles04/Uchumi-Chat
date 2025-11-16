@@ -589,6 +589,16 @@ function removeLinkFromGallery(index) {
         renderGallery(); // Re-render the gallery
     }
 }
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".product-group-wrapper").forEach(row => {
+        row.addEventListener("touchstart", () => {
+            row.style.scrollBehavior = "auto";
+        });
+        row.addEventListener("touchend", () => {
+            row.style.scrollBehavior = "smooth";
+        });
+    });
+});
 
 // initial load
 fetchAndRenderProducts();

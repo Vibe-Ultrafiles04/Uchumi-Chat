@@ -226,27 +226,6 @@ body {
     /* If you prefer pure CSS initial hide, set max-height: 0; here */
 }
 
-
-/* Product cards for fetched items */
-/* --- Products Grid Container --- */
-/* 1. Parent of #productsContainer (e.g., the main page content area) */
-/* This element should now only handle vertical overflow, if any. */
-.products-wrapper {
-    /* Set this to nullify the previous global horizontal scroll */
-    overflow-x: visible; 
-    overflow-y: auto; /* Allow vertical scrolling of the page content */
-    padding-bottom: 0; 
-    width: 100%;
-    
-    /* Remove scrollbar hiding rules from here as they are no longer necessary */
-    -ms-overflow-style: initial; 
-    scrollbar-width: initial;
-}
-.products-wrapper::-webkit-scrollbar {
-    display: initial;
-}
-
-
 /* 2. Main Product Container (holds all the swipeable rows) */
 #productsContainer {
     /* Stacks the swipeable rows vertically, as before */
@@ -258,52 +237,46 @@ body {
     width: 100%; /* Ensure it occupies full width, but doesn't control the scroll */
 }
 
-/* 3. The New Swipeable Row (The key to horizontal scrolling) */
+/* 3. The New Scrollable Row (Using Grid) */
 .product-group-wrapper {
-    /* CRUCIAL FIX: This element now handles its own horizontal scrolling */
-    overflow-x: auto; 
-    overflow-y: hidden; /* Prevent vertical scrolling within the row */
+    /* 1. Establish Grid Container */
+    display: grid;
     
-    display: flex; 
-    flex-wrap: nowrap; /* Forces items onto a single line */
-    gap: 16px; 
+    /* 2. CRITICAL: Force the Grid to be wider than the wrapper */
+    /* We explicitly define 4 columns, each 260px wide (plus 14px gap).
+       This calculated width (1082px) will always be wider than the 100% parent, 
+       forcing the overflow to happen locally. */
+    grid-template-columns: repeat(4, 260px); 
     
-    /* Add horizontal padding to the group wrapper, not the container */
-    padding: 0 20px 20px 20px; /* Added bottom padding for scrollbar visibility/space */
-    
-    /* Optional: Add snap points for smoother swiping */
+    /* 3. Essential Scrolling Properties */
+    overflow-x: auto; /* This creates the local scrollbar */
     scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
     
-    /* Optional: Hide the scrollbar for a cleaner look */
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-.product-group-wrapper::-webkit-scrollbar {
-    display: none;
+    /* 4. Spacing and Containment */
+    gap: 14px;
+    padding: 10px;
+    
+    /* IMPORTANT: Ensure the wrapper itself does NOT expand the page, 
+       but allows its children to overflow *it*. */
+    width: 100%;
+    box-sizing: border-box; 
 }
 
 
-/* 4. Individual Product Card Adjustment */
+
+/* Snap each card cleanly when swiping */
 .modern-product-card {
-    /* CRUCIAL: Prevents the card from shrinking and defines its width */
-    flex-shrink: 0; 
-    width: 280px; 
-    max-width: 280px;
-    
-    /* Optional: Align the scroll snap to the start of the card */
+    /* Grid item setup */
     scroll-snap-align: start;
     
-    /* ... (All other card styles maintained) ... */
-    background: var(--white);
-    border: 1px solid #e0e0e0;
-    border-radius: 16px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
-    transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
+    /* Ensure card doesn't try to stretch vertically */
+    align-self: start; 
+    
+    /* Optional: Ensure card respects the column definition */
+    max-width: 260px;
 }
+
 /* Class applied by JS for the smooth transition */
 .newly-added {
     opacity: 0;
