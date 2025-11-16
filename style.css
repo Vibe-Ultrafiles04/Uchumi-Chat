@@ -229,38 +229,72 @@ body {
 
 /* Product cards for fetched items */
 /* --- Products Grid Container --- */
+/* 1. Parent of #productsContainer (e.g., the main page content area) */
+/* This element should now only handle vertical overflow, if any. */
+.products-wrapper {
+    /* Set this to nullify the previous global horizontal scroll */
+    overflow-x: visible; 
+    overflow-y: auto; /* Allow vertical scrolling of the page content */
+    padding-bottom: 0; 
+    width: 100%;
+    
+    /* Remove scrollbar hiding rules from here as they are no longer necessary */
+    -ms-overflow-style: initial; 
+    scrollbar-width: initial;
+}
+.products-wrapper::-webkit-scrollbar {
+    display: initial;
+}
+
+
+/* 2. Main Product Container (holds all the swipeable rows) */
 #productsContainer {
-    /* Use Grid to organize items into rows and columns */
-    display: grid;
+    /* Stacks the swipeable rows vertically, as before */
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Vertical gap between the swipeable rows */
+    padding: 0; 
+    margin: 0 auto;
+    width: 100%; /* Ensure it occupies full width, but doesn't control the scroll */
+}
+
+/* 3. The New Swipeable Row (The key to horizontal scrolling) */
+.product-group-wrapper {
+    /* CRUCIAL FIX: This element now handles its own horizontal scrolling */
+    overflow-x: auto; 
+    overflow-y: hidden; /* Prevent vertical scrolling within the row */
     
-    /* Enforce exactly four columns. Minimum width per column is 200px. */
-    grid-template-columns: repeat(4, minmax(200px, 1fr));
-    
-    /* Sets the gap between grid items */
+    display: flex; 
+    flex-wrap: nowrap; /* Forces items onto a single line */
     gap: 16px; 
     
-    /* Standard padding and centering */
-    padding: 20px 0;
-    margin: 0 auto;
+    /* Add horizontal padding to the group wrapper, not the container */
+    padding: 0 20px 20px 20px; /* Added bottom padding for scrollbar visibility/space */
     
-    /* Allow the grid to expand beyond the viewport horizontally */
-    width: 100%; 
+    /* Optional: Add snap points for smoother swiping */
+    scroll-snap-type: x mandatory;
+    
+    /* Optional: Hide the scrollbar for a cleaner look */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.product-group-wrapper::-webkit-scrollbar {
+    display: none;
 }
 
-/* *** Crucial Step for Scrolling ***
-   Apply 'overflow-x: auto;' to the direct parent of #productsContainer.
-   This is what makes the content scrollable when the 4 columns 
-   (minimum 800px wide + gaps) exceed the screen width.
-*/
 
-.products-wrapper {
-    overflow-x: auto;
-    /* Optional: Hide the scrollbar in certain browsers */
-}
-/* --- Product Card Base Style --- */
+/* 4. Individual Product Card Adjustment */
 .modern-product-card {
-    /* ... (All other card styles remain the same to maintain colors and styling) ... */
-    background: var(--white); /* Color maintained */
+    /* CRUCIAL: Prevents the card from shrinking and defines its width */
+    flex-shrink: 0; 
+    width: 280px; 
+    max-width: 280px;
+    
+    /* Optional: Align the scroll snap to the start of the card */
+    scroll-snap-align: start;
+    
+    /* ... (All other card styles maintained) ... */
+    background: var(--white);
     border: 1px solid #e0e0e0;
     border-radius: 16px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);

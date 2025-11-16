@@ -462,9 +462,6 @@ addProductBtn.addEventListener("click", async () => {
 function handleInventoryData(json) {
     // The JSONP response is received here as the 'json' object
     
-    // Debugging log
-    console.log("APPS SCRIPT JSONP RESPONSE:", json); 
-    
     productsContainer.innerHTML = ""; // Clear "Loading..." hint
 
     if (!Array.isArray(json.rows) || json.rows.length === 0) {
@@ -474,15 +471,29 @@ function handleInventoryData(json) {
     
     // render each row as product card (reverse for newest first)
     const rows = json.rows.slice().reverse();
-    rows.forEach((r) => {
+    
+    let productGroupWrapper = document.createElement('div');
+    productGroupWrapper.className = 'product-group-wrapper';
+
+    rows.forEach((r, index) => {
         // Ensure each product object 'r' has the necessary fields
         if (!r.rowId && r.row) r.rowId = r.row; 
         
         const card = createProductCard(r); 
-        productsContainer.appendChild(card);
+        productGroupWrapper.appendChild(card);
+        
+        // Group logic: Append the wrapper after every 4 cards or on the last card
+        if ((index + 1) % 4 === 0 || index === rows.length - 1) {
+            productsContainer.appendChild(productGroupWrapper);
+            
+            // Start a new wrapper for the next group
+            if (index < rows.length - 1) {
+                productGroupWrapper = document.createElement('div');
+                productGroupWrapper.className = 'product-group-wrapper';
+            }
+        }
     });
 }
-
 // ** 2. Modified Fetch Function (Uses JSONP via Script Tag Injection) **
 function fetchAndRenderProducts(){
     productsContainer.innerHTML = '<div class="hint">Loading products...</div>';
