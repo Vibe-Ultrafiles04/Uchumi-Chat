@@ -16,15 +16,23 @@ h1 { text-align:center; color:#3b6dc6; margin:30px 0; font-size:24px; }
 
 /* Styles for the new "Studio" toggle button */
 .toggle-btn {
-    padding: 10px 20px;
+    padding: 8px 16px;          /* smaller padding */
     background: #3b6dc6;
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 16px;
+    border-radius: 30px;        /* pill shape = looks good even when very short */
+    font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
-    display: block; /* Make it a block element to control centering */
-    margin: 20px auto 0; /* Center it horizontally and add space */
+    display: block;
+    margin: 20px auto 0;
+    width: fit-content;        /* makes it hug the text instead of stretching */
+    transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+    background: #325a9e;
+    transform: translateY(-1px);
 }
 
 /* Existing CSS for the container */
@@ -107,24 +115,27 @@ button {width:100%;padding:14px;background:#3b6dc6;color:white;border:none;borde
   } else {
     // Create tiny install button at top-right
     const btn = document.createElement("button");
-    btn.textContent = "↓ Install";
-    btn.title = "Install this app on your device";
-    btn.style = `
-      position:fixed;
-      top:15px;
-      right:15px;
-      background:#3b6dc6;
-      color:white;
-      border:none;
-      padding:6px 10px;
-      font-size:12px;
-      border-radius:20px;
-      cursor:pointer;
-      z-index:9999;
-      box-shadow:0 2px 10px rgba(0,0,0,0.2);
-      transition:all 0.3s ease;
-      display:none;
-    `;
+    btn.textContent = "⬇️";              // ← Only a tiny downward arrow
+btn.title = "Install App";           // Tooltip explains it on hover/tap
+btn.style = `
+  position:fixed;
+  top:12px;
+  right:12px;
+  background:#3b6dc6;
+  color:white;
+  border:none;
+  width:36px;           /* fixed small size */
+  height:36px;
+  font-size:18px;       /* makes the ↓ nice and clear */
+  line-height:36px;     /* vertically centers the arrow */
+  border-radius:50%;    /* perfect circle */
+  cursor:pointer;
+  z-index:9999;
+  box-shadow:0 2px 8px rgba(0,0,0,0.25);
+  transition:all 0.2s ease;
+  display:none;
+  text-align:center;
+`;
     btn.onmouseover = () => btn.style.transform = "scale(1.1)";
     btn.onmouseout  = () => btn.style.transform = "scale(1)";
 
