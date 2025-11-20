@@ -9,7 +9,9 @@ const OFFLINE_URL = "index.html";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
+   "./index.js",
   "./style.css",
+   "./studio.html",
   "./script.js",
   "./manifest.json",
   "./inventory192.png",

@@ -3,275 +3,304 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#3b6dc6" />
-  <title>Smart Inventory</title>
+  <title>Our Stock - Live View</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#3b6dc6" />
-<link rel="apple-touch-icon" href="icons/icon-192x192.png" />
+  <meta name="theme-color" content="#3b6dc6" />
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
+  <style>
+   body { background: #f9f9f9; }
 
+/* The main heading is still centered */
+h1 { text-align:center; color:#3b6dc6; margin:30px 0; font-size:24px; }
+
+/* Styles for the new "Studio" toggle button */
+.toggle-btn {
+    padding: 10px 20px;
+    background: #3b6dc6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    display: block; /* Make it a block element to control centering */
+    margin: 20px auto 0; /* Center it horizontally and add space */
+}
+
+/* Existing CSS for the container */
+.box-container {
+    text-align: center;
+    margin-top: 20px;
+    
+    /* --- KEY CHANGES FOR SMOOTHNESS --- */
+    /* Start with max-height 0 to hide it */
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden; /* Important: Hides the content during transition */
+    
+    /* The transition property makes the animation smooth */
+    transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out; 
+}
+
+/* New class added by JavaScript to show the content */
+.box-container.active {
+    /* Set max-height large enough to fit all content */
+    max-height: 500px; 
+    opacity: 1;
+}
+
+/* All other styles remain the same... */
+.box {
+    background:white;
+    padding:40px;
+    border-radius:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.2);
+    text-align:center;
+    width:300px;
+    margin: 0 auto;
+}
+
+
+/* Existing styles for form elements */
+input {width:100%;padding:12px;margin:15px 0;font-size:18px;border:1px solid #ccc;border-radius:8px;}
+button {width:100%;padding:14px;background:#3b6dc6;color:white;border:none;border-radius:8px;font-size:18px;cursor:pointer;}
+.wrong {color:red;margin-top:10px;display:none;}
+
+  </style>
 </head>
 <body>
+  <main class="page">
+   <button id="studio-toggle-btn" class="toggle-btn">Studio</button>
 
-    <main class="page">
-        <button id="toggleFormBtn" class="btn-toggle">Toggle Input Form (Show)</button>
-
-        <section id="productsContainer" class="products-area">
-            <div class="hint">OTHER PRODUCT CONTAINERS WILL APPEAR HERE</div>
-        </section>
-
-        <div id="inputContainer" style="display: none;">
-            <section class="product-panel add-panel">
-                <div class="form-row">
-                    <div class="label-black">PRODUCT name</div>
-                    <input id="productName" class="text-input" type="text" placeholder="Product name appears here" />
-                </div>
-
-               <div class="form-row">
-    <div class="label-black">Quantity</div>
-    <input id="productQuantity" class="text-input" 
-        type="text" 
-        placeholder="Number of products" 
-        min="0"
-        data-numeric="true"
-    />
-</div>
-
-               <div class="form-row">
-    <div class="label-black">BUYING PRICE</div>
-    <input id="productBuy" class="text-input" 
-           type="text" 
-           placeholder="Buying price appears here" 
-           data-numeric="true"
-    />
-</div>
-
-<div class="form-row">
-    <div class="label-black">SELLING PRICE</div>
-    <input id="productSell" class="text-input" 
-           type="text" 
-           placeholder="Selling price appears here" 
-           data-numeric="true"
-    />
-</div>
-                <div class="thumb-and-link">
-                    <div id="newThumb" class="thumb-preview small">Thumbnail appears</div>
-                    <div class="link-column">
-                        <input id="driveLink" class="text-input" type="text" placeholder="Paste your google Drive Link" />
-                        <button id="previewBtn" class="btn-black small">Preview</button>
-                        <button id="saveLinkBtn" class="btn-black small">Save Link</button>
-                    </div>
-                </div>
-
-                <div class="add-row">
-                    <button id="openGalleryBtn" class="btn-black big">Open Link Gallery</button>
-                    <button id="addProductBtn" class="btn-black big">Add product</button>
-                </div>
-            </section>
-        </div>
-
-        <dialog id="linkGalleryDialog">
-            <div class="gallery-header">
-                <h2>Link Gallery</h2>
-                <button id="closeGalleryBtn" class="btn-black small">Close</button>
-            </div>
-            <section id="galleryContainer" class="products-area"></section>
-        </dialog>
-
-    <dialog id="updateDialog" class="modal">
-    <div class="modal-body">
-        <button id="closeUpdateDialogBtn" class="close-btn">X</button> 
-        <p class="product-title">Product: <strong id="updateProductName"></strong></p>
-        
-        <div class="input-group">
-            <label for="sellQuantity">📉 Units Sold (Decrease Stock):</label>
-            <input 
-                type="text" 
-                id="sellQuantity" 
-                min="0" 
-                value="0" 
-                placeholder="Enter quantity sold"
-                class="input-field"
-                data-numeric="true" >
-        </div>
-        
-        <div class="input-group">
-            <label for="restockQuantity">📦 Units Restocked (Increase Stock):</label>
-            <input 
-                type="text" 
-                id="restockQuantity" 
-                min="0" 
-                value="0" 
-                placeholder="Enter quantity restocked"
-                class="input-field"
-                data-numeric="true" >
-        </div>
-        
-        <button id="executeUpdateButton" class="btn btn-primary">
-            Execute Stock Update
-        </button>
-        
+<div id="studio-content" class="box-container">
+    <div class="box">
+        <h2>Studio Access</h2>
+        <input type="password" id="pass" placeholder="Enter password" />
+        <button onclick="go()">Enter Studio</button>
+        <p class="wrong" id="msg">Wrong password!</p>
     </div>
-</dialog>
-        <script>
-            // ✅ Register the Service Worker
-            if ("serviceWorker" in navigator) {
-                navigator.serviceWorker
-                    .register("service-worker.js")
-                    .then(() => console.log("✅ Service Worker registered successfully."))
-                    .catch((err) => console.error("❌ Service Worker registration failed:", err));
-            }
+</div>
+    <h1>Current Stock</h1>
+    <section id="productsContainer" class="products-area">
+      <div class="hint">Loading products...</div>
+    </section>
 
-            // ✅ Handle PWA Install Prompt
-            let deferredPrompt;
-            const installBtn = document.createElement("button");
-            installBtn.textContent = "📲 Install App";
-            installBtn.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: #3b6dc6;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 10px;
-                font-size: 16px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                cursor: pointer;
-                display: none;
-                z-index: 9999;
-            `;
-            document.body.appendChild(installBtn);
+    
+  </main>
 
-            window.addEventListener("beforeinstallprompt", (e) => {
-                // Prevent the mini-infobar from appearing
-                e.preventDefault();
-                deferredPrompt = e;
 
-                // Show the install button
-                installBtn.style.display = "block";
-                console.log("📦 PWA install prompt ready.");
 
-                installBtn.addEventListener("click", async () => {
-                    installBtn.style.display = "none";
-                    deferredPrompt.prompt(); // Show the native prompt
 
-                    const {
-                        outcome
-                    } = await deferredPrompt.userChoice;
-                    console.log(`User response to install: ${outcome}`);
 
-                    deferredPrompt = null;
-                });
-            });
+  <!-- PWA Install Button (optional) -->
+ <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+  }
 
-            // Optional: Notify if app is already installed
-            window.addEventListener("appinstalled", () => {
-                console.log("✅ App installed successfully!");
-                installBtn.remove();
-            });
-        </script>
+  let deferredPrompt;
+  const INSTALL_KEY = "appInstalledOrDismissed"; // Remember user's choice forever
 
-       
+  // Check if user already installed or dismissed
+  if (localStorage.getItem(INSTALL_KEY) === "true") {
+    // Do nothing — button stays hidden forever
+  } else {
+    // Create tiny install button at top-right
+    const btn = document.createElement("button");
+    btn.textContent = "↓ Install";
+    btn.title = "Install this app on your device";
+    btn.style = `
+      position:fixed;
+      top:15px;
+      right:15px;
+      background:#3b6dc6;
+      color:white;
+      border:none;
+      padding:6px 10px;
+      font-size:12px;
+      border-radius:20px;
+      cursor:pointer;
+      z-index:9999;
+      box-shadow:0 2px 10px rgba(0,0,0,0.2);
+      transition:all 0.3s ease;
+      display:none;
+    `;
+    btn.onmouseover = () => btn.style.transform = "scale(1.1)";
+    btn.onmouseout  = () => btn.style.transform = "scale(1)";
 
-        <script>
+    document.body.appendChild(btn);
 
-            document.addEventListener('DOMContentLoaded', () => {
-    // Select all inputs you want to format
-    const numericInputs = document.querySelectorAll('input[data-numeric="true"]');
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btn.style.display = "block"; // Show only when installable
+    });
 
-    // Function to strip commas and return a pure number string
-    const unformatNumber = (value) => {
-        // Replace all commas with an empty string
-        return value.replace(/,/g, '');
+    btn.onclick = () => {
+      btn.style.display = "none";
+      localStorage.setItem(INSTALL_KEY, "true"); // Never show again
+
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(choice => {
+          if (choice.outcome === "accepted") {
+            console.log("App installed");
+          } else {
+            console.log("Install declined");
+          }
+          deferredPrompt = null;
+        });
+      }
     };
 
-    // Function to format the number with thousands separators (commas)
-    const formatNumber = (value) => {
-        // First, unformat to ensure only pure numeric value remains
-        const rawValue = unformatNumber(value); 
-        
-        // Ensure the value is treated as a string for regex
-        let [integerPart, decimalPart] = rawValue.split('.');
-        
-        // Add commas to the integer part
-        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-        // Recombine integer and decimal parts
-        if (decimalPart !== undefined) {
-            return `${integerPart}.${decimalPart}`;
-        }
-        return integerPart;
-    };
-
-    numericInputs.forEach(input => {
-        // 1. Format on input (while user is typing)
-        input.addEventListener('input', (event) => {
-            const cursorStart = event.target.selectionStart;
-            const originalLength = event.target.value.length;
-
-            const unformatted = unformatNumber(event.target.value);
-            const formatted = formatNumber(unformatted);
-            
-            event.target.value = formatted;
-
-            // Maintain cursor position after formatting
-            const newLength = event.target.value.length;
-            const newCursor = cursorStart + (newLength - originalLength);
-            event.target.setSelectionRange(newCursor, newCursor);
-        });
-
-        // 2. Format on blur (when user clicks away)
-        input.addEventListener('blur', (event) => {
-            event.target.value = formatNumber(event.target.value);
-        });
-        
-        // 3. Optional: Unformat before form submission (if required)
-        // If you are submitting the form, you must unformat the value 
-        // back to a standard number (no commas) before sending it to the server.
+    // Optional: Also hide forever if user clicks outside (dismisses prompt)
+    window.addEventListener("appinstalled", () => {
+      localStorage.setItem(INSTALL_KEY, "true");
     });
-});
-    document.addEventListener('DOMContentLoaded', () => {
-        const toggleBtn = document.getElementById('toggleFormBtn');
-        const inputContainer = document.getElementById('inputContainer');
-        const content = inputContainer.querySelector('.product-panel.add-panel');
-        
-        // 1. Set initial state for smooth toggle (Hidden by default)
-        // inputContainer must be styled with overflow: hidden; and max-height: 0;
-        inputContainer.style.maxHeight = '0';
-        inputContainer.style.opacity = '0';
-        // Ensure it's not display: none, or transition won't work
-        inputContainer.style.display = 'block'; 
-
-        // Set initial button text to 'Show'
-        toggleBtn.textContent = 'Toggle Input Form (Show)';
-
-        toggleBtn.addEventListener('click', () => {
-            // Check if the container is visually hidden (max-height is 0)
-            const isHidden = inputContainer.style.maxHeight === '0px';
-
-            if (isHidden) {
-                // SHOW: Temporarily set max-height to its content height (plus a buffer)
-                // This forces the transition from 0 to the actual height.
-                const scrollHeight = content.scrollHeight; 
-                inputContainer.style.maxHeight = scrollHeight + 40 + 'px'; // + buffer for padding/margin
-                inputContainer.style.opacity = '1';
-                toggleBtn.textContent = 'Toggle Input Form (Hide)';
-
-            } else {
-                // HIDE: First set max-height to its current scrollHeight, 
-                // then set it to 0 after a tiny delay. This ensures the transition works.
-                // We also set the max-height to 0 directly, as it's the target.
-                inputContainer.style.maxHeight = '0';
-                inputContainer.style.opacity = '0';
-                toggleBtn.textContent = 'Toggle Input Form (Show)';
-            }
-        });
-    });
+  }
 </script>
 
-        <script src="script.js" defer></script>
+<script>
+    // ===================================================================
+    // Constants
+    // ===================================================================
+    const PASSWORD = "12345";
+    const AUTH_KEY = "studioAuthenticated";      // Permanent access granted
+    const BAN_KEY  = "studioAccessBanned";       // Permanent ban
+    const UNBAN_CODE = "LIFTBAN";                // Secret unban code
 
-    </main>
+    // Persistent counters (survive page reloads and sessions)
+    let successfulLogins = parseInt(localStorage.getItem('studioSuccessCount') || '0', 10);
+    let failedLogins     = parseInt(localStorage.getItem('studioFailedCount') || '0', 10);
+
+    // ===================================================================
+    // 1. On Page Load – Initial checks
+    // ===================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleBtn = document.getElementById('studio-toggle-btn');
+        const content   = document.getElementById('studio-content');
+
+        // Permanently banned?
+        if (localStorage.getItem(BAN_KEY) === 'true') {
+            toggleBtn.style.display = 'none';
+            return;
+        }
+
+        // Already authenticated forever?
+        if (localStorage.getItem(AUTH_KEY) === 'true') {
+            toggleBtn.textContent = "Studio (Direct Access)";
+            content.remove(); // Completely remove the password box from DOM
+        }
+    });
+
+    // ===================================================================
+    // 2. Toggle Button Click
+    // ===================================================================
+    document.getElementById('studio-toggle-btn').addEventListener('click', function () {
+        const content   = document.getElementById('studio-content');
+        const toggleBtn = this;
+
+        // Ban check again (in case it was set elsewhere)
+        if (localStorage.getItem(BAN_KEY) === 'true') {
+            toggleBtn.style.display = 'none';
+            return;
+        }
+
+        // If already permanently authenticated → go straight to studio
+        if (localStorage.getItem(AUTH_KEY) === 'true') {
+            location.href = "studio.html";
+            return;
+        }
+
+        // Otherwise show/hide the password box
+        content.classList.toggle('active');
+
+        if (!content.classList.contains('active')) {
+            document.getElementById('msg').style.display = 'none';
+        }
+    });
+
+    // ===================================================================
+    // 3. Password Check Function
+    // ===================================================================
+    function go() {
+        const inputPass  = document.getElementById('pass').value.trim();
+        const msgElement = document.getElementById('msg');
+        const toggleBtn  = document.getElementById('studio-toggle-btn');
+        const content    = document.getElementById('studio-content');
+
+        // === Unban secret code ===
+        if (inputPass === UNBAN_CODE) {
+            localStorage.removeItem(BAN_KEY);
+            localStorage.setItem('studioFailedCount', '0');
+            failedLogins = 0;
+
+            toggleBtn.style.display = 'block';
+            content.classList.remove('active');
+            content.style.display = '';
+
+            msgElement.textContent = "Ban lifted! You may now log in normally.";
+            msgElement.style.color = "blue";
+            msgElement.style.display = "block";
+            return;
+        }
+
+        // === Correct password ===
+        if (inputPass === PASSWORD) {
+            successfulLogins++;
+            failedLogins = 0;
+
+            localStorage.setItem('studioSuccessCount', successfulLogins);
+            localStorage.setItem('studioFailedCount', '0');
+
+            if (successfulLogins >= 2) {
+                // Permanent access granted!
+                localStorage.setItem(AUTH_KEY, 'true');
+                toggleBtn.textContent = "Studio (Direct Access)";
+
+                // Permanently remove the entire password box
+                content.remove();
+
+                msgElement.textContent = "Password remembered forever! Redirecting...";
+                msgElement.style.color = "green";
+                msgElement.style.display = "block";
+            }
+
+            setTimeout(() => location.href = "studio.html", 150);
+
+        // === Wrong password ===
+        } else {
+            successfulLogins = 0;
+            failedLogins++;
+
+            localStorage.setItem('studioSuccessCount', '0');
+            localStorage.setItem('studioFailedCount', failedLogins);
+
+            if (failedLogins >= 2) {
+                localStorage.setItem(BAN_KEY, 'true');
+
+                msgElement.textContent = "Too many wrong attempts → Access permanently banned.";
+                msgElement.style.color = "red";
+                msgElement.style.display = "block";
+
+                content.classList.remove('active');
+
+                setTimeout(() => toggleBtn.style.display = 'none', 600);
+            } else {
+                msgElement.textContent = `Wrong password! ${2 - failedLogins} attempt(s) left before permanent ban.`;
+                msgElement.style.color = "red";
+                msgElement.style.display = "block";
+            }
+        }
+    }
+
+    // ===================================================================
+    // 4. Enter key support
+    // ===================================================================
+    document.getElementById('pass')?.addEventListener('keypress', e => {
+        if (e.key === 'Enter') go();
+    });
+</script>
+  <script src="index.js" defer></script>
 </body>
 </html>
