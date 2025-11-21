@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyjnSw84YcMVSVUIb4sYfxp7KaViMrxwTtpcOkg4w-iNieKiky3fDYmZFQa3soryQel1Q/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzmmOfnRRYyGtIqwBhO1o9jcJnzaQ2iaTQPqS6zr090SsEyyHEKAUZd-G1i0x31YR5a/exec"; // <- REPLACE THIS
 
 /// New Gallery DOM refs
 const CURRENCY_SYMBOL = "KES";
@@ -13,6 +13,12 @@ const previewBtn = document.getElementById("previewBtn");
 const newThumb = document.getElementById("newThumb");
 const addProductBtn = document.getElementById("addProductBtn");
 const productsContainer = document.getElementById("productsContainer");
+const productDescriptionInput = document.getElementById("productDescription"); // NEW
+const productDetailsInput = document.getElementById("productDetails"); // NEW
+// *** NEW DOM REFERENCES for Business and Category ***
+const businessNameInput = document.getElementById("businessName");
+const businessCategoryInput = document.getElementById("businessCategory");
+// ***************************************************
 
 const productNameInput = document.getElementById("productName");
 const productQuantityInput = document.getElementById("productQuantity");
@@ -33,160 +39,164 @@ const executeUpdateButton = document.getElementById("executeUpdateButton");
 let currentProductData = {}; // Stores data of the product currently being updated
 // ----------------------------------------------------------------------
 
-// *** NEW FUNCTION: Unique ID Generator ***
+// *** NEW FUNCTION: Unique ID Generator (Stays the same) ***
 function generateUniqueId() {
-    // Generates a simple, client-side unique ID using timestamp and a random component
-    return 'prod-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
+    // Generates a simple, client-side unique ID using timestamp and a random component
+    return 'prod-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
 }
 
 // *** MISSING HELPER FUNCTION (REQUIRED FOR NUMBER INPUTS) ***
 function unformatNumber(value) {
-    if (typeof value !== 'string') return value;
-    // Remove all commas from the string
-    return value.replace(/,/g, ''); 
+    if (typeof value !== 'string') return value;
+    // Remove all commas from the string
+    return value.replace(/,/g, ''); 
 }
 
-// Load links from local storage
+// Load links from local storage (Stays the same)
 function loadSavedLinks() {
-    const json = localStorage.getItem(STORAGE_KEY);
-    return json ? JSON.parse(json) : [];
+    const json = localStorage.getItem(STORAGE_KEY);
+    return json ? JSON.parse(json) : [];
 }
 
-// Save links to local storage
+// Save links to local storage (Stays the same)
 function saveLinks(links) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
 }
 
-// helper: check if a link is a direct image url
+// helper: check if a link is a direct image url (Stays the same)
 function isDirectImageUrl(link) {
-    if (!link) return false;
-    // Check if the link ends with common image extensions
-    return /\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i.test(link.toLowerCase());
+    if (!link) return false;
+    // Check if the link ends with common image extensions
+    return /\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i.test(link.toLowerCase());
 }
 
-// helper: extracts the appropriate thumbnail URL
+// helper: extracts the appropriate thumbnail URL (Stays the same)
 function getThumbnailUrl(link, size = 800) {
-    if (!link) return null;
+    if (!link) return null;
 
-    const fileId = extractDriveId(link);
+    const fileId = extractDriveId(link);
 
-    if (fileId) {
-        // 1. Google Drive Link
-        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`;
-    }
+    if (fileId) {
+        // 1. Google Drive Link
+        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`;
+    }
 
-    if (isDirectImageUrl(link)) {
-        // 2. Direct Image URL (use the link itself)
-        return link;
-    }
+    if (isDirectImageUrl(link)) {
+        // 2. Direct Image URL (use the link itself)
+        return link;
+    }
 
-    return null; // Not a recognized link type for thumbnail
+    return null; // Not a recognized link type for thumbnail
 }
 
-// helper: extract drive id from multiple link formats
+// helper: extract drive id from multiple link formats (Stays the same)
 function extractDriveId(link) {
-    if (!link) return null;
-    // patterns:
-    // https://drive.google.com/file/d/FILEID/view?usp=sharing
-    // https://drive.google.com/open?id=FILEID
-    // https://drive.google.com/thumbnail?id=FILEID&sz=w1000
-    let m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
-    if (m && m[1]) return m[1];
-    m = link.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
-    if (m && m[1]) return m[1];
-    // fallback: maybe the whole thing is an id
-    if (/^[a-zA-Z0-9_-]{10,}$/.test(link)) return link;
-    return null;
+    if (!link) return null;
+    // patterns:
+    // https://drive.google.com/file/d/FILEID/view?usp=sharing
+    // https://drive.google.com/open?id=FILEID
+    // https://drive.google.com/thumbnail?id=FILEID&sz=w1000
+    let m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+    if (m && m[1]) return m[1];
+    m = link.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+    if (m && m[1]) return m[1];
+    // fallback: maybe the whole thing is an id
+    if (/^[a-zA-Z0-9_-]{10,}$/.test(link)) return link;
+    return null;
 }
 
-// Render the gallery in the dialog (MODIFIED)
+// Render the gallery in the dialog (Stays the same)
 function renderGallery() {
-    galleryContainer.innerHTML = '';
-    const links = loadSavedLinks();
+    galleryContainer.innerHTML = '';
+    const links = loadSavedLinks();
 
-    if (links.length === 0) {
-        galleryContainer.innerHTML = '<div class="hint">No links saved yet.</div>';
-        return;
-    }
+    if (links.length === 0) {
+        galleryContainer.innerHTML = '<div class="hint">No links saved yet.</div>';
+        return;
+    }
 
-    links.forEach((linkObj, index) => {
-        // Use the new unified helper function
-        const thumbUrl = getThumbnailUrl(linkObj.driveLink, 200); 
+    links.forEach((linkObj, index) => {
+        // Use the new unified helper function
+        const thumbUrl = getThumbnailUrl(linkObj.driveLink, 200); 
 
-        const card = document.createElement("div");
-        card.className = "gallery-card";
-        card.dataset.index = index; // Store the index for selection
+        const card = document.createElement("div");
+        card.className = "gallery-card";
+        card.dataset.index = index; // Store the index for selection
 
-        const thumb = document.createElement("div");
-        thumb.className = "p-thumb";
-        thumb.innerHTML = thumbUrl
-            ? `<img src="${thumbUrl}" alt="preview" style="width:100%;height:100%;object-fit:cover"/>`
-            : `<span style="font-size:12px;color:#888">No Image</span>`;
+        const thumb = document.createElement("div");
+        thumb.className = "p-thumb";
+        thumb.innerHTML = thumbUrl
+            ? `<img src="${thumbUrl}" alt="preview" style="width:100%;height:100%;object-fit:cover"/>`
+            : `<span style="font-size:12px;color:#888">No Image</span>`;
 
-        const nameDisplay = document.createElement("p");
-        nameDisplay.textContent = linkObj.name || "Unnamed Link";
-        nameDisplay.style.fontWeight = 'bold';
+        const nameDisplay = document.createElement("p");
+        nameDisplay.textContent = linkObj.name || "Unnamed Link";
+        nameDisplay.style.fontWeight = 'bold';
 
-        // Add a 'Use' button to populate the main form
-        const useBtn = document.createElement("button");
-        useBtn.className = "btn-black small";
-        useBtn.textContent = "Use";
-        useBtn.style.marginRight = '5px';
-        useBtn.addEventListener("click", (e) => {
-            e.stopPropagation(); // Prevent card click
-            useLinkFromGallery(index);
-        });
+        // Add a 'Use' button to populate the main form
+        const useBtn = document.createElement("button");
+        useBtn.className = "btn-black small";
+        useBtn.textContent = "Use";
+        useBtn.style.marginRight = '5px';
+        useBtn.addEventListener("click", (e) => {
+            e.stopPropagation(); // Prevent card click
+            useLinkFromGallery(index);
+        });
 
-        // Add a 'Remove' button
-        const removeBtn = document.createElement("button");
-        removeBtn.className = "btn-black small";
-        removeBtn.textContent = "Remove";
-        removeBtn.addEventListener("click", (e) => {
-            e.stopPropagation(); // Prevent card click
-            removeLinkFromGallery(index);
-        });
+        // Add a 'Remove' button
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "btn-black small";
+        removeBtn.textContent = "Remove";
+        removeBtn.addEventListener("click", (e) => {
+            e.stopPropagation(); // Prevent card click
+            removeLinkFromGallery(index);
+        });
 
-        card.appendChild(thumb);
-        card.appendChild(nameDisplay);
-        card.appendChild(useBtn);
-        card.appendChild(removeBtn);
-        galleryContainer.appendChild(card);
-    });
+        card.appendChild(thumb);
+        card.appendChild(nameDisplay);
+        card.appendChild(useBtn);
+        card.appendChild(removeBtn);
+        galleryContainer.appendChild(card);
+    });
 }
 
-// preview button handler (MODIFIED)
+// preview button handler (Stays the same)
 previewBtn.addEventListener("click", () => {
-    const link = driveLinkInput.value.trim();
-    const thumbUrl = getThumbnailUrl(link, 800); // Use the unified helper
+    const link = driveLinkInput.value.trim();
+    const thumbUrl = getThumbnailUrl(link, 800); // Use the unified helper
 
-    if (!thumbUrl) {
-        newThumb.innerHTML = "Invalid Drive or direct Image link (try a link ending in .jpg, .png, etc.)";
-        return;
-    }
-    
-    newThumb.innerHTML = `<img src="${thumbUrl}" alt="thumb" style="max-width:100%;max-height:100%"/>`;
+    if (!thumbUrl) {
+        newThumb.innerHTML = "Invalid Drive or direct Image link (try a link ending in .jpg, .png, etc.)";
+        return;
+    }
+    
+    newThumb.innerHTML = `<img src="${thumbUrl}" alt="thumb" style="max-width:100%;max-height:100%"/>`;
 });
 
 // **********************************************
 // ** NEW/MODIFIED FUNCTIONS START HERE **
 // **********************************************
 
-// Helper function to create a single product card DOM element (MODIFIED)
+// Helper function to create a single product card DOM element (MODIFIED to use 'id' consistently)
+// Helper function to create a single product card DOM element (MODIFIED to use 'id' consistently)
 function createProductCard(r) {
-    // Data extraction (copied from fetchAndRenderProducts)
+    // Data extraction
     const name = r.name || "PRODUCT DETAILS";
-    // Check if r is an object or an array-like structure. The current structure implies r is the object from App Script.
-    const quantity = parseInt(r.quantity ?? r[1] ?? r[2] ?? 0); // Convert to number
-    const buy = parseFloat(r.buy ?? r[3] ?? r[3] ?? 0);          // Convert to float
-    const sell = parseFloat(r.sell ?? r[4] ?? r[4] ?? 0);        // Convert to float
+    const quantity = parseInt(r.quantity ?? 0); // Convert to number
+    const buy = parseFloat(r.buy ?? 0);          // Convert to float
+    const sell = parseFloat(r.sell ?? 0);        // Convert to float
     
-    // Assumes the row index or unique ID is available as 'rowId' for updates
-    // The App Script should return the actual row number OR the unique ID in 'rowId'
+    // NEW: Extract description and details
+    const description = r.description || "";
+    const details = r.details || "";
+    
+    // The unique ID for the product
+    // Assuming the backend now returns this as 'id' and the row number as 'rowId'
+    const productId = r.id; 
     const rowId = r.rowId; 
 
     // IMPORTANT: The app script should now return the original link under 'driveLink' 
-    // for all product types, or a new 'imageUrl' field. We use 'driveLink' as the main link.
-    const productLink = r.driveLink || "";  
+    const productLink = r.driveLink || "";  
     // Use the unified helper to get the image URL for the card
     const thumbUrl = getThumbnailUrl(productLink, 400); 
 
@@ -201,15 +211,16 @@ function createProductCard(r) {
         profitPercent = (profit / sell) * 100;
     } else if (profit > 0 && buy === 0) {
         // Special case: If Cost Price is 0, the margin is 100%
-        profitPercent = 100;        
+        profitPercent = 100;        
     }
     const profitDisplay = `${profitPercent.toFixed(1)}%`; // Display with one decimal place
 
     // --- MODERN CARD STRUCTURE ---
     const card = document.createElement("div");
     card.className = "modern-product-card"; // NEW CLASS NAME
-    // Add dataset attributes for easy DOM look-up and quantity update
-    card.dataset.rowId = rowId;
+    // Use 'data-product-id' for the unique ID for updates, and data-row-id for the row number if needed
+    card.dataset.productId = productId;
+    card.dataset.rowId = rowId; 
     card.dataset.quantity = quantity;
 
     // 1. Thumbnail Area
@@ -238,365 +249,423 @@ function createProductCard(r) {
 
     // Name
     info.innerHTML += `<h4 class="product-name">${escapeHtml(name)}</h4>`;
+    
+    // NEW: Display Description
+    if (description.length > 0) {
+        info.innerHTML += `<p class="product-description">${escapeHtml(description)}</p>`;
+    }
+
+    // NEW: Display Details
+    if (details.length > 0) {
+        info.innerHTML += `<div class="product-details">
+            <span class="details-label">Details:</span> ${escapeHtml(details)}
+        </div>`;
+    }
 
     // Prices Grid
-  info.innerHTML += `
-        <div class="price-grid">
-            <div class="price-item">
-                <span class="label">Cost Price:</span>
-                <span class="value buy-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(buy)}</span>
-            </div>
-            <div class="price-item">
-                <span class="label">Sell Price:</span>
-                <span class="value sell-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(sell)}</span>
-            </div>
-        </div>
-    `;
-    // Profit Margin
-   info.innerHTML += `
-        <div class="profit-margin ${profitClass}">
-            <span class="label">Est. Profit Margin:</span>
-            <span class="value">${profitDisplay}</span>
-        </div>
-    `;
+  info.innerHTML += `
+        <div class="price-grid">
+            <div class="price-item">
+                <span class="label">Cost Price:</span>
+                <span class="value buy-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(buy)}</span>
+            </div>
+            <div class="price-item">
+                <span class="label">Sell Price:</span>
+                <span class="value sell-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(sell)}</span>
+            </div>
+        </div>
+    `;
+    // Profit Margin
+   info.innerHTML += `
+        <div class="profit-margin ${profitClass}">
+            <span class="label">Est. Profit Margin:</span>
+            <span class="value">${profitDisplay}</span>
+        </div>
+    `;
 
-    // 3. Update Button (NEW)
-    const updateBtn = document.createElement("button");
-    updateBtn.className = "btn-black update-product-btn";
-    updateBtn.textContent = "Update Stock";
-    
-    // Add event listener to open the update dialog
-    updateBtn.addEventListener("click", () => {
-        openUpdateDialog(r); // Pass the entire product object to the handler
-    });
+    // 3. Update Button (NEW)
+    const updateBtn = document.createElement("button");
+    updateBtn.className = "btn-black update-product-btn";
+    updateBtn.textContent = "Update Stock";
+    
+    // Add event listener to open the update dialog
+    updateBtn.addEventListener("click", () => {
+        openUpdateDialog(r); // Pass the entire product object to the handler
+    });
 
-    info.appendChild(updateBtn);
-    card.appendChild(info);
-    // --- END MODERN CARD STRUCTURE ---
-    
-    return card;
+    info.appendChild(updateBtn);
+    card.appendChild(info);
+    // --- END MODERN CARD STRUCTURE ---
+    
+    return card;
 }
 
-// NEW HELPER FUNCTION: Formats a number with commas and two decimal places
+// NEW HELPER FUNCTION: Formats a number with commas and two decimal places (Stays the same)
 function formatNumberWithCommas(number) {
-    const num = parseFloat(number);
-    if (isNaN(num)) return '0.00';
-    
-    // Convert to a string with two decimal places
-    const fixedNum = num.toFixed(2);
-    
-    // Separate integer and decimal parts
-    const parts = fixedNum.split('.');
-    const integerPart = parts[0];
-    const decimalPart = parts.length > 1 ? '.' + parts[1] : '';
+    const num = parseFloat(number);
+    if (isNaN(num)) return '0.00';
+    
+    // Convert to a string with two decimal places
+    const fixedNum = num.toFixed(2);
+    
+    // Separate integer and decimal parts
+    const parts = fixedNum.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts.length > 1 ? '.' + parts[1] : '';
 
-    // Add commas to the integer part
-    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    
-    return formattedInteger + decimalPart;
+    // Add commas to the integer part
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    
+    return formattedInteger + decimalPart;
 }
-// Handler to open the update dialog (NEW)
+
+// Handler to open the update dialog (MODIFIED to use 'id' consistently)
 function openUpdateDialog(product) {
-    // Store the product data globally
-    currentProductData = product;
-    
-    // Populate the dialog fields
-    updateProductName.textContent = product.name;
-    sellQuantityInput.value = "";
-    restockQuantityInput.value = "";
-    
-    updateDialog.showModal();
+    // Store the product data globally
+    currentProductData = product;
+    
+    // Populate the dialog fields
+    updateProductName.textContent = product.name;
+    sellQuantityInput.value = "";
+    restockQuantityInput.value = "";
+    
+    updateDialog.showModal();
 }
 
-// Handler to close the update dialog (NEW)
+// Handler to close the update dialog (Stays the same)
 if (closeUpdateDialogBtn) {
-    closeUpdateDialogBtn.addEventListener("click", () => {
-        updateDialog.close();
-    });
+    closeUpdateDialogBtn.addEventListener("click", () => {
+        updateDialog.close();
+    });
 }
 
-// Handler to execute the stock update (NEW)
+// Handler to execute the stock update (MODIFIED to use 'id' consistently)
 if (executeUpdateButton) {
-    executeUpdateButton.addEventListener("click", async () => {
-        const sellAmount = parseInt(unformatNumber(sellQuantityInput.value) || "0", 10);
-        const restockAmount = parseInt(unformatNumber(restockQuantityInput.value) || "0", 10);
-        
-        if (sellAmount === 0 && restockAmount === 0) {
-            alert("Enter a quantity to sell or restock.");
-            return;
-        }
+    executeUpdateButton.addEventListener("click", async () => {
+        const sellAmount = parseInt(unformatNumber(sellQuantityInput.value) || "0", 10);
+        const restockAmount = parseInt(unformatNumber(restockQuantityInput.value) || "0", 10);
+        
+        if (sellAmount === 0 && restockAmount === 0) {
+            alert("Enter a quantity to sell or restock.");
+            return;
+        }
 
-        const product = currentProductData;
-        
-        // Use 'id' if available, fallback to 'rowId'
-        const productId = product.id || product.rowId; 
-        
-        if (!productId) {
-            alert("Error: Product ID not found for update.");
-            return;
-        }
+        const product = currentProductData;
+        
+        // Use 'id' (the unique ID) as the primary key
+        const productId = product.id; 
+        const rowId = product.rowId; // Keep rowId for DOM lookup convenience
 
-        const currentQuantity = parseInt(product.quantity, 10);
-        const newQuantity = currentQuantity - sellAmount + restockAmount;
-        
-        if (newQuantity < 0) {
-            alert(`Cannot sell ${sellAmount} units. Current stock is ${currentQuantity}. New quantity would be negative.`);
-            return;
-        }
+        if (!productId) {
+            alert("Error: Product ID not found for update.");
+            return;
+        }
 
-        // 1. Prepare Payload for API (POST with specific action)
-        const payload = {
-            action: "updateQuantity",
-            // Send the unique ID for the backend to find the row
-            productId: productId, 
-            newQuantity: newQuantity
-        };
+        const currentQuantity = parseInt(product.quantity, 10);
+        const newQuantity = currentQuantity - sellAmount + restockAmount;
+        
+        if (newQuantity < 0) {
+            alert(`Cannot sell ${sellAmount} units. Current stock is ${currentQuantity}. New quantity would be negative.`);
+            return;
+        }
 
-        try {
-            // 2. Send Update to Web App
-            const res = await fetch(WEB_APP_URL, {
-                method: "POST",
-                mode: "cors",
-                headers: {"Content-Type":"text/plain"}, 
-                body: JSON.stringify(payload)
-            });
-            const json = await res.json();
-            
-            if (json && json.result === "success") {
-                // 3. Update Front-End UI
-                const card = productsContainer.querySelector(`[data-row-id="${product.rowId || productId}"]`); 
-                if (card) {
-                    // Update dataset attribute
-                    card.dataset.quantity = newQuantity;
-                    
-                    // Update the visual badge
-                    const badge = card.querySelector('[data-quantity-display="true"]');
-                    if (badge) {
-                        const lowStockClass = newQuantity < 5 ? 'low-stock' : '';
-                        badge.className = `quantity-badge ${lowStockClass}`;
-                        badge.innerHTML = `<span class="icon">📦</span> ${newQuantity} in Stock`;
-                    }
-                }
-                
-                // 4. Update the currentProductData object for immediate re-updates
-                currentProductData.quantity = newQuantity; 
-                
-                // The success alert is REMOVED here to provide an instant, silent update.
-                
-                updateDialog.close();
-            } else {
-                alert("Failed to update product: " + (json && json.message ? json.message : res.status));
-            }
+        // 1. Prepare Payload for API (POST with specific action)
+        const payload = {
+            action: "updateQuantity",
+            // Send the unique ID for the backend to find the row
+            productId: productId, 
+            newQuantity: newQuantity
+        };
 
-        } catch (err) {
-            console.error(err);
-            alert("Error sending update to server: " + err.message);
-        }
-    });
+        try {
+            // 2. Send Update to Web App
+            const res = await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "cors",
+                headers: {"Content-Type":"text/plain"}, 
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            
+            if (json && json.result === "success") {
+                // 3. Update Front-End UI
+                // Look up by data-product-id
+                const card = productsContainer.querySelector(`[data-product-id="${productId}"]`); 
+                if (card) {
+                    // Update dataset attribute
+                    card.dataset.quantity = newQuantity;
+                    
+                    // Update the visual badge
+                    const badge = card.querySelector('[data-quantity-display="true"]');
+                    if (badge) {
+                        const lowStockClass = newQuantity < 5 ? 'low-stock' : '';
+                        badge.className = `quantity-badge ${lowStockClass}`;
+                        badge.innerHTML = `<span class="icon">📦</span> ${newQuantity} in Stock`;
+                    }
+                }
+                
+                // 4. Update the currentProductData object for immediate re-updates
+                currentProductData.quantity = newQuantity; 
+                
+                // The success alert is REMOVED here to provide an instant, silent update.
+                
+                updateDialog.close();
+            } else {
+                alert("Failed to update product: " + (json && json.message ? json.message : res.status));
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Error sending update to server: " + err.message);
+        }
+    });
 }
-// add product: collect fields -> POST to Web App (MODIFIED)
+
+// add product: collect fields -> POST to Web App (MODIFIED to include Business/Category/Description/Details)
 addProductBtn.addEventListener("click", async () => {
-    // 1. COLLECT ALL DATA FROM INPUTS FIRST
-    const name = productNameInput.value.trim(); 
-   const quantity = parseInt(unformatNumber(productQuantityInput.value) || "0", 10);
-   const buy = parseFloat(unformatNumber(productBuyInput.value) || "0");
-    const sell = parseFloat(unformatNumber(productSellInput.value) || "0");
-    const link = driveLinkInput.value.trim();
-    const fileId = extractDriveId(link);
-
-    if (!name) { alert("Enter product name"); return; }
+    // 1. COLLECT ALL DATA FROM INPUTS FIRST
+    const businessName = businessNameInput.value.trim();
+    const category = businessCategoryInput.value.trim();
+    const name = productNameInput.value.trim();
+    // NEW: Collect Description and Details
+    const description = productDescriptionInput.value.trim();
+    const details = productDetailsInput.value.trim();
     
-    // Check for a link that can be used for an image (either Drive or a direct URL)
-    if (!fileId && !isDirectImageUrl(link) && link.length > 0) {
-        alert("Link must be a Google Drive link or a direct image URL (try a link ending in .jpg, .png, etc.)");
-        return;
-    }
+   const quantity = parseInt(unformatNumber(productQuantityInput.value) || "0", 10);
+   const buy = parseFloat(unformatNumber(productBuyInput.value) || "0");
+    const sell = parseFloat(unformatNumber(productSellInput.value) || "0");
+    const link = driveLinkInput.value.trim();
+    const fileId = extractDriveId(link);
 
-    // *** NEW: Generate Unique Product ID ***
-    const uniqueId = generateUniqueId();
+    if (!businessName) { alert("Enter business name"); return; }
+    if (!category) { alert("Enter product category"); return; }
+    if (!name) { alert("Enter product name"); return; }
+    
+    // Check for a link that can be used for an image (either Drive or a direct URL)
+    if (!fileId && !isDirectImageUrl(link) && link.length > 0) {
+        alert("Link must be a Google Drive link or a direct image URL (try a link ending in .jpg, .png, etc.)");
+        return;
+    }
 
-    // 2. CREATE THE PAYLOAD OBJECT
-    // The 'driveLink' field is repurposed to hold the main link, regardless of type.
-    const payload = {
-        action: "addProduct", // Optional: Added an action for clarity on the backend
-        id: uniqueId, // *** NEW: Unique ID ***
-        timestamp: new Date().toISOString(),
-        name, quantity, buy, sell,
-        driveLink: link, // Holds the Drive link OR the generic URL
-        driveFileId: fileId || "" // Only holds an ID if it's a Drive link
-    };
+    // *** NEW: Generate Unique Product ID ***
+    const uniqueId = generateUniqueId();
 
-    try {
-        const res = await fetch(WEB_APP_URL, {
-            method: "POST",
-            mode: "cors",
-            headers: {"Content-Type":"text/plain"}, 
-            body: JSON.stringify(payload)
-        });
-        const json = await res.json();
-        if (json && json.result === "success") {
+    // 2. CREATE THE PAYLOAD OBJECT
+    const payload = {
+        action: "addProduct", // Optional: Added an action for clarity on the backend
+        id: uniqueId, // *** NEW: Unique ID ***
+        timestamp: new Date().toISOString(),
+        businessName: businessName, // *** NEW FIELD ***
+        category: category,         // *** NEW FIELD ***
+        description: description,    // *** NEW FIELD ***
+        details: details,            // *** NEW FIELD ***
+        name, quantity, buy, sell,
+        driveLink: link, // Holds the Drive link OR the generic URL
+        driveFileId: fileId || "" // Only holds an ID if it's a Drive link
+    };
+
+    try {
+        const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: {"Content-Type":"text/plain"}, 
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json && json.result === "success") {
+            
+            // Re-fetch products to ensure the new product has a valid rowId for future updates
+            fetchAndRenderProducts(); 
+
+            // 4. CLEAR INPUTS LAST
+            // Do NOT clear businessNameInput/businessCategoryInput if the user is likely to add another item in the same group.
+            productNameInput.value = ""; 
+            productQuantityInput.value = "";
+            productBuyInput.value = "";
+            productSellInput.value = "";
+            // NEW: Clear Description and Details inputs
+            productDescriptionInput.value = "";
+            productDetailsInput.value = "";
             
-            // Re-fetch products to ensure the new product has a valid rowId for future updates
-            fetchAndRenderProducts(); 
+            driveLinkInput.value = "";
+            newThumb.innerHTML = "Thumbnail appears";
 
-            // 4. CLEAR INPUTS LAST
-            productNameInput.value = ""; 
-            productQuantityInput.value = "";
-            productBuyInput.value = "";
-            productSellInput.value = "";
-            driveLinkInput.value = "";
-            newThumb.innerHTML = "Thumbnail appears";
-
-        } else {
-            alert("Failed to add product: " + (json && json.message ? json.message : res.status));
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Error sending to server: " + err.message);
-    }
+        } else {
+            alert("Failed to add product: " + (json && json.message ? json.message : res.status));
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error sending to server: " + err.message);
+    }
 });
-
-// ** 1. Global Callback Function (Handles JSONP Response) **
-// NOTE: This must be a globally accessible function.
+// ** 1. Global Callback Function (MODIFIED for Grouping) **
 function handleInventoryData(json) {
-    // The JSONP response is received here as the 'json' object
-    
-    productsContainer.innerHTML = ""; // Clear "Loading..." hint
+    productsContainer.innerHTML = ""; // Clear "Loading..." hint
 
-    if (!Array.isArray(json.rows) || json.rows.length === 0) {
-        productsContainer.innerHTML = '<div class="hint">No products returned or invalid response format.</div>';
-        return;
-    }
-    
-    // render each row as product card (reverse for newest first)
-    const rows = json.rows.slice().reverse();
-    
-    let productGroupWrapper = document.createElement('div');
-    productGroupWrapper.className = 'product-group-wrapper';
+    if (!Array.isArray(json.rows) || json.rows.length === 0) {
+        productsContainer.innerHTML = '<div class="hint">No products returned or invalid response format.</div>';
+        return;
+    }
+    
+    const rows = json.rows.slice().reverse();
 
-    rows.forEach((r, index) => {
-        // Ensure each product object 'r' has the necessary fields
-        if (!r.rowId && r.row) r.rowId = r.row; 
-        
-        const card = createProductCard(r); 
-        productGroupWrapper.appendChild(card);
-        
-        // Group logic: Append the wrapper after every 4 cards or on the last card
-        if ((index + 1) % 4 === 0 || index === rows.length - 1) {
-            productsContainer.appendChild(productGroupWrapper);
-            
-            // Start a new wrapper for the next group
-            if (index < rows.length - 1) {
-                productGroupWrapper = document.createElement('div');
-                productGroupWrapper.className = 'product-group-wrapper';
-            }
-        }
-    });
+    // 1. Group products by Business Name
+    const groupedByBusiness = rows.reduce((acc, product) => {
+        const business = product.businessName || 'Uncategorized Business';
+        acc[business] = acc[business] || [];
+        acc[business].push(product);
+        return acc;
+    }, {});
+
+    // 2. Iterate through Business Groups
+    for (const businessName in groupedByBusiness) {
+        const businessProducts = groupedByBusiness[businessName];
+
+        // Business Header
+        const businessHeader = document.createElement('h2');
+        businessHeader.className = 'business-header';
+        businessHeader.textContent = `🏢 ${businessName}`;
+        productsContainer.appendChild(businessHeader);
+
+        // 3. Group products within the business by Category
+        const groupedByCategory = businessProducts.reduce((acc, product) => {
+            const category = product.category || 'Other Category';
+            acc[category] = acc[category] || [];
+            acc[category].push(product);
+            return acc;
+        }, {});
+
+        // 4. Iterate through Category Groups
+        for (const categoryName in groupedByCategory) {
+            const categoryProducts = groupedByCategory[categoryName];
+
+            // Category Header
+            const categoryHeader = document.createElement('h3');
+            categoryHeader.className = 'category-header';
+            categoryHeader.textContent = `🏷️ ${categoryName}`;
+            productsContainer.appendChild(categoryHeader);
+
+            // Product Card Wrapper (the scrollable container)
+            const categoryGroupWrapper = document.createElement('div');
+            categoryGroupWrapper.className = 'product-group-wrapper'; // Use the class for styling/scrolling
+
+            // 5. Append product cards
+            categoryProducts.forEach(r => {
+                // Ensure each product object 'r' has the necessary fields
+                if (!r.rowId && r.row) r.rowId = r.row; 
+                const card = createProductCard(r); 
+                categoryGroupWrapper.appendChild(card);
+            });
+            
+            productsContainer.appendChild(categoryGroupWrapper);
+        }
+    }
 }
-// ** 2. Modified Fetch Function (Uses JSONP via Script Tag Injection) **
+
+// ** 2. Modified Fetch Function (Stays the same) **
 function fetchAndRenderProducts(){
-    productsContainer.innerHTML = '<div class="hint">Loading products...</div>';
-    
-    // The name of the function we defined above
-    const callbackName = 'handleInventoryData'; 
-    
-    // Construct the URL with the action and the mandatory 'callback' parameter
-    const url = `${WEB_APP_URL}?action=list&callback=${callbackName}`;
+    productsContainer.innerHTML = '<div class="hint">Loading products...</div>';
+    
+    // The name of the function we defined above
+    const callbackName = 'handleInventoryData'; 
+    
+    // Construct the URL with the action and the mandatory 'callback' parameter
+    const url = `${WEB_APP_URL}?action=list&callback=${callbackName}`;
 
-    // Create a script tag to make the JSONP request
-    const script = document.createElement('script');
-    script.src = url;
-    
-    // Handle success/failure cleanup
-    script.onload = () => {
-        // Clean up the temporary script tag after execution
-        setTimeout(() => script.remove(), 100); 
-    };
+    // Create a script tag to make the JSONP request
+    const script = document.createElement('script');
+    script.src = url;
+    
+    // Handle success/failure cleanup
+    script.onload = () => {
+        // Clean up the temporary script tag after execution
+        setTimeout(() => script.remove(), 100); 
+    };
 
-    script.onerror = (err) => {
-        console.error("JSONP Request Failed:", err);
-        productsContainer.innerHTML = '<div class="hint">Error loading products (Failed to connect or script error).</div>';
-        script.remove();
-    };
-    
-    // Execute the request by appending the script tag to the head
-    document.head.appendChild(script);
+    script.onerror = (err) => {
+        console.error("JSONP Request Failed:", err);
+        productsContainer.innerHTML = '<div class="hint">Error loading products (Failed to connect or script error).</div>';
+        script.remove();
+    };
+    
+    // Execute the request by appending the script tag to the head
+    document.head.appendChild(script);
 }
-// small helper to escape HTML when injecting text
+// small helper to escape HTML when injecting text (Stays the same)
 function escapeHtml(s){
-    return String(s).replace(/[&<>"'`]/g, c=>({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;', '`':'&#96;'
-    })[c]);
+    return String(s).replace(/[&<>"'`]/g, c=>({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;', '`':'&#96;'
+    })[c]);
 }
-// Handler to save the current link in the form to the gallery (MODIFIED)
+// Handler to save the current link in the form to the gallery (Stays the same)
 saveLinkBtn.addEventListener("click", () => {
-    const link = driveLinkInput.value.trim();
-    const name = productNameInput.value.trim() || 'Untitled Link';
-    
-    // Validate that it's either a Drive link or a direct image URL
-    if (!link || (!extractDriveId(link) && !isDirectImageUrl(link))) {
-        alert("Please enter a valid Google Drive link or a direct image URL (ends in .jpg, .png, etc.).");
-        return;
-    }
+    const link = driveLinkInput.value.trim();
+    const name = productNameInput.value.trim() || 'Untitled Link';
+    
+    // Validate that it's either a Drive link or a direct image URL
+    if (!link || (!extractDriveId(link) && !isDirectImageUrl(link))) {
+        alert("Please enter a valid Google Drive link or a direct image URL (ends in .jpg, .png, etc.).");
+        return;
+    }
 
-    const links = loadSavedLinks();
-    // Save the original link regardless of type
-    links.push({ driveLink: link, name: name }); 
-    saveLinks(links);
+    const links = loadSavedLinks();
+    // Save the original link regardless of type
+    links.push({ driveLink: link, name: name }); 
+    saveLinks(links);
 
-    alert(`Link for "${name}" saved to gallery!`);
-    
-    // Clear the link field only, keep the name/price fields
-    driveLinkInput.value = ""; 
-    newThumb.innerHTML = "Thumbnail appears";
+    alert(`Link for "${name}" saved to gallery!`);
+    
+    // Clear the link field only, keep the name/price fields
+    driveLinkInput.value = ""; 
+    newThumb.innerHTML = "Thumbnail appears";
 });
 
-// Open Gallery Dialog
+// Open Gallery Dialog (Stays the same)
 openGalleryBtn.addEventListener("click", () => {
-    renderGallery();
-    linkGalleryDialog.showModal();
+    renderGallery();
+    linkGalleryDialog.showModal();
 });
 
-// Close Gallery Dialog
+// Close Gallery Dialog (Stays the same)
 closeGalleryBtn.addEventListener("click", () => {
-    linkGalleryDialog.close();
+    linkGalleryDialog.close();
 });
 
-// Function to populate the main form with a link from the gallery
+// Function to populate the main form with a link from the gallery (Stays the same)
 function useLinkFromGallery(index) {
-    const links = loadSavedLinks();
-    const linkObj = links[index];
-    if (linkObj) {
-        // Populate the drive link and product name in the main form
-        driveLinkInput.value = linkObj.driveLink;
-        productNameInput.value = linkObj.name || "";
-        
-        // Trigger the preview button function to show the thumbnail
-        previewBtn.click();
+    const links = loadSavedLinks();
+    const linkObj = links[index];
+    if (linkObj) {
+        // Populate the drive link and product name in the main form
+        driveLinkInput.value = linkObj.driveLink;
+        productNameInput.value = linkObj.name || "";
+        
+        // Trigger the preview button function to show the thumbnail
+        previewBtn.click();
 
-        linkGalleryDialog.close();
-        alert(`Link for "${linkObj.name}" loaded into the Add Product form.`);
-    }
+        linkGalleryDialog.close();
+        alert(`Link for "${linkObj.name}" loaded into the Add Product form.`);
+    }
 }
 
-// Function to remove a link from the gallery
+// Function to remove a link from the gallery (Stays the same)
 function removeLinkFromGallery(index) {
-    if (confirm("Are you sure you want to remove this link from the gallery?")) {
-        const links = loadSavedLinks();
-        links.splice(index, 1); // Remove item at index
-        saveLinks(links);
-        renderGallery(); // Re-render the gallery
-    }
+    if (confirm("Are you sure you want to remove this link from the gallery?")) {
+        const links = loadSavedLinks();
+        links.splice(index, 1); // Remove item at index
+        saveLinks(links);
+        renderGallery(); // Re-render the gallery
+    }
 }
 document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".product-group-wrapper").forEach(row => {
-        row.addEventListener("touchstart", () => {
-            row.style.scrollBehavior = "auto";
-        });
-        row.addEventListener("touchend", () => {
-            row.style.scrollBehavior = "smooth";
-        });
-    });
+    document.querySelectorAll(".product-group-wrapper").forEach(row => {
+        row.addEventListener("touchstart", () => {
+            row.style.scrollBehavior = "auto";
+        });
+        row.addEventListener("touchend", () => {
+            row.style.scrollBehavior = "smooth";
+        });
+    });
 });
 
 // initial load
