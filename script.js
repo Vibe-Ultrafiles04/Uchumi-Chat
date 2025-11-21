@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzM9b-ZbQ9qlsne_gtflVdONYamPLdAz8opvMHXmGoZ8f82-jMd57HKZEka5mWz_7JSTw/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOowu_ahdM6z9r-LGJN-zdOUn01jEsSo_sklYZ4HdKpvSoxy5kiQuXk80x_beQAuY/exec"; // <- REPLACE THIS
 
 /// New Gallery DOM refs
 const CURRENCY_SYMBOL = "KES";
@@ -89,6 +89,86 @@ async function deleteProduct(productId, productName, cardElement) {
     } catch (err) {
         console.error("Error sending delete request to server:", err);
         alert("An error occurred while trying to delete the product.");
+    }
+}
+
+
+// ==========================================================
+// *** NEW UI AND BACKEND ACTION HANDLERS ***
+// ==========================================================
+
+/**
+ * Handler for editing the category name.
+ */
+async function openEditCategoryDialog(businessName, oldCategoryName, productData) {
+    const newCategory = prompt(`Enter the new name for the category "${oldCategoryName}" in business "${businessName}":`);
+
+    if (newCategory && newCategory.trim() !== "" && newCategory.trim() !== oldCategoryName) {
+        const trimmedNewCategory = newCategory.trim();
+
+        const payload = {
+            action: "editCategoryName",
+            businessName: businessName, 
+            oldCategoryName: oldCategoryName,
+            newCategoryName: trimmedNewCategory
+        };
+
+        try {
+            const res = await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "cors",
+                headers: {"Content-Type":"text/plain"}, 
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            
+            if (json && json.result === "success") {
+                alert(`✅ Category "${oldCategoryName}" successfully renamed to "${trimmedNewCategory}". Refreshing data...`);
+                fetchAndRenderProducts(); 
+            } else {
+                alert("❌ Failed to rename category: " + (json && json.message ? json.message : res.status));
+            }
+        } catch (err) {
+            console.error("Error sending category edit request to server:", err);
+            alert("An error occurred while trying to rename the category.");
+        }
+    } else if (newCategory !== null) {
+        alert("Category name unchanged or cancelled.");
+    }
+}
+
+/**
+ * Handler for deleting the entire Business group.
+ */
+async function deleteBusiness(businessName, categoryName) {
+    if (!confirm(`🔥 WARNING: Are you sure you want to PERMANENTLY delete ALL products associated with the business "${businessName}"?\n\nThis action cannot be undone and will remove many items from the Google Sheet.`)) {
+        return;
+    }
+
+    const payload = {
+        action: "deleteBusinessGroup",
+        businessName: businessName
+    };
+
+    try {
+        const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: {"Content-Type":"text/plain"}, 
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        
+        if (json && json.result === "success") {
+            fetchAndRenderProducts(); 
+            alert(`✅ All products for business "${businessName}" successfully deleted.`);
+        } else {
+            alert("❌ Failed to delete business group: " + (json && json.message ? json.message : res.status));
+        }
+
+    } catch (err) {
+        console.error("Error sending delete business request to server:", err);
+        alert("An error occurred while trying to delete the business.");
     }
 }
 // Load links from local storage (Stays the same)
@@ -218,90 +298,82 @@ previewBtn.addEventListener("click", () => {
 
 // Helper function to create a single product card DOM element (MODIFIED to use 'id' consistently)
 // Helper function to create a single product card DOM element (MODIFIED to use 'id' consistently)
+// Helper function to create a single product card DOM element (MODIFIED to use 'id' consistently)
 function createProductCard(r) {
-    // Data extraction
+    // Data extraction (all extraction logic remains the same)
     const name = r.name || "PRODUCT DETAILS";
-    const quantity = parseInt(r.quantity ?? 0); // Convert to number
-    const buy = parseFloat(r.buy ?? 0);          // Convert to float
-    const sell = parseFloat(r.sell ?? 0);        // Convert to float
+    const quantity = parseInt(r.quantity ?? 0);
+    const buy = parseFloat(r.buy ?? 0);
+    const sell = parseFloat(r.sell ?? 0);
     
     // NEW: Extract description and details
     const description = r.description || "";
     const details = r.details || "";
     
     // The unique ID for the product
-    // Assuming the backend now returns this as 'id' and the row number as 'rowId'
     const productId = r.id; 
     const rowId = r.rowId; 
+    const businessName = r.businessName; // NEW: Need business name for group delete
+    const categoryName = r.category;     // NEW: Need category name for edit/delete
 
     // IMPORTANT: The app script should now return the original link under 'driveLink' 
     const productLink = r.driveLink || "";  
     // Use the unified helper to get the image URL for the card
     const thumbUrl = getThumbnailUrl(productLink, 400); 
 
-    // Calculate profit
+    // Calculate profit (remains the same)
     const profit = sell - buy;
     const profitClass = profit > 0 ? 'profit-positive' : profit < 0 ? 'profit-negative' : 'profit-neutral';
 
-    // Calculate Percentage Profit (Profit Margin)
+    // Calculate Percentage Profit (remains the same)
     let profitPercent = 0;
     if (sell > 0) {
-        // Calculate Profit Margin: ((Sell - Buy) / Sell) * 100
         profitPercent = (profit / sell) * 100;
     } else if (profit > 0 && buy === 0) {
-        // Special case: If Cost Price is 0, the margin is 100%
         profitPercent = 100;        
     }
-    const profitDisplay = `${profitPercent.toFixed(1)}%`; // Display with one decimal place
+    const profitDisplay = `${profitPercent.toFixed(1)}%`;
 
-    // --- MODERN CARD STRUCTURE ---
+    // --- MODERN CARD STRUCTURE (remains the same) ---
     const card = document.createElement("div");
-    card.className = "modern-product-card"; // NEW CLASS NAME
-    // Use 'data-product-id' for the unique ID for updates, and data-row-id for the row number if needed
+    card.className = "modern-product-card";
     card.dataset.productId = productId;
     card.dataset.rowId = rowId; 
     card.dataset.quantity = quantity;
 
-    // 1. Thumbnail Area
+    // 1. Thumbnail Area (remains the same)
     const thumbWrapper = document.createElement("div");
     thumbWrapper.className = "card-thumb-wrapper";
-
-    // MODIFIED to use the unified thumbUrl
     const thumbContent = thumbUrl
         ? `<img src="${thumbUrl}" alt="Product Image" class="product-image"/>`
         : `<div class="placeholder-image">🖼️ No Image</div>`;
     thumbWrapper.innerHTML = thumbContent;
 
-    // Quantity Badge (Updated element to target for live quantity update)
     const quantityBadge = document.createElement("div");
-    const lowStockClass = quantity < 5 ? 'low-stock' : ''; // Example: Low stock warning
+    const lowStockClass = quantity < 5 ? 'low-stock' : '';
     quantityBadge.className = `quantity-badge ${lowStockClass}`;
-    quantityBadge.dataset.quantityDisplay = "true"; // Marker for live update
+    quantityBadge.dataset.quantityDisplay = "true";
     quantityBadge.innerHTML = `<span class="icon">📦</span> ${quantity} in Stock`;
 
     thumbWrapper.appendChild(quantityBadge);
     card.appendChild(thumbWrapper);
 
-    // 2. Info Area
+    // 2. Info Area (remains the same)
     const info = document.createElement("div");
     info.className = "card-info";
 
-    // Name
     info.innerHTML += `<h4 class="product-name">${escapeHtml(name)}</h4>`;
     
-    // NEW: Display Description
     if (description.length > 0) {
         info.innerHTML += `<p class="product-description">${escapeHtml(description)}</p>`;
     }
 
-    // NEW: Display Details
     if (details.length > 0) {
         info.innerHTML += `<div class="product-details">
             <span class="details-label">Details:</span> ${escapeHtml(details)}
         </div>`;
     }
 
-    // Prices Grid
     info.innerHTML += `
         <div class="price-grid">
             <div class="price-item">
@@ -314,7 +386,6 @@ function createProductCard(r) {
             </div>
         </div>
     `;
-    // Profit Margin
     info.innerHTML += `
         <div class="profit-margin ${profitClass}">
             <span class="label">Est. Profit Margin:</span>
@@ -324,38 +395,77 @@ function createProductCard(r) {
 
     // 3. Action Buttons Container
     const actionButtons = document.createElement("div");
-    actionButtons.className = "product-action-buttons"; // Use this class for styling/layout
+    actionButtons.className = "product-action-buttons";
 
     // Update Button (Existing)
     const updateBtn = document.createElement("button");
     updateBtn.className = "btn-black update-product-btn";
     updateBtn.textContent = "Update Stock";
     
-    // Add event listener to open the update dialog
     updateBtn.addEventListener("click", () => {
-        openUpdateDialog(r); // Pass the entire product object to the handler
+        openUpdateDialog(r);
     });
-
-    // *** NEW: Delete Button ***
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "btn-red delete-product-btn"; // Use a red class for distinction
-    deleteBtn.textContent = "Delete Product";
     
-    // Add event listener to call the delete function (which you'll define elsewhere)
-    deleteBtn.addEventListener("click", () => {
-        // Assume deleteProduct function takes productId, name, and the card element to remove
-        deleteProduct(productId, name, card); 
+    // --- MODIFIED DELETE BUTTON INTO ACTION MENU ---
+    const actionMenuWrapper = document.createElement("div");
+    actionMenuWrapper.className = "action-menu-wrapper"; // For positioning the menu
+
+    const menuBtn = document.createElement("button");
+    menuBtn.className = "btn-red action-menu-btn"; 
+    menuBtn.textContent = "Actions ▼";
+    
+    const menu = document.createElement("div");
+    menu.className = "delete-action-menu";
+    menu.style.display = 'none'; // Initially hidden
+    menu.innerHTML = `
+        <button data-action="delete-product">🗑️ Delete This Product Card</button>
+        <button data-action="edit-category">✏️ Edit Category: ${escapeHtml(categoryName)}</button>
+        <button data-action="delete-business">🔥 Delete Whole Business: ${escapeHtml(businessName)}</button>
+    `;
+    
+    // Toggle menu visibility
+    menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation(); // Stop click from propagating to the document
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    });
+    
+    // Handle menu item clicks
+    menu.addEventListener('click', (e) => {
+        const action = e.target.dataset.action;
+        if (action) {
+            menu.style.display = 'none'; // Hide menu after selection
+            if (action === "delete-product") {
+                deleteProduct(productId, name, card); 
+            } else if (action === "edit-category") {
+                // You need to implement this dialog/function separately
+                openEditCategoryDialog(businessName, categoryName, r);
+            } else if (action === "delete-business") {
+                // You need to implement this function separately
+                deleteBusiness(businessName, categoryName);
+            }
+        }
     });
 
-    // Append both buttons to the container
+    // Append menu elements
+    actionMenuWrapper.appendChild(menuBtn);
+    actionMenuWrapper.appendChild(menu);
+    // --- END MODIFIED DELETE BUTTON ---
+
+    // Append buttons/menu to the container
     actionButtons.appendChild(updateBtn);
-    actionButtons.appendChild(deleteBtn);
+    actionButtons.appendChild(actionMenuWrapper); // Append the menu wrapper here
     
     // Append the container to the info area
     info.appendChild(actionButtons);
     card.appendChild(info);
-    // --- END MODERN CARD STRUCTURE ---
     
+    // Hide the menu when clicking anywhere else on the document
+    document.addEventListener('click', (e) => {
+        if (menu.style.display === 'block' && !actionMenuWrapper.contains(e.target)) {
+            menu.style.display = 'none';
+        }
+    });
+
     return card;
 }
 // NEW HELPER FUNCTION: Formats a number with commas and two decimal places (Stays the same)

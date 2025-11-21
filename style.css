@@ -662,6 +662,64 @@ body {
 .btn-red:hover {
     background-color: #c82333;
 }
+
+/* Styling for the Action Menu Wrapper */
+.action-menu-wrapper {
+    position: relative; /* Essential for positioning the dropdown */
+    display: inline-block;
+    flex: 1;
+}
+
+/* Base button style for the menu trigger */
+.action-menu-btn {
+    width: 100%;
+    background-color: #dc3545; /* btn-red */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+}
+
+/* Dropdown Menu Styles */
+.delete-action-menu {
+    position: absolute;
+    bottom: 100%; /* Position above the button */
+    left: 0;
+    z-index: 10;
+    min-width: 250px;
+    border: 1px solid #ccc;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 5px; /* Small space above the button */
+}
+
+/* Buttons inside the dropdown */
+.delete-action-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    text-align: left;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+}
+
+.delete-action-menu button:hover {
+    background-color: #f0f0f0;
+}
+
+.delete-action-menu button:last-child {
+    border-bottom: none;
+    color: #dc3545; /* Highlight the delete business option */
+    font-weight: bold;
+}
 .product-name {
     font-size: 1.3rem;
     font-weight: 700;
