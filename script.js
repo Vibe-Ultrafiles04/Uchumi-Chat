@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzmmOfnRRYyGtIqwBhO1o9jcJnzaQ2iaTQPqS6zr090SsEyyHEKAUZd-G1i0x31YR5a/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzM9b-ZbQ9qlsne_gtflVdONYamPLdAz8opvMHXmGoZ8f82-jMd57HKZEka5mWz_7JSTw/exec"; // <- REPLACE THIS
 
 /// New Gallery DOM refs
 const CURRENCY_SYMBOL = "KES";
@@ -53,6 +53,44 @@ function unformatNumber(value) {
     return value.replace(/,/g, ''); 
 }
 
+// NEW FUNCTION: Handles the API call and UI removal for product deletion
+async function deleteProduct(productId, productName, cardElement) {
+    // 1. Confirmation Dialog
+    if (!confirm(`⚠️ WARNING: Are you sure you want to PERMANENTLY delete the product "${productName}" (ID: ${productId})?\n\nThis action cannot be undone and will remove the item from the Google Sheet.`)) {
+        return; // Stop if the user cancels
+    }
+
+    // 2. Prepare Payload for API
+    const payload = {
+        action: "deleteProduct",
+        productId: productId // Use the unique product ID for the backend to find the row
+    };
+
+    try {
+        // 3. Send Delete request to Web App
+        const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: {"Content-Type":"text/plain"}, 
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        
+        // 4. Handle Response
+        if (json && json.result === "success") {
+            // Remove the card from the UI immediately
+            cardElement.remove();
+            alert(`✅ Product "${productName}" successfully deleted.`);
+            
+        } else {
+            alert("❌ Failed to delete product: " + (json && json.message ? json.message : res.status));
+        }
+
+    } catch (err) {
+        console.error("Error sending delete request to server:", err);
+        alert("An error occurred while trying to delete the product.");
+    }
+}
 // Load links from local storage (Stays the same)
 function loadSavedLinks() {
     const json = localStorage.getItem(STORAGE_KEY);
@@ -264,43 +302,62 @@ function createProductCard(r) {
     }
 
     // Prices Grid
-  info.innerHTML += `
-        <div class="price-grid">
-            <div class="price-item">
-                <span class="label">Cost Price:</span>
-                <span class="value buy-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(buy)}</span>
-            </div>
-            <div class="price-item">
-                <span class="label">Sell Price:</span>
-                <span class="value sell-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(sell)}</span>
-            </div>
-        </div>
-    `;
-    // Profit Margin
-   info.innerHTML += `
-        <div class="profit-margin ${profitClass}">
-            <span class="label">Est. Profit Margin:</span>
-            <span class="value">${profitDisplay}</span>
-        </div>
-    `;
+    info.innerHTML += `
+        <div class="price-grid">
+            <div class="price-item">
+                <span class="label">Cost Price:</span>
+                <span class="value buy-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(buy)}</span>
+            </div>
+            <div class="price-item">
+                <span class="label">Sell Price:</span>
+                <span class="value sell-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(sell)}</span>
+            </div>
+        </div>
+    `;
+    // Profit Margin
+    info.innerHTML += `
+        <div class="profit-margin ${profitClass}">
+            <span class="label">Est. Profit Margin:</span>
+            <span class="value">${profitDisplay}</span>
+        </div>
+    `;
 
-    // 3. Update Button (NEW)
-    const updateBtn = document.createElement("button");
-    updateBtn.className = "btn-black update-product-btn";
-    updateBtn.textContent = "Update Stock";
-    
-    // Add event listener to open the update dialog
-    updateBtn.addEventListener("click", () => {
-        openUpdateDialog(r); // Pass the entire product object to the handler
-    });
+    // 3. Action Buttons Container
+    const actionButtons = document.createElement("div");
+    actionButtons.className = "product-action-buttons"; // Use this class for styling/layout
 
-    info.appendChild(updateBtn);
-    card.appendChild(info);
-    // --- END MODERN CARD STRUCTURE ---
-    
-    return card;
+    // Update Button (Existing)
+    const updateBtn = document.createElement("button");
+    updateBtn.className = "btn-black update-product-btn";
+    updateBtn.textContent = "Update Stock";
+    
+    // Add event listener to open the update dialog
+    updateBtn.addEventListener("click", () => {
+        openUpdateDialog(r); // Pass the entire product object to the handler
+    });
+
+    // *** NEW: Delete Button ***
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "btn-red delete-product-btn"; // Use a red class for distinction
+    deleteBtn.textContent = "Delete Product";
+    
+    // Add event listener to call the delete function (which you'll define elsewhere)
+    deleteBtn.addEventListener("click", () => {
+        // Assume deleteProduct function takes productId, name, and the card element to remove
+        deleteProduct(productId, name, card); 
+    });
+
+    // Append both buttons to the container
+    actionButtons.appendChild(updateBtn);
+    actionButtons.appendChild(deleteBtn);
+    
+    // Append the container to the info area
+    info.appendChild(actionButtons);
+    card.appendChild(info);
+    // --- END MODERN CARD STRUCTURE ---
+    
+    return card;
 }
-
 // NEW HELPER FUNCTION: Formats a number with commas and two decimal places (Stays the same)
 function formatNumberWithCommas(number) {
     const num = parseFloat(number);

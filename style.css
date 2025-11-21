@@ -643,6 +643,25 @@ body {
     transform: translateY(-4px);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
 }
+
+.product-action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+.btn-red {
+    background-color: #dc3545; /* Red color for danger */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    flex: 1; 
+    text-align: center;
+}
+.btn-red:hover {
+    background-color: #c82333;
+}
 .product-name {
     font-size: 1.3rem;
     font-weight: 700;
