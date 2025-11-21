@@ -453,6 +453,196 @@ body {
     /* Keep the label inline with the details value */
     display: inline;
 }
+
+/* === BUSINESS GROUP CONTAINER === */
+.business-group-container {
+    margin-bottom: 28px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    background: #ffffff;
+    transition: all 0.3s ease;
+}
+
+.business-group-container:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+/* === HEADER (CLICKABLE) === */
+.business-card-header {
+    background: linear-gradient(135deg, #3550c0 0%, #4169e1 100%); /* Deeper royal blue gradient */
+    color: #ffffff;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.3s ease;
+    user-select: none;
+}
+
+.business-card-header:hover {
+    background: linear-gradient(135deg, #2d45a8 0%, #3550c0 100%);
+}
+
+/* Latest product thumbnail */
+.latest-product-image-container {
+    width: 130px;
+    height: 110px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    background: #ffffff;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.latest-product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.business-card-header:hover .latest-product-image {
+    transform: scale(1.08);
+}
+
+.placeholder-image-large {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Business info */
+.business-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.business-name {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.5px;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+
+.product-categories {
+    font-size: 15px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    display: inline-block;
+    align-self: flex-start;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Open / View button – top-right corner */
+.open-business-card-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #000000;
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 0 14px 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.open-business-card-btn:hover {
+    background: #1a1a1a;
+    padding-right: 20px;
+}
+
+/* Arrow indicator (optional – add ▼ or ► via ::after in HTML/JS) */
+.business-card-header::after {
+    content: "▼";
+    position: absolute;
+    right: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    transition: transform 0.3s ease;
+}
+
+.business-group-container.is-open .business-card-header::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+/* === COLLAPSIBLE CONTENT AREA === */
+.product-card-display-area {
+    padding: 0 24px;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.6s ease, opacity 0.5s ease, padding 0.4s ease;
+    background: #fafafa;
+}
+
+.business-group-container.is-open .product-card-display-area {
+    max-height: 3000px; /* Adjust if you have very tall content */
+    opacity: 1;
+    padding: 24px;
+    background: #ffffff;
+}
+
+/* Small category headers inside the expanded area */
+.category-group-header-small {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 28px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #4169e1;
+    position: relative;
+}
+
+.category-group-header-small::before {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 50px;
+    height: 2px;
+    background: #3550c0;
+}
+
+/* Optional: enhance your existing modern-product-card */
+.modern-product-card {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.modern-product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
 .product-name {
     font-size: 1.3rem;
     font-weight: 700;

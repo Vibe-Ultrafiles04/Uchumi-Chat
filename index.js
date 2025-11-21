@@ -137,7 +137,43 @@ function escapeHtml(s){
 // ----------------------------------------------------------------------
 // *** CORE RENDERING LOGIC ***
 // ----------------------------------------------------------------------
+// NEW: Function to create the business header card element
+function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
+    const businessCard = document.createElement("div");
+    businessCard.className = "business-card-header"; // Apply main styling for the enclosure
+    
+    // Use the latest product's image for the main display
+    const latestProductLink = latestProduct.driveLink || "";
+    const latestThumbUrl = getThumbnailUrl(latestProductLink, 800); 
 
+    // Join category names for display
+    const categoriesText = categoryNames.join(' | ');
+
+    businessCard.innerHTML = `
+        <div class="latest-product-image-container">
+            ${latestThumbUrl 
+                ? `<img src="${latestThumbUrl}" alt="Latest Product Image" class="latest-product-image"/>`
+                : `<div class="placeholder-image-large">🖼️ Latest Product Image</div>`
+            }
+        </div>
+        <div class="business-info">
+            <h2 class="business-name">${escapeHtml(businessName)}</h2>
+            <div class="product-categories">${escapeHtml(categoriesText)}</div>
+        </div>
+        <button class="btn-black open-business-card-btn">Click card to open</button>
+    `;
+    
+    // Optional: Add an event listener to toggle the display of the products 
+    // (You will need to implement the actual card/product toggle visibility in your CSS/HTML)
+    const toggleButton = businessCard.querySelector(".open-business-card-btn");
+    toggleButton.addEventListener('click', (e) => {
+        e.currentTarget.closest('.business-group-container').classList.toggle('is-open');
+        toggleButton.textContent = businessCard.closest('.business-group-container').classList.contains('is-open') 
+            ? "Click card to close" : "Click card to open";
+    });
+    
+    return businessCard;
+}
 // Helper function to create a single product card DOM element (CONDITIONAL)
 function createProductCard(r) {
     // Data extraction
@@ -284,68 +320,76 @@ function renderProductsToDOM(productsToRender) {
         productsContainer.innerHTML = '<div class="hint">No products found matching the filter criteria.</div>';
         return;
     }
-    
+
     // --- Grouping Logic Implementation ---
-    // Group by Business Name, then Category
-    const groupedProducts = productsToRender.reduce((acc, product) => {
-        // Use businessName from the product object
+    // Group by Business Name
+    const groupedByBusiness = productsToRender.reduce((acc, product) => {
         const business = product.businessName || "Unassigned Business";
         const category = product.category || "Unassigned Category";
 
         if (!acc[business]) {
-            acc[business] = {};
+            acc[business] = {
+                latestProduct: product, // Assuming the first product encountered is the 'latest'
+                categories: new Set(),
+                productsByCategory: {}
+            };
         }
 
-        if (!acc[business][category]) {
-            acc[business][category] = [];
+        acc[business].categories.add(category);
+
+        if (!acc[business].productsByCategory[category]) {
+            acc[business].productsByCategory[category] = [];
         }
 
-        acc[business][category].push(product);
+        acc[business].productsByCategory[category].push(product);
         return acc;
     }, {});
-    
-    // Render the grouped products
-    
-    for (const businessName in groupedProducts) {
-        // Business Name Header
-        const businessHeader = document.createElement('h2');
-        businessHeader.className = 'business-group-header';
-        businessHeader.textContent = escapeHtml(businessName);
-        productsContainer.appendChild(businessHeader);
 
-        for (const categoryName in groupedProducts[businessName]) {
-            const products = groupedProducts[businessName][categoryName];
-            
-            // Category Header
-            const categoryHeader = document.createElement('h3');
-            categoryHeader.className = 'category-group-header';
+    // Render the grouped products
+    for (const businessName in groupedByBusiness) {
+        const groupData = groupedByBusiness[businessName];
+        const allCategoryNames = Array.from(groupData.categories);
+
+        // ** 1. Create the main wrapper for the business group (This will be the collapsible container) **
+        const businessGroupContainer = document.createElement('div');
+        businessGroupContainer.className = 'business-group-container';
+
+        // ** 2. Create the business card header (Image, Name, Categories, Button) **
+        const businessHeaderCard = createBusinessCardHeader(businessName, allCategoryNames, groupData.latestProduct);
+        businessGroupContainer.appendChild(businessHeaderCard);
+
+        // ** 3. Create the container for the individual product cards **
+        const productCardDisplayArea = document.createElement('div');
+        productCardDisplayArea.className = 'product-card-display-area'; // Container to be shown/hidden
+
+        for (const categoryName in groupData.productsByCategory) {
+            const products = groupData.productsByCategory[categoryName];
+
+            // Category Header (Inside the collapsible area)
+            const categoryHeader = document.createElement('h4');
+            categoryHeader.className = 'category-group-header-small';
             categoryHeader.textContent = escapeHtml(categoryName);
-            productsContainer.appendChild(categoryHeader);
-            
+            productCardDisplayArea.appendChild(categoryHeader);
+
             let productGroupWrapper = document.createElement('div');
             productGroupWrapper.className = 'product-group-wrapper';
 
-            products.forEach((r, index) => {
-                if (!r.rowId && r.row) r.rowId = r.row; 
-                
-                const card = createProductCard(r); 
+            products.forEach((r) => {
+                if (!r.rowId && r.row) r.rowId = r.row;
+
+                // NOTE: The individual product cards now only display product-specific details, 
+                // as Business Name and Categories are in the main header.
+                const card = createProductCard(r);
                 productGroupWrapper.appendChild(card);
-                
-                // Group logic: Append the wrapper after every 4 cards or on the last card
-                if ((index + 1) % 4 === 0 || index === products.length - 1) {
-                    productsContainer.appendChild(productGroupWrapper);
-                    
-                    if (index < products.length - 1) {
-                        productGroupWrapper = document.createElement('div');
-                        productGroupWrapper.className = 'product-group-wrapper';
-                    }
-                }
             });
+
+            productCardDisplayArea.appendChild(productGroupWrapper);
         }
+
+        businessGroupContainer.appendChild(productCardDisplayArea);
+        productsContainer.appendChild(businessGroupContainer);
     }
 }
-
-
 // ** 1. Global Callback Function (Handles JSONP Response) **
 function handleInventoryData(json) {
     productsContainer.innerHTML = "";
