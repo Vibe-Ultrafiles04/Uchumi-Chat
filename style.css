@@ -647,7 +647,7 @@ body {
 }
 
 /* 🚀 MEDIA QUERY: MOBILE RESPONSIVENESS FIX */
-@media (max-width: 600px) {
+@media (max-width: 300px) {
     /* --- Header Layout Change: Stack elements vertically --- */
     .business-card-header {
         flex-direction: column; 
