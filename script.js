@@ -20,6 +20,7 @@ const businessNameInput = document.getElementById("businessName");
 const businessCategoryInput = document.getElementById("businessCategory");
 // ***************************************************
 
+const businessFilterInput = document.getElementById("businessFilterInput");
 const productNameInput = document.getElementById("productName");
 const productQuantityInput = document.getElementById("productQuantity");
 const productBuyInput = document.getElementById("productBuy");
@@ -561,7 +562,92 @@ function handleInventoryData(json) {
         }
     }
 }
+// *** NEW FUNCTION: Applies the filter to the rendered products ***
+function applyBusinessFilter(filterTerm) {
+    const term = filterTerm.toLowerCase().trim();
+    const productGroups = productsContainer.querySelectorAll('.product-group-wrapper');
+    const businessHeaders = productsContainer.querySelectorAll('.business-header');
+    
+    let anyBusinessVisible = false;
 
+    // 1. Iterate over each Business Header and its corresponding product groups
+    businessHeaders.forEach(header => {
+        const businessName = header.textContent.replace('🏢 ', '').trim().toLowerCase();
+        let groupProductsWrapper = header.nextElementSibling; // Get the next element after the header
+        
+        // Find the next element that is a product-group-wrapper (skipping category headers in between)
+        while (groupProductsWrapper && !groupProductsWrapper.classList.contains('product-group-wrapper')) {
+            groupProductsWrapper = groupProductsWrapper.nextElementSibling;
+        }
+
+        // Hide the Business Header and its entire group wrapper by default
+        header.style.display = 'none';
+        if (groupProductsWrapper) {
+            groupProductsWrapper.style.display = 'none';
+        }
+    });
+
+    // 2. Iterate over the raw product list (from the grouped data, if you had it)
+    // ---
+    // NOTE: Since the current rendering logic groups everything into category wrappers, 
+    // the filter must be applied *during* the rendering phase or by searching the DOM
+    // for all business-related elements. 
+    //
+    // A simpler approach is to:
+    // a) Re-fetch and re-render the filtered results (more network traffic, simplest code change).
+    // b) Hide/Show the rendered DOM elements (less network traffic, more complex DOM traversal).
+    //
+    // **Let's use the DOM hiding/showing approach (Option b) which is more efficient after initial load.**
+    // ---
+
+    // The filter will re-iterate over *all* the product cards and headers and hide/show them.
+    let currentBusinessVisible = false;
+    
+    // Get ALL business headers, category headers, and product wrappers
+    const allElements = productsContainer.children;
+    
+    for (const element of allElements) {
+        if (element.classList.contains('business-header')) {
+            // Check the current business header
+            const businessName = element.textContent.replace('🏢 ', '').trim().toLowerCase();
+            
+            // Determine if the business should be visible
+            currentBusinessVisible = businessName.includes(term) || term === '';
+            
+            // Set visibility for the business header
+            element.style.display = currentBusinessVisible ? 'block' : 'none';
+            
+            if (currentBusinessVisible) {
+                anyBusinessVisible = true;
+            }
+            
+        } else if (element.classList.contains('category-header')) {
+            // Category headers are only visible if the parent business is visible
+            element.style.display = currentBusinessVisible ? 'block' : 'none';
+            
+        } else if (element.classList.contains('product-group-wrapper')) {
+            // Product wrappers are only visible if the parent business is visible
+            element.style.display = currentBusinessVisible ? 'flex' : 'none'; // Assuming 'flex' for the wrapper
+        }
+    }
+
+    // Display a "No results" message if no business is visible and the search term is not empty
+    const noResultsHint = document.getElementById('noFilterResultsHint');
+    if (!anyBusinessVisible && term.length > 0) {
+        if (!noResultsHint) {
+            const hint = document.createElement('div');
+            hint.id = 'noFilterResultsHint';
+            hint.className = 'hint';
+            hint.textContent = `No products found matching business name: "${filterTerm}"`;
+            productsContainer.appendChild(hint);
+        } else {
+            noResultsHint.textContent = `No products found matching business name: "${filterTerm}"`;
+            noResultsHint.style.display = 'block';
+        }
+    } else if (noResultsHint) {
+        noResultsHint.style.display = 'none';
+    }
+}
 // ** 2. Modified Fetch Function (Stays the same) **
 function fetchAndRenderProducts(){
     productsContainer.innerHTML = '<div class="hint">Loading products...</div>';
@@ -670,3 +756,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // initial load
 fetchAndRenderProducts();
+
+// *** NEW EVENT LISTENER: Triggers the filter when the input changes ***
+if (businessFilterInput) {
+    businessFilterInput.addEventListener('input', (e) => {
+        applyBusinessFilter(e.target.value);
+    });
+}
