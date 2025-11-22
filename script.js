@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwsEgyi_2kmiXxTObZdUsMfvfoSueVnIJYFgB-xrGXj3w2azmRJrUvJmGalNlseTwPJ/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySbNNp_HF3EHO1NdfiJM77bV3Vqa8K2lFLMpXq_5Re_a2oVQBlNpn1ihtF0b7mdCO1hw/exec"; // <- REPLACE THIS
 
 /// New Gallery DOM refs
 const CURRENCY_SYMBOL = "KES";
@@ -905,34 +905,30 @@ function applyBusinessFilter(filterTerm) {
         noResultsHint.style.display = 'none';
     }
 }
-// ** 2. Modified Fetch Function (Stays the same) **
-function fetchAndRenderProducts(){
-    productsContainer.innerHTML = '<div class="hint">Loading products...</div>';
-    
-    // The name of the function we defined above
-    const callbackName = 'handleInventoryData'; 
-    
-    // Construct the URL with the action and the mandatory 'callback' parameter
-    const url = `${WEB_APP_URL}?action=list&callback=${callbackName}`;
+// SECURE VERSION: Only fetches and shows the OWNER'S products
+function fetchAndRenderProducts() {
+    const ownerBusiness = localStorage.getItem('ownerBusinessName');
+    
+    if (!ownerBusiness) {
+        productsContainer.innerHTML = '<div class="hint">No business profile found. Please set up your business first.</div>';
+        return;
+    }
 
-    // Create a script tag to make the JSONP request
-    const script = document.createElement('script');
-    script.src = url;
-    
-    // Handle success/failure cleanup
-    script.onload = () => {
-        // Clean up the temporary script tag after execution
-        setTimeout(() => script.remove(), 100); 
-    };
+    productsContainer.innerHTML = '<div class="hint">Loading your products...</div>';
 
-    script.onerror = (err) => {
-        console.error("JSONP Request Failed:", err);
-        productsContainer.innerHTML = '<div class="hint">Error loading products (Failed to connect or script error).</div>';
-        script.remove();
-    };
-    
-    // Execute the request by appending the script tag to the head
-    document.head.appendChild(script);
+    const callbackName = 'handleInventoryData';
+    const url = `${WEB_APP_URL}?action=list&callback=${callbackName}&business=${encodeURIComponent(ownerBusiness)}`;
+
+    const script = document.createElement('script');
+    script.src = url;
+
+    script.onload = () => setTimeout(() => script.remove(), 100);
+    script.onerror = () => {
+        productsContainer.innerHTML = '<div class="hint" style="color:red">Failed to load your products. Check internet connection.</div>';
+        script.remove();
+    };
+
+    document.head.appendChild(script);
 }
 // small helper to escape HTML when injecting text (Stays the same)
 function escapeHtml(s){
