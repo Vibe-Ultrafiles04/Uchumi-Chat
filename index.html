@@ -1,295 +1,228 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- all your head content stays exactly the same -->
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Our Stock - Live View</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#3b6dc6" />
-  <link rel="apple-touch-icon" href="inventory192.png" />
-  <style>
-   body {
-  background: #f9f9f9;
-  margin: 0;
-  padding: 0 0 100px 0; /* generous bottom padding so button is never cut off */
-  min-height: 100vh;
-  box-sizing: border-box;
-}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Our Stock - Live View</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#3b6dc6" />
+    <link rel="apple-touch-icon" href="inventory192.png" />
 
-/* Main heading */
-h1 {
-  text-align: center;
-  color: #3b6dc6;
-  margin: 30px 0;
-  font-size: 24px;
-}
+    <style>
+        body {
+            background: #f9f9f9;
+            margin: 0;
+            padding: 0 0 100px 0;
+            min-height: 100vh;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
 
-/* Owner button — sits at the bottom of the page, scrolls normally */
-#studio-toggle-btn {
-  display: block;
-  margin: 40px auto 0;           /* auto centers it, 40px space from last product */
-  padding: 10px 20px;            /* comfortable padding */
-  background: rgba(59, 109, 198, 0.15);
-  color: #3b6dc6;
-  font-size: 14px;
-  font-weight: 600;
-  border: 1px solid #3b6dc6;
-  border-radius: 50px;           /* perfect pill shape */
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-  white-space: nowrap;           /* prevents text from wrapping */
-  max-width: 90%;                /* safety on very small screens */
-  box-sizing: border-box;
-}
+        h1 {
+            text-align: center;
+            color: #3b6dc6;
+            margin: 30px 0;
+            font-size: 24px;
+        }
 
-#studio-toggle-btn:hover {
-  background: #3b6dc6;
-  color: white;
-  transform: scale(1.05);
-}
+        /* Profile Header */
+        #profileHeader {
+            text-align: center;
+            padding: 15px;
+            background: #e9f0fa;
+            border-bottom: 2px solid #3b6dc6;
+            margin-bottom: 20px;
+            display: none;
+        }
 
-/* Rest of your styles — unchanged and perfect */
-.box-container {
-  text-align: center;
-  margin-top: 20px;
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
-}
-.box-container.active {
-  max-height: 520px;
-  opacity: 1;
-}
-.box {
-  background: white;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  text-align: center;
-  width: 300px;
-  margin: 0 auto;
-}
-input {
-  width: 100%;
-  padding: 12px;
-  margin: 15px 0;
-  font-size: 18px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-sizing: border-box;
-}
-button {
-  width: 100%;
-  padding: 14px;
-  background: #3b6dc6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-button:hover { background: #325a9e; }
-.wrong {
-  color: red;
-  margin-top: 10px;
-  display: none;
-  font-size: 14px;
-}
-input:focus {
-  outline: none;
-  border-color: #3b6dc6;
-  box-shadow: 0 0 0 3px rgba(59, 109, 198, 0.2);
-}
-  </style>
+        #ownerBusinessNameDisplay {
+            font-size: 18px;
+            font-weight: bold;
+            color: #3b6dc6;
+            margin-bottom: 8px;
+        }
+
+        #editProfileBtn, #logoutBtn {
+            background: #f0f0f0;
+            color: #555;
+            border: 1px solid #ccc;
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+
+        #editProfileBtn:hover, #logoutBtn:hover {
+            background: #e0e0e0;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            text-align: center;
+            margin: 20px auto;
+            max-width: 90%;
+        }
+
+        .filter-bar label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #444;
+        }
+
+        .filter-bar input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        /* My Studio Button */
+        #myStudioBtn {
+            display: none;
+            margin: 40px auto 0;
+            padding: 14px 32px;
+            background: #3b6dc6;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(59, 109, 198, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #myStudioBtn:hover {
+            background: #325a9e;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 109, 198, 0.4);
+        }
+    </style>
 </head>
 <body>
-  <main class="page">
-    <h1>Current Stock</h1>
-    <div class="filter-bar">
-    <label for="businessFilterInput">🔍 Filter by Business:</label>
-    <input type="text" id="businessFilterInput" placeholder="Type the business name...">
-</div>
-    <section id="productsContainer" class="products-area">
-      <div class="hint">Loading products...</div>
+
+    <!-- Profile Header Section -->
+    <section id="profileHeader">
+        <div id="ownerBusinessNameDisplay">Loading profile...</div>
+        <div>
+            <button id="editProfileBtn">Edit Profile</button>
+            <button id="logoutBtn">Logout</button>
+        </div>
     </section>
-  </main>
 
-  <!-- STUDIO BUTTON NOW AT THE VERY BOTTOM — TINY & DISCREET -->
-  <button id="studio-toggle-btn" title="Owner only">Owner Access</button>
+    <!-- Main Content -->
+    <main class="page">
+        <h1>Current Stock</h1>
 
-  <!-- Password box (still hidden until button clicked) -->
-  <div id="studio-content" class="box-container">
-    <div class="box">
-      <h2>Studio Access</h2>
-      <input type="password" id="pass" placeholder="Enter password" />
-      <button onclick="go()">Enter Studio</button>
-      <p class="wrong" id="msg"></p>
-    </div>
-  </div>
+        <div class="filter-bar">
+            <label for="businessFilterInput">Filter by Business:</label>
+            <input type="text" id="businessFilterInput" placeholder="Type the business name...">
+        </div>
 
+        <section id="productsContainer" class="products-area">
+            <div class="hint">Loading products...</div>
+        </section>
+    </main>
 
+    <!-- My Studio Button (Only visible to owner) -->
+    <button id="myStudioBtn">My Studio</button>
 
-
-
-  <!-- PWA Install Button (optional) -->
- <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
-  }
-
-  let deferredPrompt;
-  const INSTALL_KEY = "appInstalledOrDismissed"; // Remember user's choice forever
-
-  // Check if user already installed or dismissed
-  if (localStorage.getItem(INSTALL_KEY) === "true") {
-    // Do nothing — button stays hidden forever
-  } else {
-    // Create tiny install button at top-right
-    const btn = document.createElement("button");
-    btn.textContent = "⬇️";              // ← Only a tiny downward arrow
-btn.title = "Install App";           // Tooltip explains it on hover/tap
-btn.style = `
-  position:fixed;
-  top:12px;
-  right:12px;
-  background:#3b6dc6;
-  color:white;
-  border:none;
-  width:36px;           /* fixed small size */
-  height:36px;
-  font-size:18px;       /* makes the ↓ nice and clear */
-  line-height:36px;     /* vertically centers the arrow */
-  border-radius:50%;    /* perfect circle */
-  cursor:pointer;
-  z-index:9999;
-  box-shadow:0 2px 8px rgba(0,0,0,0.25);
-  transition:all 0.2s ease;
-  display:none;
-  text-align:center;
-`;
-    btn.onmouseover = () => btn.style.transform = "scale(1.1)";
-    btn.onmouseout  = () => btn.style.transform = "scale(1)";
-
-    document.body.appendChild(btn);
-
-    window.addEventListener("beforeinstallprompt", e => {
-      e.preventDefault();
-      deferredPrompt = e;
-      btn.style.display = "block"; // Show only when installable
-    });
-
-    btn.onclick = () => {
-      btn.style.display = "none";
-      localStorage.setItem(INSTALL_KEY, "true"); // Never show again
-
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(choice => {
-          if (choice.outcome === "accepted") {
-            console.log("App installed");
-          } else {
-            console.log("Install declined");
-          }
-          deferredPrompt = null;
-        });
-      }
-    };
-
-    // Optional: Also hide forever if user clicks outside (dismisses prompt)
-    window.addEventListener("appinstalled", () => {
-      localStorage.setItem(INSTALL_KEY, "true");
-    });
-  }
-</script>
-
-<script>
-    const PASSWORD = "12345";
-    const AUTH_KEY = "studioAuthenticated";
-    const BAN_KEY = "studioAccessBanned";
-    const UNBAN_CODE = "LIFTBAN";
-
-    let successfulLogins = parseInt(localStorage.getItem('studioSuccessCount') || '0', 10);
-    let failedLogins = parseInt(localStorage.getItem('studioFailedCount') || '0', 10);
-
-    const toggleBtn = document.getElementById('studio-toggle-btn');
-    const content = document.getElementById('studio-content');
-
-    // Secret URL backdoor: ?admin → force open password box (for unban)
-    if (location.search === "?admin") {
-      content.classList.add('active');
-      history.replaceState(null, null, location.pathname); // hide ?admin from URL
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      if (localStorage.getItem(BAN_KEY) === 'true') {
-        toggleBtn.remove(); // completely gone for banned users
-        return;
-      }
-      if (localStorage.getItem(AUTH_KEY) === 'true') {
-        toggleBtn.textContent = "Studio (Direct)";
-        toggleBtn.onclick = () => location.href = "studio.html";
-        content.remove();
-      }
-    });
-
-    toggleBtn.addEventListener('click', () => {
-      if (localStorage.getItem(AUTH_KEY) === 'true') {
-        location.href = "studio.html";
-      } else {
-        content.classList.toggle('active');
-      }
-    });
-
-    function go() {
-      const input = document.getElementById('pass').value.trim();
-      const msg = document.getElementById('msg');
-
-      if (input === UNBAN_CODE) {
-        localStorage.removeItem(BAN_KEY);
-        localStorage.setItem('studioFailedCount', '0');
-        location.reload(); // brings button back
-        return;
-      }
-
-      if (input === PASSWORD) {
-        successfulLogins++;
-        localStorage.setItem('studioSuccessCount', successfulLogins);
-        localStorage.setItem('studioFailedCount', '0');
-
-        if (successfulLogins >= 2) {
-          localStorage.setItem(AUTH_KEY, 'true');
-          toggleBtn.textContent = "Studio (Direct)";
-          content.remove();
+    <!-- Service Worker & PWA Install Button -->
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js");
         }
-        setTimeout(() => location.href = "studio.html", 150);
-        return;
-      }
 
-      // Wrong → 2 fails = button vanishes forever
-      failedLogins++;
-      localStorage.setItem('studioFailedCount', failedLogins);
-      localStorage.setItem('studioSuccessCount', '0');
+        let deferredPrompt;
+        const INSTALL_KEY = "appInstalledOrDismissed";
 
-      if (failedLogins >= 2) {
-        localStorage.setItem(BAN_KEY, 'true');
-        msg.textContent = "Access banned permanently.";
-        msg.style.color = "red";
-        content.classList.remove('active');
-        toggleBtn.remove(); // GONE. No temptation.
-      } else {
-        msg.textContent = `Wrong! ${2 - failedLogins} attempt(s) left.`;
-        msg.style.color = "red";
-      }
-    }
+        if (localStorage.getItem(INSTALL_KEY) !== "true") {
+            const btn = document.createElement("button");
+            btn.textContent = "Down Arrow";
+            btn.title = "Install App";
+            btn.style = `
+                position:fixed;top:12px;right:12px;background:#3b6dc6;color:white;border:none;
+                width:36px;height:36px;font-size:18px;line-height:36px;border-radius:50%;
+                cursor:pointer;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.25);
+                transition:all 0.2s ease;display:none;text-align:center;
+            `;
+            btn.onmouseover = () => btn.style.transform = "scale(1.1)";
+            btn.onmouseout  = () => btn.style.transform = "scale(1)";
+            document.body.appendChild(btn);
 
-    document.getElementById('pass')?.addEventListener('keypress', e => e.key === 'Enter' && go());
-  </script>
+            window.addEventListener("beforeinstallprompt", e => {
+                e.preventDefault();
+                deferredPrompt = e;
+                btn.style.display = "block";
+            });
 
-  <script src="index.js" defer></script>
+            btn.onclick = () => {
+                btn.style.display = "none";
+                localStorage.setItem(INSTALL_KEY, "true");
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+                }
+            };
+
+            window.addEventListener("appinstalled", () => {
+                localStorage.setItem(INSTALL_KEY, "true");
+            });
+        }
+    </script>
+
+    <!-- Business Profile & My Studio Access Logic -->
+    <script>
+        const OWNER_BUSINESS_KEY = 'ownerBusinessName';
+        const profileHeader = document.getElementById('profileHeader');
+        const ownerBusinessNameDisplay = document.getElementById('ownerBusinessNameDisplay');
+        const editProfileBtn = document.getElementById('editProfileBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const myStudioBtn = document.getElementById('myStudioBtn');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const ownerBusinessName = localStorage.getItem(OWNER_BUSINESS_KEY);
+
+            if (ownerBusinessName) {
+                // Show profile
+                ownerBusinessNameDisplay.textContent = `Your Active Profile: ${ownerBusinessName}`;
+                editProfileBtn.textContent = "Edit Profile";
+                editProfileBtn.onclick = () => location.href = 'setup.html?mode=edit';
+
+                // Show logout
+                logoutBtn.style.display = "inline-block";
+                logoutBtn.onclick = () => {
+                    if (confirm("Leave this business profile?")) {
+                        localStorage.removeItem(OWNER_BUSINESS_KEY);
+                        location.reload();
+                    }
+                };
+
+                // Show My Studio button
+                myStudioBtn.style.display = "block";
+                myStudioBtn.onclick = () => {
+                    sessionStorage.setItem('ownerStudioAccess', ownerBusinessName);
+                    location.href = "studio.html";
+                };
+
+            } else {
+                ownerBusinessNameDisplay.textContent = "No Business Profile Set Up.";
+                editProfileBtn.textContent = "Create Profile Now";
+                editProfileBtn.onclick = () => location.href = 'setup.html';
+                logoutBtn.style.display = "none";
+            }
+
+            profileHeader.style.display = 'block';
+        });
+    </script>
+
+    <script src="index.js" defer></script>
 </body>
 </html>

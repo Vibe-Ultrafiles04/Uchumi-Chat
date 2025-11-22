@@ -8,6 +8,7 @@ const OFFLINE_URL = "index.html";
 
 const ASSETS_TO_CACHE = [
   "./",
+   "./setup.html",
   "./index.html",
    "./index.js",
   "./style.css",

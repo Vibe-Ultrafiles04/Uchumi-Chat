@@ -1,303 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#3b6dc6" />
-  <title>Smart Inventory</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#3b6dc6" />
-<link rel="apple-touch-icon" href="inventory192.png" />
-
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#3b6dc6" />
+    <title>My Studio - Smart Inventory</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#3b6dc6" />
+    <link rel="apple-touch-icon" href="inventory192.png" />
 </head>
-<script>window.IS_ADMIN_VIEW = true;</script>
 <body>
 
-       
-    <main class="page">
-         <header class="admin-header">
-            <h1>Admin Studio</h1>
-            <button onclick="window.location.href='index.html'" class="btn-black">
-                🏠 Home (Public View)
-            </button>
-        </header>
+    <main class="page">
+        <header class="admin-header">
+            <h1 id="studioTitle">My Studio</h1>
+            <button onclick="window.location.href='index.html'" class="btn-black">
+                Home (Public View)
+            </button>
+        </header>
 
-        <button id="toggleFormBtn" class="btn-toggle">Toggle Input Form (Show)</button>
-<div class="filter-bar-container">
-    <label for="businessFilterInput">
-        <span class="icon">🔍</span> Filter Products by Business Name:
-    </label>
-    <input 
-        type="text" 
-        id="businessFilterInput" 
-        placeholder="Your Business Name "
-        class="text-input"
-    >
-</div>
-        <section id="productsContainer" class="products-area">
-            <div class="hint">OTHER PRODUCT CONTAINERS WILL APPEAR HERE</div>
-        </section>
+        <!-- Toggle Form Button -->
+        <button id="toggleFormBtn" class="btn-toggle">Toggle Input Form (Show)</button>
 
-        <div id="inputContainer" style="display: none;">
-            <section class="product-panel add-panel">
-                
-                <div class="form-row">
-                    <div class="label-black">BUSINESS NAME</div>
-                    <input id="businessName" class="text-input" type="text" placeholder="e.g., Jane's Boutique" />
-                </div>
-                
-                <div class="form-row">
-                    <div class="label-black">CATEGORY</div>
-                    <input id="businessCategory" class="text-input" type="text" placeholder="e.g., Clothing, Electronics, Food" />
-                </div>
-                <div class="form-row">
-                    <div class="label-black">PRODUCT name</div>
-                    <input id="productName" class="text-input" type="text" placeholder="Product name appears here" />
-                </div>
+        <!-- Hidden filter (no longer needed) -->
+        <div class="filter-bar-container" style="display: none;">
+            <label for="businessFilterInput">
+                <span class="icon">Search</span> Filter Products by Business Name:
+            </label>
+            <input type="text" id="businessFilterInput" placeholder="Your Business Name" class="text-input">
+        </div>
 
-               <div class="form-row">
-    <div class="label-black">Quantity</div>
-    <input id="productQuantity" class="text-input" 
-        type="text" 
-        placeholder="Number of products" 
-        min="0"
-        data-numeric="true"
-    />
-</div>
+        <section id="productsContainer" class="products-area">
+            <div class="hint">Your products will appear here...</div>
+        </section>
 
-               <div class="form-row">
-    <div class="label-black">BUYING PRICE</div>
-    <input id="productBuy" class="text-input" 
-           type="text" 
-           placeholder="Buying price appears here" 
-           data-numeric="true"
-    />
-</div>
+        <!-- Add Product Form (Hidden by default) -->
+        <div id="inputContainer" style="display: none;">
+            <section class="product-panel add-panel">
+                
+                <div class="form-row">
+                    <div class="label-black">BUSINESS NAME</div>
+                    <input id="businessName" class="text-input" type="text" readonly 
+                           style="background:#f5f5f5; color:#333; font-weight:bold;" />
+                </div>
+                
+                <div class="form-row">
+                    <div class="label-black">CATEGORY</div>
+                    <input id="businessCategory" class="text-input" type="text" placeholder="e.g., Clothing, Electronics, Food" />
+                </div>
 
-<div class="form-row">
-    <div class="label-black">SELLING PRICE</div>
-    <input id="productSell" class="text-input" 
-           type="text" 
-           placeholder="Selling price appears here" 
-           data-numeric="true"
-    />
-</div>
+                <div class="form-row">
+                    <div class="label-black">PRODUCT NAME</div>
+                    <input id="productName" class="text-input" type="text" placeholder="Product name appears here" />
+                </div>
 
-<label for="productDescription">Description:</label>
-<textarea id="productDescription" placeholder="A short, catchy description of the product..."></textarea>
+                <div class="form-row">
+                    <div class="label-black">QUANTITY</div>
+                    <input id="productQuantity" class="text-input" type="text" 
+                           placeholder="Number of products" data-numeric="true" />
+                </div>
 
-<label for="productDetails">Details / Specs:</label>
-<textarea id="productDetails" placeholder="Detailed specifications, ingredients, or features..."></textarea>
-                <div class="thumb-and-link">
-                    <div id="newThumb" class="thumb-preview small">Thumbnail appears</div>
-                    <div class="link-column">
-                        <input id="driveLink" class="text-input" type="text" placeholder="Paste your google Drive Link" />
-                        <button id="previewBtn" class="btn-black small">Preview</button>
-                        <button id="saveLinkBtn" class="btn-black small">Save Link</button>
-                    </div>
-                </div>
+                <div class="form-row">
+                    <div class="label-black">BUYING PRICE</div>
+                    <input id="productBuy" class="text-input" type="text" 
+                           placeholder="Buying price" data-numeric="true" />
+                </div>
 
-                <div class="add-row">
-                    <button id="openGalleryBtn" class="btn-black big">Open Link Gallery</button>
-                    <button id="addProductBtn" class="btn-black big">Add product</button>
-                </div>
-            </section>
-        </div>
+                <div class="form-row">
+                    <div class="label-black">SELLING PRICE</div>
+                    <input id="productSell" class="text-input" type="text" 
+                           placeholder="Selling price" data-numeric="true" />
+                </div>
 
-        <dialog id="linkGalleryDialog">
-            <div class="gallery-header">
-                <h2>Link Gallery</h2>
-                <button id="closeGalleryBtn" class="btn-black small">Close</button>
-            </div>
-            <section id="galleryContainer" class="products-area"></section>
-        </dialog>
+                <label for="productDescription">Description:</label>
+                <textarea id="productDescription" placeholder="A short, catchy description..."></textarea>
 
-    <dialog id="updateDialog" class="modal">
-    <div class="modal-body">
-        <button id="closeUpdateDialogBtn" class="close-btn">X</button> 
-        <p class="product-title">Product: <strong id="updateProductName"></strong></p>
-        
-        <div class="input-group">
-            <label for="sellQuantity">📉 Units Sold (Decrease Stock):</label>
-            <input 
-                type="text" 
-                id="sellQuantity" 
-                min="0" 
-                value="0" 
-                placeholder="Enter quantity sold"
-                class="input-field"
-                data-numeric="true" >
-        </div>
-        
-        <div class="input-group">
-            <label for="restockQuantity">📦 Units Restocked (Increase Stock):</label>
-            <input 
-                type="text" 
-                id="restockQuantity" 
-                min="0" 
-                value="0" 
-                placeholder="Enter quantity restocked"
-                class="input-field"
-                data-numeric="true" >
-        </div>
-        
-        <button id="executeUpdateButton" class="btn btn-primary">
-            Execute Stock Update
-        </button>
-        
-    </div>
-</dialog>
-        
-       
+                <label for="productDetails">Details / Specs:</label>
+                <textarea id="productDetails" placeholder="Detailed specs, features, or ingredients..."></textarea>
 
-        <script>
-            // Keys for Local Storage
-            const LAST_BUSINESS_KEY = 'lastBusinessName';
-            const LAST_CATEGORY_KEY = 'lastCategory';
+                <div class="thumb-and-link">
+                    <div id="newThumb" class="thumb-preview small">Thumbnail appears</div>
+                    <div class="link-column">
+                        <input id="driveLink" class="text-input" type="text" placeholder="Paste Google Drive Link" />
+                        <button id="previewBtn" class="btn-black small">Preview</button>
+                        <button id="saveLinkBtn" class="btn-black small">Save Link</button>
+                    </div>
+                </div>
 
-            // --- 1. Load Last Used Values on Page Load ---
-            document.addEventListener('DOMContentLoaded', () => {
-                const businessInput = document.getElementById('businessName');
-                const categoryInput = document.getElementById('businessCategory');
-                const addProductBtn = document.getElementById('addProductBtn');
+                <div class="add-row">
+                    <button id="openGalleryBtn" class="btn-black big">Open Link Gallery</button>
+                    <button id="addProductBtn" class="btn-black big">Add Product</button>
+                </div>
+            </section>
+        </div>
 
-                // Attempt to load the last used values
-                const lastBusiness = localStorage.getItem(LAST_BUSINESS_KEY);
-                const lastCategory = localStorage.getItem(LAST_CATEGORY_KEY);
+        <!-- Link Gallery Dialog -->
+        <dialog id="linkGalleryDialog">
+            <div class="gallery-header">
+                <h2>Link Gallery</h2>
+                <button id="closeGalleryBtn" class="btn-black small">Close</button>
+            </div>
+            <section id="galleryContainer" class="products-area"></section>
+        </dialog>
 
-                // Set the input values if they exist in local storage
-                if (lastBusiness) {
-                    businessInput.value = lastBusiness;
-                }
+        <!-- Update Stock Dialog -->
+        <dialog id="updateDialog" class="modal">
+            <div class="modal-body">
+                <button id="closeUpdateDialogBtn" class="close-btn">X</button> 
+                <p class="product-title">Product: <strong id="updateProductName"></strong></p>
+                
+                <div class="input-group">
+                    <label for="sellQuantity">Units Sold (Decrease Stock):</label>
+                    <input type="text" id="sellQuantity" value="0" placeholder="Enter quantity sold"
+                           class="input-field" data-numeric="true">
+                </div>
+                
+                <div class="input-group">
+                    <label for="restockQuantity">Units Restocked (Increase Stock):</label>
+                    <input type="text" id="restockQuantity" value="0" placeholder="Enter quantity restocked"
+                           class="input-field" data-numeric="true">
+                </div>
+                
+                <button id="executeUpdateButton" class="btn btn-primary">
+                    Execute Stock Update
+                </button>
+            </div>
+        </dialog>
+    </main>
 
-                if (lastCategory) {
-                    categoryInput.value = lastCategory;
-                }
+    <!-- SECURITY + OWNER AUTO-FILL SCRIPT (MUST BE FIRST) -->
+    <script>
+        // Block direct access — must come from index.html with valid token
+        const ownerBusinessName = sessionStorage.getItem('ownerStudioAccess');
+        
+        if (!ownerBusinessName) {
+            alert("Access denied. Please enter through the main app.");
+            window.location.href = "index.html";
+        }
 
-                // --- 2. Save Last Used Values on Product Add ---
-                // Assuming the existing addProductBtn logic is in script.js and handles the product submission.
-                // We will add an event listener here that fires *after* successful submission (or as part of your existing submission logic in script.js)
-                
-                // NOTE: For this to work best, this saving logic should be placed *inside* your addProductBtn.addEventListener 
-                // in script.js, right after the product is successfully added, but before inputs are cleared.
-                
-                // For demonstration, we'll put a placeholder function here. 
-                // You must integrate this saving step into your main 'addProductBtn' logic in script.js:
-                
-                // ***************************************************************
-                // 🚨 ACTION REQUIRED: Integrate the following two lines into your 
-                // addProductBtn.addEventListener in script.js, right after 
-                // `fetchAndRenderProducts()` and before clearing inputs:
-                // localStorage.setItem(LAST_BUSINESS_KEY, businessName);
-                // localStorage.setItem(LAST_CATEGORY_KEY, category);
-                // ***************************************************************
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set page title
+            document.title = `${ownerBusinessName}'s Studio`;
+            document.getElementById('studioTitle').textContent = `${ownerBusinessName}'s Studio`;
 
-                
-                // --- End Last Used Values Logic ---
-            });
+            // Lock business name field
+            const businessInput = document.getElementById('businessName');
+            businessInput.value = ownerBusinessName;
+            businessInput.placeholder = ownerBusinessName;
 
+            // Clear token after use (security)
+            sessionStorage.removeItem('ownerStudioAccess');
+        });
+    </script>
 
-    // ... (Rest of your numeric formatting and toggle form logic remains below) ...
+    <!-- Number Formatting & Form Toggle -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const numericInputs = document.querySelectorAll('input[data-numeric="true"]');
 
-            document.addEventListener('DOMContentLoaded', () => {
-    // Select all inputs you want to format
-    const numericInputs = document.querySelectorAll('input[data-numeric="true"]');
+            const unformatNumber = (value) => value.replace(/,/g, '');
+            const formatNumber = (value) => {
+                const raw = unformatNumber(value);
+                let [integerPart, decimalPart] = raw.split('.');
+                integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                return decimalPart !== undefined ? `${integerPart}.${decimalPart}` : integerPart;
+            };
 
-    // Function to strip commas and return a pure number string
-    const unformatNumber = (value) => {
-        // Replace all commas with an empty string
-        return value.replace(/,/g, '');
-    };
+            numericInputs.forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const cursor = e.target.selectionStart;
+                    const oldLen = e.target.value.length;
+                    const formatted = formatNumber(e.target.value);
+                    e.target.value = formatted;
+                    const newLen = formatted.length;
+                    e.target.setSelectionRange(cursor + (newLen - oldLen), cursor + (newLen - oldLen));
+                });
+                input.addEventListener('blur', (e) => {
+                    e.target.value = formatNumber(e.target.value);
+                });
+            });
+        });
 
-    // Function to format the number with thousands separators (commas)
-    const formatNumber = (value) => {
-        // First, unformat to ensure only pure numeric value remains
-        const rawValue = unformatNumber(value); 
-        
-        // Ensure the value is treated as a string for regex
-        let [integerPart, decimalPart] = rawValue.split('.');
-        
-        // Add commas to the integer part
-        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleBtn = document.getElementById('toggleFormBtn');
+            const inputContainer = document.getElementById('inputContainer');
+            const content = inputContainer.querySelector('.product-panel.add-panel');
 
-        // Recombine integer and decimal parts
-        if (decimalPart !== undefined) {
-            return `${integerPart}.${decimalPart}`;
-        }
-        return integerPart;
-    };
+            inputContainer.style.maxHeight = '0';
+            inputContainer.style.opacity = '0';
+            inputContainer.style.overflow = 'hidden';
+            inputContainer.style.transition = 'max-height 0.6s ease, opacity 0.4s ease';
+            inputContainer.style.display = 'block';
 
-    numericInputs.forEach(input => {
-        // 1. Format on input (while user is typing)
-        input.addEventListener('input', (event) => {
-            const cursorStart = event.target.selectionStart;
-            const originalLength = event.target.value.length;
+            toggleBtn.addEventListener('click', () => {
+                if (inputContainer.style.maxHeight === '0px' || !inputContainer.style.maxHeight) {
+                    inputContainer.style.maxHeight = (content.scrollHeight + 60) + 'px';
+                    inputContainer.style.opacity = '1';
+                    toggleBtn.textContent = 'Toggle Input Form (Hide)';
+                } else {
+                    inputContainer.style.maxHeight = '0';
+                    inputContainer.style.opacity = '0';
+                    toggleBtn.textContent = 'Toggle Input Form (Show)';
+                }
+            });
+        });
+    </script>
 
-            const unformatted = unformatNumber(event.target.value);
-            const formatted = formatNumber(unformatted);
-            
-            event.target.value = formatted;
-
-            // Maintain cursor position after formatting
-            const newLength = event.target.value.length;
-            const newCursor = cursorStart + (newLength - originalLength);
-            event.target.setSelectionRange(newCursor, newCursor);
-        });
-
-        // 2. Format on blur (when user clicks away)
-        input.addEventListener('blur', (event) => {
-            event.target.value = formatNumber(event.target.value);
-        });
-        
-        // 3. Optional: Unformat before form submission (if required)
-        // If you are submitting the form, you must unformat the value 
-        // back to a standard number (no commas) before sending it to the server.
-    });
-});
-    document.addEventListener('DOMContentLoaded', () => {
-        const toggleBtn = document.getElementById('toggleFormBtn');
-        const inputContainer = document.getElementById('inputContainer');
-        const content = inputContainer.querySelector('.product-panel.add-panel');
-        
-        // 1. Set initial state for smooth toggle (Hidden by default)
-        // inputContainer must be styled with overflow: hidden; and max-height: 0;
-        inputContainer.style.maxHeight = '0';
-        inputContainer.style.opacity = '0';
-        // Ensure it's not display: none, or transition won't work
-        inputContainer.style.display = 'block'; 
-
-        // Set initial button text to 'Show'
-        toggleBtn.textContent = 'Toggle Input Form (Show)';
-
-        toggleBtn.addEventListener('click', () => {
-            // Check if the container is visually hidden (max-height is 0)
-            const isHidden = inputContainer.style.maxHeight === '0px';
-
-            if (isHidden) {
-                // SHOW: Temporarily set max-height to its content height (plus a buffer)
-                // This forces the transition from 0 to the actual height.
-                const scrollHeight = content.scrollHeight; 
-                inputContainer.style.maxHeight = scrollHeight + 40 + 'px'; // + buffer for padding/margin
-                inputContainer.style.opacity = '1';
-                toggleBtn.textContent = 'Toggle Input Form (Hide)';
-
-            } else {
-                // HIDE: First set max-height to its current scrollHeight, 
-                // then set it to 0 after a tiny delay. This ensures the transition works.
-                // We also set the max-height to 0 directly, as it's the target.
-                inputContainer.style.maxHeight = '0';
-                inputContainer.style.opacity = '0';
-                toggleBtn.textContent = 'Toggle Input Form (Show)';
-            }
-        });
-    });
-</script>
-
-
-
-        <script src="script.js" defer></script>
-
-    </main>
+    <script src="script.js" defer></script>
 </body>
 </html>

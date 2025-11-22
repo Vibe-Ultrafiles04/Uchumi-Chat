@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyaLhqJDnEFoUymQ8juFc8fagpS1rYtzL_jn9fQACnyGcdfESZn6Sb6pO8nDpoMp_I_IA/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwsEgyi_2kmiXxTObZdUsMfvfoSueVnIJYFgB-xrGXj3w2azmRJrUvJmGalNlseTwPJ/exec"; // <- REPLACE THIS
 
 /// New Gallery DOM refs
 const CURRENCY_SYMBOL = "KES";
@@ -1000,23 +1000,48 @@ function removeLinkFromGallery(index) {
         renderGallery(); // Re-render the gallery
     }
 }
+// =============================================
+// MAIN PAGE LOAD — ONE SINGLE PLACE (FIXED)
+// =============================================
 document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".product-group-wrapper").forEach(row => {
-        row.addEventListener("touchstart", () => {
-            row.style.scrollBehavior = "auto";
-        });
-        row.addEventListener("touchend", () => {
-            row.style.scrollBehavior = "smooth";
-        });
-    });
-});
 
-// initial load
-fetchAndRenderProducts();
+    // 1. AUTO-FILL BUSINESS NAME FROM setup.html (THIS IS WHAT YOU WANTED!)
+    const savedBusinessName = localStorage.getItem('ownerBusinessName');
+    if (savedBusinessName) {
+        // Fill the "Add Product" business name field
+        if (businessNameInput) {
+            businessNameInput.value = savedBusinessName;
+            businessNameInput.disabled = true;
+            businessNameInput.title = "Business name is permanently linked to this device";
+        }
 
-// *** NEW EVENT LISTENER: Triggers the filter when the input changes ***
-if (businessFilterInput) {
-    businessFilterInput.addEventListener('input', (e) => {
-        applyBusinessFilter(e.target.value);
+        // Fill and lock the top filter input
+        if (businessFilterInput) {
+            businessFilterInput.value = savedBusinessName;
+            businessFilterInput.placeholder = savedBusinessName;
+            businessFilterInput.readOnly = true; // Prevents accidental change
+        }
+
+        // Auto-filter so only YOUR business products show up immediately
+        applyBusinessFilter(savedBusinessName);
+    }
+
+    // 2. Run your existing initialization (keeps the disable logic consistent)
+    initializeBusinessNameInput?.();
+
+    // 3. Smooth touch scrolling for product rows
+    document.querySelectorAll(".product-group-wrapper").forEach(row => {
+        row.addEventListener("touchstart", () => row.style.scrollBehavior = "auto");
+        row.addEventListener("touchend", () => row.style.scrollBehavior = "smooth");
     });
-}
+
+    // 4. Live filter as user types (your existing code)
+    if (businessFilterInput) {
+        businessFilterInput.addEventListener('input', (e) => {
+            applyBusinessFilter(e.target.value);
+        });
+    }
+
+    // 5. Finally load all products
+    fetchAndRenderProducts();
+});
