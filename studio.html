@@ -130,29 +130,44 @@
     </main>
 
     <!-- SECURITY + OWNER AUTO-FILL SCRIPT (MUST BE FIRST) -->
-    <script>
-        // Block direct access — must come from index.html with valid token
-        const ownerBusinessName = sessionStorage.getItem('ownerStudioAccess');
-        
-        if (!ownerBusinessName) {
-            alert("Access denied. Please enter through the main app.");
-            window.location.href = "index.html";
-        }
+   <script>
+    // === STUDIO ACCESS CONTROL & BUSINESS NAME SETUP ===
+    // Try to get business name from sessionStorage first (set when entering from index.html)
+    let ownerBusinessName = sessionStorage.getItem('ownerStudioAccess');
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // Set page title
-            document.title = `${ownerBusinessName}'s Studio`;
-            document.getElementById('studioTitle').textContent = `${ownerBusinessName}'s Studio`;
+    // Fallback: if user refreshed the page, try localStorage (set below as backup)
+    if (!ownerBusinessName) {
+        ownerBusinessName = localStorage.getItem('ownerBusinessName');
+    }
 
-            // Lock business name field
-            const businessInput = document.getElementById('businessName');
+    // If still no business name → block access
+    if (!ownerBusinessName) {
+        alert("Access denied. Please enter Studio from the main gallery.");
+        window.location.href = "index.html";
+        // Note: the rest of the script won't run
+    }
+
+    // === EXPOSE BUSINESS NAME TO script.js (critical!) ===
+    window.BUSINESS_NAME = ownerBusinessName.trim();
+
+    // === ALSO SAVE TO localStorage SO IT SURVIVES REFRESH ===
+    localStorage.setItem('ownerBusinessName', ownerBusinessName.trim());
+
+    // === DOM READY: Update title and form ===
+    document.addEventListener('DOMContentLoaded', () => {
+        document.title = `${ownerBusinessName}'s Studio`;
+        document.getElementById('studioTitle').textContent = `${ownerBusinessName}'s Studio`;
+
+        const businessInput = document.getElementById('businessName');
+        if (businessInput) {
             businessInput.value = ownerBusinessName;
             businessInput.placeholder = ownerBusinessName;
+        }
 
-            // Clear token after use (security)
-            sessionStorage.removeItem('ownerStudioAccess');
-        });
-    </script>
+        // Clean up session token (one-time use)
+        sessionStorage.removeItem('ownerStudioAccess');
+    });
+</script>
 
     <!-- Number Formatting & Form Toggle -->
     <script>

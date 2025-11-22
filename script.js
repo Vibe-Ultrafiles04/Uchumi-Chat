@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbySbNNp_HF3EHO1NdfiJM77bV3Vqa8K2lFLMpXq_5Re_a2oVQBlNpn1ihtF0b7mdCO1hw/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyzR8pXx1W3Ia4eGHNr9fu1EVsNC_ALbUXu5_CU39hHJpGs_4P1XoPc-b6KnbRUi-pk/exec"; // <- REPLACE THIS
 
 /// New Gallery DOM refs
 const CURRENCY_SYMBOL = "KES";
@@ -905,26 +905,43 @@ function applyBusinessFilter(filterTerm) {
         noResultsHint.style.display = 'none';
     }
 }
-// SECURE VERSION: Only fetches and shows the OWNER'S products
+// FINAL & PERFECT VERSION FOR STUDIO.HTML (script.js)
 function fetchAndRenderProducts() {
-    const ownerBusiness = localStorage.getItem('ownerBusinessName');
-    
+    // Get business name from sessionStorage (set when entering from index.html)
+    // Fallback to localStorage (in case user refreshes studio.html directly)
+    let ownerBusiness = sessionStorage.getItem('ownerStudioAccess') || 
+                        localStorage.getItem('ownerBusinessName');
+
     if (!ownerBusiness) {
-        productsContainer.innerHTML = '<div class="hint">No business profile found. Please set up your business first.</div>';
+        productsContainer.innerHTML = `
+            <div class="hint" style="color:red">
+                Access denied or business name missing.<br>
+                Please enter Studio from the main gallery.
+            </div>`;
+        console.error("No business name found for studio access");
         return;
     }
 
     productsContainer.innerHTML = '<div class="hint">Loading your products...</div>';
 
     const callbackName = 'handleInventoryData';
-    const url = `${WEB_APP_URL}?action=list&callback=${callbackName}&business=${encodeURIComponent(ownerBusiness)}`;
+    let url = `${WEB_APP_URL}?action=list&callback=${callbackName}`;
+
+    // Always send the business name in Studio mode — this is safe and required
+    url += `&business=${encodeURIComponent(ownerBusiness.trim())}`;
 
     const script = document.createElement('script');
     script.src = url;
 
     script.onload = () => setTimeout(() => script.remove(), 100);
+
     script.onerror = () => {
-        productsContainer.innerHTML = '<div class="hint" style="color:red">Failed to load your products. Check internet connection.</div>';
+        productsContainer.innerHTML = `
+            <div class="hint" style="color:red">
+                Failed to load products.<br>
+                Check internet or try again.
+            </div>`;
+        console.error("JSONP load failed:", url);
         script.remove();
     };
 
