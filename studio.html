@@ -25,15 +25,15 @@
 
         <button id="toggleFormBtn" class="btn-toggle">Toggle Input Form (Show)</button>
 <div class="filter-bar-container">
-    <label for="businessFilterInput">
-        <span class="icon">🔍</span> Filter Products by Business Name:
-    </label>
-    <input 
-        type="text" 
-        id="businessFilterInput" 
-        placeholder="Your Business Name "
-        class="text-input"
-    >
+    <label for="businessFilterInput">
+        <span class="icon">🔍</span> Filter Products by Business Name:
+    </label>
+    <input 
+        type="text" 
+        id="businessFilterInput" 
+        placeholder="Your Business Name "
+        class="text-input"
+    >
 </div>
         <section id="productsContainer" class="products-area">
             <div class="hint">OTHER PRODUCT CONTAINERS WILL APPEAR HERE</div>
@@ -42,16 +42,16 @@
         <div id="inputContainer" style="display: none;">
             <section class="product-panel add-panel">
                 
-                <div class="form-row">
-                    <div class="label-black">BUSINESS NAME</div>
-                    <input id="businessName" class="text-input" type="text" placeholder="e.g., Jane's Boutique" />
-                </div>
-                
-                <div class="form-row">
-                    <div class="label-black">CATEGORY</div>
-                    <input id="businessCategory" class="text-input" type="text" placeholder="e.g., Clothing, Electronics, Food" />
-                </div>
-                <div class="form-row">
+                <div class="form-row">
+                    <div class="label-black">BUSINESS NAME</div>
+                    <input id="businessName" class="text-input" type="text" placeholder="e.g., Jane's Boutique" />
+                </div>
+                
+                <div class="form-row">
+                    <div class="label-black">CATEGORY</div>
+                    <input id="businessCategory" class="text-input" type="text" placeholder="e.g., Clothing, Electronics, Food" />
+                </div>
+                <div class="form-row">
                     <div class="label-black">PRODUCT name</div>
                     <input id="productName" class="text-input" type="text" placeholder="Product name appears here" />
                 </div>
@@ -149,7 +149,8 @@
     </div>
 </dialog>
         <script>
-            // ✅ Register the Service Worker
+            // ✅ Register the Service Worker (PWA logic remains)
+            // ... (PWA code here) ...
             if ("serviceWorker" in navigator) {
                 navigator.serviceWorker
                     .register("service-worker.js")
@@ -210,6 +211,53 @@
        
 
         <script>
+            // Keys for Local Storage
+            const LAST_BUSINESS_KEY = 'lastBusinessName';
+            const LAST_CATEGORY_KEY = 'lastCategory';
+
+            // --- 1. Load Last Used Values on Page Load ---
+            document.addEventListener('DOMContentLoaded', () => {
+                const businessInput = document.getElementById('businessName');
+                const categoryInput = document.getElementById('businessCategory');
+                const addProductBtn = document.getElementById('addProductBtn');
+
+                // Attempt to load the last used values
+                const lastBusiness = localStorage.getItem(LAST_BUSINESS_KEY);
+                const lastCategory = localStorage.getItem(LAST_CATEGORY_KEY);
+
+                // Set the input values if they exist in local storage
+                if (lastBusiness) {
+                    businessInput.value = lastBusiness;
+                }
+
+                if (lastCategory) {
+                    categoryInput.value = lastCategory;
+                }
+
+                // --- 2. Save Last Used Values on Product Add ---
+                // Assuming the existing addProductBtn logic is in script.js and handles the product submission.
+                // We will add an event listener here that fires *after* successful submission (or as part of your existing submission logic in script.js)
+                
+                // NOTE: For this to work best, this saving logic should be placed *inside* your addProductBtn.addEventListener 
+                // in script.js, right after the product is successfully added, but before inputs are cleared.
+                
+                // For demonstration, we'll put a placeholder function here. 
+                // You must integrate this saving step into your main 'addProductBtn' logic in script.js:
+                
+                // ***************************************************************
+                // 🚨 ACTION REQUIRED: Integrate the following two lines into your 
+                // addProductBtn.addEventListener in script.js, right after 
+                // `fetchAndRenderProducts()` and before clearing inputs:
+                // localStorage.setItem(LAST_BUSINESS_KEY, businessName);
+                // localStorage.setItem(LAST_CATEGORY_KEY, category);
+                // ***************************************************************
+
+                
+                // --- End Last Used Values Logic ---
+            });
+
+
+    // ... (Rest of your numeric formatting and toggle form logic remains below) ...
 
             document.addEventListener('DOMContentLoaded', () => {
     // Select all inputs you want to format

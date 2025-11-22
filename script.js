@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOowu_ahdM6z9r-LGJN-zdOUn01jEsSo_sklYZ4HdKpvSoxy5kiQuXk80x_beQAuY/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyaLhqJDnEFoUymQ8juFc8fagpS1rYtzL_jn9fQACnyGcdfESZn6Sb6pO8nDpoMp_I_IA/exec"; // <- REPLACE THIS
 
 /// New Gallery DOM refs
 const CURRENCY_SYMBOL = "KES";
@@ -26,6 +26,8 @@ const productQuantityInput = document.getElementById("productQuantity");
 const productBuyInput = document.getElementById("productBuy");
 const productSellInput = document.getElementById("productSell");
 
+const DEVICE_ID_KEY = 'uniqueDeviceId';
+const OWNER_BUSINESS_KEY = 'ownerBusinessName';
 const STORAGE_KEY = 'savedProductLinks';
 
 // ----------------------------------------------------------------------
@@ -37,8 +39,43 @@ const sellQuantityInput = document.getElementById("sellQuantity");
 const restockQuantityInput = document.getElementById("restockQuantity");
 const executeUpdateButton = document.getElementById("executeUpdateButton");
 
+let DEVICE_ID = getOrCreateDeviceId();
+let OWNER_BUSINESS_NAME = localStorage.getItem(OWNER_BUSINESS_KEY);
 let currentProductData = {}; // Stores data of the product currently being updated
 // ----------------------------------------------------------------------
+
+
+function getOrCreateDeviceId() {
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if (!id) {
+        // Generate a new unique ID (similar to your generateUniqueId)
+        id = 'dev-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+        localStorage.setItem(DEVICE_ID_KEY, id);
+    }
+    console.log("Device ID:", id);
+    return id;
+}
+
+// Function to set the business name (called upon successful creation)
+function setOwnerBusinessName(name) {
+    OWNER_BUSINESS_NAME = name;
+    localStorage.setItem(OWNER_BUSINESS_KEY, name);
+    // Also, disable the businessNameInput after creation
+    businessNameInput.disabled = true; 
+    businessNameInput.title = "A business name is already registered to this device.";
+}
+
+// Function to check and disable the input on page load
+function initializeBusinessNameInput() {
+    if (OWNER_BUSINESS_NAME) {
+        businessNameInput.value = OWNER_BUSINESS_NAME;
+        businessNameInput.disabled = true;
+        businessNameInput.title = "A business name is already registered to this device. Clear storage to register a new one.";
+    } else {
+        businessNameInput.disabled = false;
+        businessNameInput.title = "";
+    }
+}
 
 // *** NEW FUNCTION: Unique ID Generator (Stays the same) ***
 function generateUniqueId() {
@@ -299,6 +336,8 @@ previewBtn.addEventListener("click", () => {
 // Helper function to create a single product card DOM element (MODIFIED to use 'id' consistently)
 // Helper function to create a single product card DOM element (MODIFIED to use 'id' consistently)
 // Helper function to create a single product card DOM element (MODIFIED to use 'id' consistently)
+// Assume DEVICE_ID is a globally defined variable holding the unique ID of the current device.
+
 function createProductCard(r) {
     // Data extraction (all extraction logic remains the same)
     const name = r.name || "PRODUCT DETAILS";
@@ -313,9 +352,15 @@ function createProductCard(r) {
     // The unique ID for the product
     const productId = r.id; 
     const rowId = r.rowId; 
-    const businessName = r.businessName; // NEW: Need business name for group delete
-    const categoryName = r.category;     // NEW: Need category name for edit/delete
+    const businessName = r.businessName;
+    const categoryName = r.category;    
 
+    // --- NEW: Extract Device Ownership ID and Check Authorization ---
+    const productOwnerId = r.businessOwnerId || ""; 
+    // Check if the current device is the creator (or if the ID is missing for legacy data)
+    const canEdit = productOwnerId === DEVICE_ID || !productOwnerId; 
+    // --- END NEW CHECK ---
+    
     // IMPORTANT: The app script should now return the original link under 'driveLink' 
     const productLink = r.driveLink || "";  
     // Use the unified helper to get the image URL for the card
@@ -374,18 +419,21 @@ function createProductCard(r) {
         </div>`;
     }
 
+    // --- MODIFIED PRICE STRUCTURE START ---
     info.innerHTML += `
         <div class="price-grid">
-            <div class="price-item">
+            <div class="price-item-combined">
                 <span class="label">Cost Price:</span>
                 <span class="value buy-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(buy)}</span>
             </div>
-            <div class="price-item">
+            <div class="price-item-combined">
                 <span class="label">Sell Price:</span>
                 <span class="value sell-price">${CURRENCY_SYMBOL}${formatNumberWithCommas(sell)}</span>
             </div>
         </div>
     `;
+    // --- MODIFIED PRICE STRUCTURE END ---
+    
     info.innerHTML += `
         <div class="profit-margin ${profitClass}">
             <span class="label">Est. Profit Margin:</span>
@@ -402,9 +450,16 @@ function createProductCard(r) {
     updateBtn.className = "btn-black update-product-btn";
     updateBtn.textContent = "Update Stock";
     
-    updateBtn.addEventListener("click", () => {
-        openUpdateDialog(r);
-    });
+    // 🔒 Conditional: Disable Update Stock button if not the creator
+    if (canEdit) {
+        updateBtn.addEventListener("click", () => {
+            openUpdateDialog(r);
+        });
+    } else {
+        updateBtn.disabled = true;
+        updateBtn.title = "Only the device that created this product can update its stock.";
+        updateBtn.style.opacity = '0.5';
+    }
     
     // --- MODIFIED DELETE BUTTON INTO ACTION MENU ---
     const actionMenuWrapper = document.createElement("div");
@@ -412,39 +467,48 @@ function createProductCard(r) {
 
     const menuBtn = document.createElement("button");
     menuBtn.className = "btn-red action-menu-btn"; 
-    menuBtn.textContent = "Actions ▼";
     
     const menu = document.createElement("div");
     menu.className = "delete-action-menu";
     menu.style.display = 'none'; // Initially hidden
-    menu.innerHTML = `
-        <button data-action="delete-product">🗑️ Delete This Product Card</button>
-        <button data-action="edit-category">✏️ Edit Category: ${escapeHtml(categoryName)}</button>
-        <button data-action="delete-business">🔥 Delete Whole Business: ${escapeHtml(businessName)}</button>
-    `;
     
-    // Toggle menu visibility
+    // 🔒 Conditional: Control menu content and button behavior
+    if (canEdit) {
+        menuBtn.textContent = "Actions ▼";
+        menu.innerHTML = `
+            <button data-action="delete-product">🗑️ Delete This Product Card</button>
+            <button data-action="edit-category">✏️ Edit Category: ${escapeHtml(categoryName)}</button>
+            <button data-action="delete-business">🔥 Delete Whole Business: ${escapeHtml(businessName)}</button>
+        `;
+    } else {
+        menuBtn.textContent = "View Info ⓘ";
+        menu.innerHTML = `<button data-action="none" disabled>🔒 Not Editable by this device</button>`;
+        menuBtn.style.opacity = '0.7'; // Visually indicate it's not the main action button
+    }
+
+
+    // Toggle menu visibility (applies to both editable and non-editable states)
     menuBtn.addEventListener("click", (e) => {
         e.stopPropagation(); // Stop click from propagating to the document
         menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
     });
     
-    // Handle menu item clicks
-    menu.addEventListener('click', (e) => {
-        const action = e.target.dataset.action;
-        if (action) {
-            menu.style.display = 'none'; // Hide menu after selection
-            if (action === "delete-product") {
-                deleteProduct(productId, name, card); 
-            } else if (action === "edit-category") {
-                // You need to implement this dialog/function separately
-                openEditCategoryDialog(businessName, categoryName, r);
-            } else if (action === "delete-business") {
-                // You need to implement this function separately
-                deleteBusiness(businessName, categoryName);
+    // Handle menu item clicks (only necessary if editable)
+    if (canEdit) {
+        menu.addEventListener('click', (e) => {
+            const action = e.target.dataset.action;
+            if (action) {
+                menu.style.display = 'none'; // Hide menu after selection
+                if (action === "delete-product") {
+                    deleteProduct(productId, name, card); 
+                } else if (action === "edit-category") {
+                    openEditCategoryDialog(businessName, categoryName, r);
+                } else if (action === "delete-business") {
+                    deleteBusiness(businessName, categoryName);
+                }
             }
-        }
-    });
+        });
+    }
 
     // Append menu elements
     actionMenuWrapper.appendChild(menuBtn);
@@ -589,82 +653,108 @@ if (executeUpdateButton) {
     });
 }
 
-// add product: collect fields -> POST to Web App (MODIFIED to include Business/Category/Description/Details)
 addProductBtn.addEventListener("click", async () => {
-    // 1. COLLECT ALL DATA FROM INPUTS FIRST
-    const businessName = businessNameInput.value.trim();
-    const category = businessCategoryInput.value.trim();
-    const name = productNameInput.value.trim();
+    // 1. COLLECT ALL DATA FROM INPUTS FIRST
+    const businessName = businessNameInput.value.trim();
+    const category = businessCategoryInput.value.trim();
+    const name = productNameInput.value.trim();
     // NEW: Collect Description and Details
     const description = productDescriptionInput.value.trim();
     const details = productDetailsInput.value.trim();
     
-   const quantity = parseInt(unformatNumber(productQuantityInput.value) || "0", 10);
-   const buy = parseFloat(unformatNumber(productBuyInput.value) || "0");
-    const sell = parseFloat(unformatNumber(productSellInput.value) || "0");
-    const link = driveLinkInput.value.trim();
-    const fileId = extractDriveId(link);
+    const quantity = parseInt(unformatNumber(productQuantityInput.value) || "0", 10);
+    const buy = parseFloat(unformatNumber(productBuyInput.value) || "0");
+    const sell = parseFloat(unformatNumber(productSellInput.value) || "0");
+    const link = driveLinkInput.value.trim();
+    const fileId = extractDriveId(link);
 
-    if (!businessName) { alert("Enter business name"); return; }
-    if (!category) { alert("Enter product category"); return; }
-    if (!name) { alert("Enter product name"); return; }
-    
-    // Check for a link that can be used for an image (either Drive or a direct URL)
-    if (!fileId && !isDirectImageUrl(link) && link.length > 0) {
-        alert("Link must be a Google Drive link or a direct image URL (try a link ending in .jpg, .png, etc.)");
-        return;
-    }
+    // --- VALIDATION/ENFORCEMENT START ---
 
-    // *** NEW: Generate Unique Product ID ***
-    const uniqueId = generateUniqueId();
+    // ⛔️ ENFORCEMENT CHECK: One business name per phone
+    if (OWNER_BUSINESS_NAME && businessName !== OWNER_BUSINESS_NAME) {
+        alert(`❌ Error: This device is already registered to the business "${OWNER_BUSINESS_NAME}". You cannot create products for a different business.`);
+        return;
+    }
+    
+    if (!businessName) { alert("Enter business name"); return; }
+    if (!category) { alert("Enter product category"); return; }
+    if (!name) { alert("Enter product name"); return; }
+    
+    // Check for a link that can be used for an image (either Drive or a direct URL)
+    if (!fileId && !isDirectImageUrl(link) && link.length > 0) {
+        alert("Link must be a Google Drive link or a direct image URL (try a link ending in .jpg, .png, etc.)");
+        return;
+    }
 
-    // 2. CREATE THE PAYLOAD OBJECT
-    const payload = {
-        action: "addProduct", // Optional: Added an action for clarity on the backend
-        id: uniqueId, // *** NEW: Unique ID ***
-        timestamp: new Date().toISOString(),
-        businessName: businessName, // *** NEW FIELD ***
-        category: category,         // *** NEW FIELD ***
-        description: description,    // *** NEW FIELD ***
-        details: details,            // *** NEW FIELD ***
-        name, quantity, buy, sell,
-        driveLink: link, // Holds the Drive link OR the generic URL
-        driveFileId: fileId || "" // Only holds an ID if it's a Drive link
-    };
+    // --- VALIDATION/ENFORCEMENT END ---
 
-    try {
-        const res = await fetch(WEB_APP_URL, {
-            method: "POST",
-            mode: "cors",
-            headers: {"Content-Type":"text/plain"}, 
-            body: JSON.stringify(payload)
-        });
-        const json = await res.json();
-        if (json && json.result === "success") {
-            
-            // Re-fetch products to ensure the new product has a valid rowId for future updates
-            fetchAndRenderProducts(); 
+    // *** NEW: Generate Unique Product ID ***
+    const uniqueId = generateUniqueId();
 
-            // 4. CLEAR INPUTS LAST
-            // Do NOT clear businessNameInput/businessCategoryInput if the user is likely to add another item in the same group.
-            productNameInput.value = ""; 
-            productQuantityInput.value = "";
-            productBuyInput.value = "";
-            productSellInput.value = "";
+    // 2. CREATE THE PAYLOAD OBJECT
+    const payload = {
+        action: "addProduct",
+        id: uniqueId, 
+        timestamp: new Date().toISOString(),
+        businessName: businessName, 
+        category: category,        
+        description: description,    
+        details: details,            
+        name, quantity, buy, sell,
+        driveLink: link,
+        driveFileId: fileId || "",
+        // 🔑 CRITICAL NEW FIELD: Include the unique device ID for ownership tracking
+        deviceId: DEVICE_ID 
+    };
+
+    try {
+        const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: {"Content-Type":"text/plain"}, 
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json && json.result === "success") {
+            
+            // 🔒 CRITICAL STEP: Register the business name to this device upon first successful creation
+            if (!OWNER_BUSINESS_NAME) {
+                setOwnerBusinessName(businessName); // This updates the global variable and Local Storage
+                // 🛑 REMOVED: alert(`✅ Success! Business "${businessName}" is now registered to this device (${DEVICE_ID}).`);
+                
+            } else {
+                // 🛑 REMOVED: alert(`✅ Product "${name}" successfully added to "${businessName}".`);
+            }
+
+            // --- ADDED: Save Business and Category to Local Storage (for input persistence) ---
+            // This is the logic you requested previously, placed here where the data is confirmed to be used.
+            localStorage.setItem('lastBusinessName', businessName);
+            localStorage.setItem('lastCategory', category);
+            // -----------------------------------------------------------------------------------
+
+            // Re-fetch products to ensure the new product has a valid rowId for future updates
+            fetchAndRenderProducts(); 
+
+            // 4. CLEAR INPUTS LAST
+            // Do NOT clear businessNameInput/businessCategoryInput if the user is likely to add another item in the same group.
+            productNameInput.value = ""; 
+            productQuantityInput.value = "";
+            productBuyInput.value = "";
+            productSellInput.value = "";
             // NEW: Clear Description and Details inputs
             productDescriptionInput.value = "";
             productDetailsInput.value = "";
             
-            driveLinkInput.value = "";
-            newThumb.innerHTML = "Thumbnail appears";
+            driveLinkInput.value = "";
+            newThumb.innerHTML = "Thumbnail appears";
 
-        } else {
-            alert("Failed to add product: " + (json && json.message ? json.message : res.status));
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Error sending to server: " + err.message);
-    }
+        } else {
+            alert("Failed to add product: " + (json && json.message ? json.message : res.status));
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error sending to server: " + err.message);
+    }
 });
 // ** 1. Global Callback Function (MODIFIED for Grouping) **
 function handleInventoryData(json) {
