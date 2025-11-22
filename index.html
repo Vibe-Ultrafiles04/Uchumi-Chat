@@ -86,7 +86,7 @@
         /* My Studio Button */
         #myStudioBtn {
             display: none;
-            margin: 40px auto 0;
+            margin: 5px auto 0;
             padding: 14px 32px;
             background: #3b6dc6;
             color: white;
@@ -119,8 +119,10 @@
 
     <!-- Main Content -->
     <main class="page">
-        <h1>Current Stock</h1>
-
+         <!-- My Studio Button (Only visible to owner) -->
+    <button id="myStudioBtn">My Studio</button>
+        <h1>My Organisation.Com  #JITUME</h1>
+         
         <div class="filter-bar">
             <label for="businessFilterInput">Filter by Business:</label>
             <input type="text" id="businessFilterInput" placeholder="Type the business name...">
@@ -131,8 +133,7 @@
         </section>
     </main>
 
-    <!-- My Studio Button (Only visible to owner) -->
-    <button id="myStudioBtn">My Studio</button>
+   
 
     <!-- Service Worker & PWA Install Button -->
     <script>
