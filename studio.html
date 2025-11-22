@@ -148,66 +148,7 @@
         
     </div>
 </dialog>
-        <script>
-            // ✅ Register the Service Worker (PWA logic remains)
-            // ... (PWA code here) ...
-            if ("serviceWorker" in navigator) {
-                navigator.serviceWorker
-                    .register("service-worker.js")
-                    .then(() => console.log("✅ Service Worker registered successfully."))
-                    .catch((err) => console.error("❌ Service Worker registration failed:", err));
-            }
-
-            // ✅ Handle PWA Install Prompt
-            let deferredPrompt;
-            const installBtn = document.createElement("button");
-            installBtn.textContent = "📲 Install App";
-            installBtn.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: #3b6dc6;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 10px;
-                font-size: 16px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                cursor: pointer;
-                display: none;
-                z-index: 9999;
-            `;
-            document.body.appendChild(installBtn);
-
-            window.addEventListener("beforeinstallprompt", (e) => {
-                // Prevent the mini-infobar from appearing
-                e.preventDefault();
-                deferredPrompt = e;
-
-                // Show the install button
-                installBtn.style.display = "block";
-                console.log("📦 PWA install prompt ready.");
-
-                installBtn.addEventListener("click", async () => {
-                    installBtn.style.display = "none";
-                    deferredPrompt.prompt(); // Show the native prompt
-
-                    const {
-                        outcome
-                    } = await deferredPrompt.userChoice;
-                    console.log(`User response to install: ${outcome}`);
-
-                    deferredPrompt = null;
-                });
-            });
-
-            // Optional: Notify if app is already installed
-            window.addEventListener("appinstalled", () => {
-                console.log("✅ App installed successfully!");
-                installBtn.remove();
-            });
-        </script>
-
+        
        
 
         <script>
