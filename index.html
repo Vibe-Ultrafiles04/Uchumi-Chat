@@ -178,50 +178,73 @@
         }
     </script>
 
-    <!-- Business Profile & My Studio Access Logic -->
-    <script>
-        const OWNER_BUSINESS_KEY = 'ownerBusinessName';
-        const profileHeader = document.getElementById('profileHeader');
-        const ownerBusinessNameDisplay = document.getElementById('ownerBusinessNameDisplay');
-        const editProfileBtn = document.getElementById('editProfileBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const myStudioBtn = document.getElementById('myStudioBtn');
+    <!-- Business Profile & One-Click "Start New Business" Button -->
+<script>
+    const DEVICE_ID_KEY = 'uniqueDeviceId';
+    const OWNER_BUSINESS_KEY = 'ownerBusinessName';
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const ownerBusinessName = localStorage.getItem(OWNER_BUSINESS_KEY);
+    const profileHeader = document.getElementById('profileHeader');
+    const ownerBusinessNameDisplay = document.getElementById('ownerBusinessNameDisplay');
+    const editProfileBtn = document.getElementById('editProfileBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const myStudioBtn = document.getElementById('myStudioBtn');
 
-            if (ownerBusinessName) {
-                // Show profile
-                ownerBusinessNameDisplay.textContent = `Your Active Profile: ${ownerBusinessName}`;
-                editProfileBtn.textContent = "Edit Profile";
-                editProfileBtn.onclick = () => location.href = 'setup.html?mode=edit';
+    document.addEventListener('DOMContentLoaded', () => {
+        const ownerBusinessName = localStorage.getItem(OWNER_BUSINESS_KEY);
 
-                // Show logout
-                logoutBtn.style.display = "inline-block";
-                logoutBtn.onclick = () => {
-                    if (confirm("Leave this business profile?")) {
-                        localStorage.removeItem(OWNER_BUSINESS_KEY);
-                        location.reload();
-                    }
-                };
-
-                // Show My Studio button
-                myStudioBtn.style.display = "block";
-                myStudioBtn.onclick = () => {
-                    sessionStorage.setItem('ownerStudioAccess', ownerBusinessName);
-                    location.href = "studio.html";
-                };
-
-            } else {
-                ownerBusinessNameDisplay.textContent = "No Business Profile Set Up.";
-                editProfileBtn.textContent = "Create Profile Now";
-                editProfileBtn.onclick = () => location.href = 'setup.html';
-                logoutBtn.style.display = "none";
-            }
-
+        if (ownerBusinessName) {
+            // You're logged in as a business owner
+            ownerBusinessNameDisplay.textContent = `Active: ${ownerBusinessName}`;
+            profileHeader.style.background = "#e3f2fd";
             profileHeader.style.display = 'block';
-        });
-    </script>
+
+            // Edit Profile Button
+            editProfileBtn.textContent = "Edit Profile";
+            editProfileBtn.onclick = () => location.href = 'setup.html?mode=edit';
+
+            // ONE BUTTON TO RULE THEM ALL: "Start New Business"
+            logoutBtn.textContent = "Start New Business";
+            logoutBtn.style.cssText = `
+                background: #ff5252 !important;
+                color: white15px;
+                font-weight: bold;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+            `;
+            logoutBtn.onclick = () => {
+                if (confirm("Start a completely new business?\n\nThis will delete your current profile and device link.\nYou’ll be able to create a fresh one.")) {
+                    // FULL CLEAN SLATE
+                    localStorage.removeItem(OWNER_BUSINESS_KEY);
+                    localStorage.removeItem(DEVICE_ID_KEY);
+                    sessionStorage.clear();
+
+                    alert("All clear! Taking you to setup a new business...");
+                    location.href = "setup.html";
+                }
+            };
+
+            // My Studio Button
+            myStudioBtn.style.display = "block";
+            myStudioBtn.textContent = "My Studio";
+            myStudioBtn.onclick = () => {
+                sessionStorage.setItem('ownerStudioAccess', ownerBusinessName);
+                location.href = "studio.html";
+            };
+
+        } else {
+            // No profile yet — first-time user
+            profileHeader.style.display = 'block';
+            ownerBusinessNameDisplay.textContent = "No business yet";
+            editProfileBtn.textContent = "Create Your Business";
+            editProfileBtn.onclick = () => location.href = 'setup.html';
+
+            logoutBtn.style.display = "none";
+            myStudioBtn.style.display = "none";
+        }
+    });
+</script>
 
     <script src="index.js" defer></script>
 </body>

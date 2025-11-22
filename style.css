@@ -22,7 +22,11 @@ body {
   color: #222;
   padding: 24px;
 }
-
+#logoutBtn {
+    background: #ff5252 !important;
+    color: white !important;
+    font-weight: bold;
+}
 .page {
   display: flex;
   flex-wrap: wrap;
