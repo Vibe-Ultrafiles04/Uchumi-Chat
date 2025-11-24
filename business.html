@@ -5,70 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Business Products</title>
     <link rel="stylesheet" href="style.css">
-
     <style>
-        body { 
-            margin: 0; 
-            padding: 0 0 80px; 
-            background: #f9f9f9; 
-            font-family: "Segoe UI", Roboto, Arial, sans-serif; 
-            overflow-x: hidden;
-        }
-
-        /* ====== SMOOTH PAGE TRANSITIONS ====== */
-        body {
-            animation: slideInFromRight 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-        }
-
-        /* Exit animation (applied from main page) */
-        body.page-exit {
-            animation: slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-        }
-
-        @keyframes slideInFromRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to   { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes slideOutToLeft {
-            from { transform: translateX(0); opacity: 1; }
-            to   { transform: translateX(-100%); opacity: 0; }
-        }
-        /* ===================================== */
+        body { margin: 0; padding: 0 0 80px; background: #f9f9f9; font-family: "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
+        body { animation: slideInFromRight 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+        body.page-exit { animation: slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+        @keyframes slideInFromRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutToLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-100%); opacity: 0; } }
 
         .back-btn {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 1000;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            border: none;
-            padding: 12px 18px;
-            border-radius: 50px;
-            font-size: 16px;
-            cursor: pointer;
+            position: fixed; top: 15px; left: 15px; z-index: 1000;
+            background: rgba(0,0,0,0.8); color: white; border: none;
+            padding: 12px 18px; border-radius: 50px; font-size: 16px; cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .back-btn:hover { background: #000; }
 
         .business-header {
-            text-align: center;
-            padding: 80px 20px 40px;
+            text-align: center; padding: 80px 20px 50px;
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('') center/cover no-repeat;
-            color: white;
-            margin-bottom: 30px;
+            color: white; margin-bottom: 30px;
         }
-        .business-header h1 { font-size: 2.8rem; margin: 0 0 10px 0; }
-        .business-header .categories { font-size: 1.2rem; opacity: 0.9; }
+        .business-header h1 { font-size: 2.8rem; margin: 0 0 8px 0; }
+        .business-header .categories { font-size: 1.2rem; opacity: 0.9; margin-bottom: 12px; }
+
+        .business-description {
+            font-size: 1.15rem; line-height: 1.6; max-width: 800px;
+            margin: 15px auto 25px; opacity: 0.95; font-weight: 300; padding: 0 20px;
+        }
+        @media (max-width: 768px) { .business-description { font-size: 1rem; } }
+
+        .subscribe-section {
+            margin: 20px auto; display: flex; align-items: center; justify-content: center;
+            gap: 15px; flex-wrap: wrap;
+        }
+        .subscribe-count { font-size: 1.1rem; opacity: 0.9; }
+        .subscribe-btn {
+            background: #ff4081; color: white; border: none; padding: 10px 24px;
+            border-radius: 50px; font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; box-shadow: 0 4px 15px rgba(255,64,129,0.4);
+        }
+        .subscribe-btn:hover { background: #f50057; transform: translateY(-2px); }
+        .subscribe-btn.subscribed { background: #4caf50; box-shadow: 0 4px 15px rgba(76,175,80,0.4); }
+        .subscribe-btn.subscribed:hover { background: #388e3c; }
 
         #businessProductsContainer {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            padding: 0 10px;
-            margin: 0 auto;
-            max-width: 1400px;
+            display: flex; flex-direction: column; gap: 20px;
+            padding: 0 10px; margin: 0 auto; max-width: 1400px;
         }
     </style>
 </head>
@@ -79,13 +61,18 @@
     <div class="business-header">
         <h1 id="businessName">Loading...</h1>
         <div class="categories" id="businessCategories"></div>
+        <p class="business-description" id="businessDescription">Loading description...</p>
+
+        <div class="subscribe-section">
+            <span class="subscribe-count" id="subscriberCount">Loading...</span>
+            <button class="subscribe-btn" id="subscribeBtn">Subscribe</button>
+        </div>
     </div>
 
     <div id="businessProductsContainer">
         <div class="hint">Loading products...</div>
     </div>
 
-    <!-- Dummy container for index.js -->
     <div id="productsContainer" style="display:none;"></div>
 
     <script>
@@ -94,13 +81,25 @@
     <script src="index.js"></script>
 
     <script>
-        // === BACK BUTTON: Smooth slide back ===
+        // YOUR REAL WEB APP URL (same as in setup.html)
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkltpi2s6oMtq2FTfvF3taqCsBTC2RMmxeJ35bhYljOsBCmiKvjifOMwv4ggougm9Wcw/exec";
+
+        // Same device ID logic as setup.html
+        function getDeviceId() {
+            let id = localStorage.getItem('deviceId');
+            if (!id) {
+                id = 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('deviceId', id);
+            }
+            return id;
+        }
+        const visitorDeviceId = getDeviceId();
+
         function goBackSmooth() {
             document.body.classList.add('page-exit');
             setTimeout(() => window.history.back(), 100);
         }
 
-        // Extract business name
         const params = new URLSearchParams(location.search);
         const targetBusiness = decodeURIComponent(params.get('name') || '').trim();
 
@@ -111,6 +110,85 @@
             document.getElementById('businessName').textContent = targetBusiness;
         }
 
+        let businessOwnerDeviceId = null;
+
+        // Load business info: description + subscribers + follow state
+        async function loadBusinessInfo() {
+            try {
+                // Step 1: Get any product to grab the owner's deviceId
+                const listResp = await fetch(`${SCRIPT_URL}?action=list&business=${encodeURIComponent(targetBusiness)}&callback=dummy`);
+                const text = await listResp.text();
+                const jsonMatch = text.match(/\(([\s\S]*)\)/);
+                if (!jsonMatch) throw new Error("Invalid response");
+                const data = JSON.parse(jsonMatch[1]);
+
+                if (!data.rows || data.rows.length === 0) {
+                    document.getElementById('businessDescription').textContent = "No description available.";
+                    document.getElementById('subscriberCount').textContent = "0 followers";
+                    document.getElementById('subscribeBtn').style.display = 'none';
+                    return;
+                }
+
+                businessOwnerDeviceId = data.rows[0].businessOwnerId;
+
+                // Step 2: Get the actual profile
+                const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerDeviceId}`);
+                const profile = await profileResp.json();
+
+                if (profile.result === "success" && profile.data) {
+                    const desc = profile.data.businessDescription?.trim();
+                    document.getElementById('businessDescription').textContent = desc || "This business hasn’t added a description yet.";
+
+                    const count = profile.data.subscribers || 0;
+                    document.getElementById('subscriberCount').textContent = 
+                        `${count.toLocaleString()} ${count === 1 ? 'follower' : 'followers'}`;
+
+                    // Prevent self-subscribe
+                    if (visitorDeviceId === businessOwnerDeviceId) {
+                        document.getElementById('subscribeBtn').style.display = 'none';
+                        return;
+                    }
+
+                    // Check if already following
+                    const subscribedTo = profile.data.subscribedTo || [];
+                    const isFollowing = subscribedTo.includes(visitorDeviceId);
+
+                    const btn = document.getElementById('subscribeBtn');
+                    btn.textContent = isFollowing ? "Unsubscribe" : "Subscribe";
+                    btn.classList.toggle('subscribed', isFollowing);
+                }
+            } catch (err) {
+                console.error("Load failed:", err);
+                document.getElementById('businessDescription').textContent = "Description unavailable.";
+            }
+        }
+
+        // Subscribe / Unsubscribe
+        document.getElementById('subscribeBtn').addEventListener('click', async () => {
+            if (!businessOwnerDeviceId || visitorDeviceId === businessOwnerDeviceId) return;
+
+            const isCurrentlySubscribed = document.getElementById('subscribeBtn').textContent === "Unsubscribe";
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: isCurrentlySubscribed ? "unfollowBusiness" : "followBusiness",
+                        followerId: visitorDeviceId,
+                        businessOwnerId: businessOwnerDeviceId
+                    })
+                });
+
+                // Refresh everything
+                loadBusinessInfo();
+            } catch (e) {
+                alert("Update failed. Try again.");
+            }
+        });
+
+        // Your existing product rendering (unchanged)
         function getBusinessName(p) {
             return (p.businessName || p["Business Name"] || p.BusinessName || p.businessname || "").trim();
         }
@@ -145,17 +223,17 @@
 
                 const row = document.createElement('div');
                 row.className = 'product-group-wrapper';
-
                 items.forEach(p => {
                     if (!p.rowId && p.row) p.rowId = p.row;
                     const card = createProductCard(p);
                     row.appendChild(card);
                 });
-
                 container.appendChild(row);
             }
         };
 
+        // Start
+        if (targetBusiness) loadBusinessInfo();
         fetchAndRenderProducts();
     </script>
 </body>
