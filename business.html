@@ -165,28 +165,31 @@
 
         // Subscribe / Unsubscribe
         document.getElementById('subscribeBtn').addEventListener('click', async () => {
-            if (!businessOwnerDeviceId || visitorDeviceId === businessOwnerDeviceId) return;
+    if (!businessOwnerDeviceId || visitorDeviceId === businessOwnerDeviceId) return;
 
-            const isCurrentlySubscribed = document.getElementById('subscribeBtn').textContent === "Unsubscribe";
+    const btn = document.getElementById('subscribeBtn');
+    const isUnsub = btn.textContent === "Unsubscribe";
+    btn.disabled = true;
+    btn.textContent = "Loading...";
 
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        action: isCurrentlySubscribed ? "unfollowBusiness" : "followBusiness",
-                        followerId: visitorDeviceId,
-                        businessOwnerId: businessOwnerDeviceId
-                    })
-                });
-
-                // Refresh everything
-                loadBusinessInfo();
-            } catch (e) {
-                alert("Update failed. Try again.");
-            }
+    try {
+        await fetch(SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                action: isUnsub ? "unfollowBusiness" : "followBusiness",
+                followerId: visitorDeviceId,
+                businessOwnerId: businessOwnerDeviceId
+            })
         });
+
+        await loadBusinessInfo();  // This refreshes count + button state
+    } catch (e) {
+        alert("Subscription failed. Try again.");
+        btn.disabled = false;
+        btn.textContent = isUnsub ? "Unsubscribe" : "Subscribe";
+    }
+});
 
         // Your existing product rendering (unchanged)
         function getBusinessName(p) {
