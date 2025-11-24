@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyzR8pXx1W3Ia4eGHNr9fu1EVsNC_ALbUXu5_CU39hHJpGs_4P1XoPc-b6KnbRUi-pk/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzhuY5yq7ADaD-YmNK7_O0ch1Quedgiau2Ml91HtijvTU68K_VajtopbuSAcSRn0EaF/exec"; // <- REPLACE THIS
 
 // ** GLOBAL FLAG: Read the flag set in the HTML files **
 const IS_ADMIN_VIEW = window.IS_ADMIN_VIEW === true;
@@ -139,46 +139,64 @@ function escapeHtml(s){
 // ----------------------------------------------------------------------
 // NEW: Function to create the business header card element
 function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
-    const businessCard = document.createElement("div");
-    businessCard.className = "business-card-header"; // Apply main styling for the enclosure
-    
-    // Use the latest product's image for the main display
-    const latestProductLink = latestProduct.driveLink || "";
-    const latestThumbUrl = getThumbnailUrl(latestProductLink, 800); 
+    const businessCard = document.createElement("div");
+    businessCard.className = "business-card-header";
 
-    // Join category names for display
-    const categoriesText = categoryNames.join(' | ');
+    const latestProductLink = latestProduct.driveLink || "";
+    const latestThumbUrl = getThumbnailUrl(latestProductLink, 800);
 
-    businessCard.innerHTML = `
-        <div class="latest-product-image-container">
-            ${latestThumbUrl 
-                ? `<img src="${latestThumbUrl}" alt="Latest Product Image" class="latest-product-image"/>`
-                : `<div class="placeholder-image-large">🖼️ Latest Product Image</div>`
-            }
-        </div>
-        <div class="business-info">
-            <h2 class="business-name">${escapeHtml(businessName)}</h2>
-            <div class="product-categories">${escapeHtml(categoriesText)}</div>
-        </div>
-        <button class="btn-black open-business-card-btn">Click card to open</button>
-    `;
-    
-   
-  // SMOOTH NAVIGATION TO business.html (feels like sliding!)
-businessCard.querySelector(".open-business-card-btn").addEventListener('click', (e) => {
-    e.preventDefault();
-    
-    // Trigger smooth exit animation
-    document.body.style.animation = 'slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards';
-    
-    const encodedName = encodeURIComponent(businessName.trim());
-    
-    setTimeout(() => {
-        window.location.href = `business.html?name=${encodedName}`;
-    }, 100); // Reduced delay — animation continues during navigation
-});
-    
-    return businessCard;
+    const categoriesText = categoryNames.length ? categoryNames.join(' | ') : '';
+
+    businessCard.innerHTML = `
+       <!-- Image on top -->
+    <div class="latest-product-image-wrapper">
+        <div class="latest-product-image-container">
+            ${latestThumbUrl 
+                ? `<img src="${latestThumbUrl}" alt="Latest product from ${escapeHtml(businessName)}" class="latest-product-image" loading="lazy">`
+                : `<div class="placeholder-image-large">Latest Product</div>`
+            }
+        </div>
+
+        <!-- Badge label -->
+        <div class="latest-product-label">
+            Latest Product
+        </div>
+    </div>
+
+       <!-- Text content below the image -->
+<div class="business-info-below">
+    <div class="business-name-wrapper">
+        <span class="name-label">Business Name:</span>
+        <h2 class="business-name">${escapeHtml(businessName)}</h2>
+    </div>
+
+    ${categoriesText
+        ? `<div class="product-categories">
+               <span class="categories-label">Categories:</span>
+               <span class="categories-list">${escapeHtml(categoriesText)}</span>
+           </div>`
+        : `<div class="product-categories empty">No categories listed</div>`
+    }
+</div>
+
+        <!-- Button at the very bottom -->
+        <button class="btn-black open-business-card-btn">Click card to open</button>
+    `;
+
+    // Your exact smooth navigation (unchanged)
+    businessCard.querySelector(".open-business-card-btn").addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        document.body.style.animation = 'slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards';
+        
+        const encodedName = encodeURIComponent(businessName.trim());
+        
+        setTimeout(() => {
+            window.location.href = `business.html?name=${encodedName}`;
+        }, 100);
+    });
+
+    return businessCard;
 }
 // Helper function to create a single product card DOM element (CONDITIONAL)
 function createProductCard(r) {

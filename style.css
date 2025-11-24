@@ -494,25 +494,78 @@ body {
     background: linear-gradient(135deg, #6573ab 0%, #3550c0 100%);
 }
 
-/* Latest product thumbnail */
+/* Image container */
 .latest-product-image-container {
     width: 130px;
     height: 110px;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     border: 3px solid rgba(255, 255, 255, 0.3);
     background: #ffffff;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    transition: all 0.3s ease;
+}
+
+.latest-product-image-container:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
 }
 
 .latest-product-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.4s ease;
 }
 
+.placeholder-image-large {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+/* BADGE — now cleanly separated below the image */
+.latest-product-label {
+    margin-top: 5px;                  /* Perfect breathing space */
+    text-align: center;
+    
+    display: inline-block;
+    background: linear-gradient(135deg, #4169e1, #2a4bb8);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 7px 16px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(65, 105, 225, 0.35);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    transition: all 0.3s ease;
+}
+
+/* Hover effect — makes it pop */
+.latest-product-label:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(65, 105, 225, 0.5);
+}
+
+/* Optional shine line */
+.latest-product-label::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 2px;
+}
 .business-card-header:hover .latest-product-image {
     transform: scale(1.08);
 }
@@ -529,36 +582,72 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* Business info */
-.business-info {
-    flex-grow: 1;
+.business-info-below {
+    padding: 1.4rem 1.4rem 2rem;
+    text-align: center;
+}
+
+.business-name-wrapper {
+    margin-bottom: 0.6rem;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
+    align-items: center;
+}
+
+.name-label {
+      margin-top: 5px;                  /* Perfect breathing space */
+    text-align: center;
+    
+    display: inline-block;
+    background: linear-gradient(135deg, #4169e1, #2a4bb8);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 7px 16px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(65, 105, 225, 0.35);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    transition: all 0.3s ease;
 }
 
 .business-name {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 700;
     margin: 0;
-    letter-spacing: -0.5px;
-    text-transform: uppercase;
+    color: #1a1a1a;
     line-height: 1.2;
 }
 
+/* Categories styling */
 .product-categories {
-    font-size: 12px;
-    font-weight: 500;
-    background: rgba(37, 249, 79, 0.22);
-    color: #ffffff;
-    padding: 8px 14px;
-    border-radius: 8px;
-    display: inline-block;
-    align-self: flex-start;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.95rem;
+    margin: 8px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
 }
 
+.categories-label {
+    font-weight: 600;
+    color: #222;
+}
+
+.categories-list {
+    color: #f0eff4;
+    font-weight: 500;
+}
+
+.product-categories.empty {
+    color: #999;
+    font-style: italic;
+    font-size: 0.9rem;
+}
 /* Open / View button – top-right corner */
 .open-business-card-btn {
     position: absolute;
