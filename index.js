@@ -163,14 +163,20 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
         <button class="btn-black open-business-card-btn">Click card to open</button>
     `;
     
-    // Optional: Add an event listener to toggle the display of the products 
-    // (You will need to implement the actual card/product toggle visibility in your CSS/HTML)
-    const toggleButton = businessCard.querySelector(".open-business-card-btn");
-    toggleButton.addEventListener('click', (e) => {
-        e.currentTarget.closest('.business-group-container').classList.toggle('is-open');
-        toggleButton.textContent = businessCard.closest('.business-group-container').classList.contains('is-open') 
-            ? "Click card to close" : "Click card to open";
-    });
+   
+  // SMOOTH NAVIGATION TO business.html (feels like sliding!)
+businessCard.querySelector(".open-business-card-btn").addEventListener('click', (e) => {
+    e.preventDefault();
+    
+    // Trigger smooth exit animation
+    document.body.style.animation = 'slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards';
+    
+    const encodedName = encodeURIComponent(businessName.trim());
+    
+    setTimeout(() => {
+        window.location.href = `business.html?name=${encodedName}`;
+    }, 100); // Reduced delay — animation continues during navigation
+});
     
     return businessCard;
 }

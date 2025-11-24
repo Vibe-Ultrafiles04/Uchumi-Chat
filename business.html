@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Products</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0 0 80px; 
+            background: #f9f9f9; 
+            font-family: "Segoe UI", Roboto, Arial, sans-serif; 
+            overflow-x: hidden;
+        }
+
+        /* ====== SMOOTH PAGE TRANSITIONS ====== */
+        body {
+            animation: slideInFromRight 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+
+        /* Exit animation (applied from main page) */
+        body.page-exit {
+            animation: slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+
+        @keyframes slideInFromRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOutToLeft {
+            from { transform: translateX(0); opacity: 1; }
+            to   { transform: translateX(-100%); opacity: 0; }
+        }
+        /* ===================================== */
+
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .back-btn:hover { background: #000; }
+
+        .business-header {
+            text-align: center;
+            padding: 80px 20px 40px;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('') center/cover no-repeat;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .business-header h1 { font-size: 2.8rem; margin: 0 0 10px 0; }
+        .business-header .categories { font-size: 1.2rem; opacity: 0.9; }
+
+        #businessProductsContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 0 10px;
+            margin: 0 auto;
+            max-width: 1400px;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="back-btn" onclick="goBackSmooth()">Back</button>
+
+    <div class="business-header">
+        <h1 id="businessName">Loading...</h1>
+        <div class="categories" id="businessCategories"></div>
+    </div>
+
+    <div id="businessProductsContainer">
+        <div class="hint">Loading products...</div>
+    </div>
+
+    <!-- Dummy container for index.js -->
+    <div id="productsContainer" style="display:none;"></div>
+
+    <script>
+        window.IS_ADMIN_VIEW = false;
+    </script>
+    <script src="index.js"></script>
+
+    <script>
+        // === BACK BUTTON: Smooth slide back ===
+        function goBackSmooth() {
+            document.body.classList.add('page-exit');
+            setTimeout(() => window.history.back(), 100);
+        }
+
+        // Extract business name
+        const params = new URLSearchParams(location.search);
+        const targetBusiness = decodeURIComponent(params.get('name') || '').trim();
+
+        if (!targetBusiness) {
+            document.getElementById('businessName').textContent = 'Invalid Link';
+            document.getElementById('businessProductsContainer').innerHTML = '<div class="hint">No business specified</div>';
+        } else {
+            document.getElementById('businessName').textContent = targetBusiness;
+        }
+
+        function getBusinessName(p) {
+            return (p.businessName || p["Business Name"] || p.BusinessName || p.businessname || "").trim();
+        }
+
+        window.renderProductsToDOM = function(products) {
+            const container = document.getElementById('businessProductsContainer');
+            container.innerHTML = '';
+
+            const filtered = products.filter(p => getBusinessName(p) === targetBusiness);
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="hint" style="padding:80px;text-align:center;font-size:1.2rem;">
+                    No products found for <strong>${targetBusiness}</strong>
+                </div>`;
+                return;
+            }
+
+            const cats = [...new Set(filtered.map(p => p.category || 'General').filter(Boolean))];
+            document.getElementById('businessCategories').textContent = cats.join(' • ');
+
+            const byCategory = {};
+            filtered.forEach(p => {
+                const cat = p.category || 'General';
+                if (!byCategory[cat]) byCategory[cat] = [];
+                byCategory[cat].push(p);
+            });
+
+            for (const [category, items] of Object.entries(byCategory)) {
+                const header = document.createElement('h4');
+                header.className = 'category-group-header-small';
+                header.textContent = category;
+                container.appendChild(header);
+
+                const row = document.createElement('div');
+                row.className = 'product-group-wrapper';
+
+                items.forEach(p => {
+                    if (!p.rowId && p.row) p.rowId = p.row;
+                    const card = createProductCard(p);
+                    row.appendChild(card);
+                });
+
+                container.appendChild(row);
+            }
+        };
+
+        fetchAndRenderProducts();
+    </script>
+</body>
+</html>
