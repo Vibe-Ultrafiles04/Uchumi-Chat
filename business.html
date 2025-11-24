@@ -5,52 +5,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Business Products</title>
     <link rel="stylesheet" href="style.css">
+
     <style>
-        body { margin: 0; padding: 0 0 80px; background: #f9f9f9; font-family: "Segoe UI", Roboto, Arial, sans-serif; overflow-x: hidden; }
-        body { animation: slideInFromRight 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
-        body.page-exit { animation: slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
-        @keyframes slideInFromRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideOutToLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-100%); opacity: 0; } }
+        body { 
+            margin: 0; 
+            padding: 0 0 80px; 
+            background: #f9f9f9; 
+            font-family: "Segoe UI", Roboto, Arial, sans-serif; 
+            overflow-x: hidden;
+        }
+
+        /* ====== SMOOTH PAGE TRANSITIONS ====== */
+        body {
+            animation: slideInFromRight 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+        body.page-exit {
+            animation: slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+        @keyframes slideInFromRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutToLeft {
+            from { transform: translateX(0); opacity: 1; }
+            to   { transform: translateX(-100%); opacity: 0; }
+        }
 
         .back-btn {
-            position: fixed; top: 15px; left: 15px; z-index: 1000;
-            background: rgba(0,0,0,0.8); color: white; border: none;
-            padding: 12px 18px; border-radius: 50px; font-size: 16px; cursor: pointer;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .back-btn:hover { background: #000; }
 
         .business-header {
-            text-align: center; padding: 80px 20px 50px;
+            text-align: center;
+            padding: 80px 20px 40px;
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('') center/cover no-repeat;
-            color: white; margin-bottom: 30px;
+            color: white;
+            margin-bottom: 30px;
         }
-        .business-header h1 { font-size: 2.8rem; margin: 0 0 8px 0; }
-        .business-header .categories { font-size: 1.2rem; opacity: 0.9; margin-bottom: 12px; }
+        .business-header h1 { font-size: 2.8rem; margin: 0 0 10px 0; }
+        .business-header .categories { font-size: 1.2rem; opacity: 0.9; }
 
+        /* Description styling */
         .business-description {
-            font-size: 1.15rem; line-height: 1.6; max-width: 800px;
-            margin: 15px auto 25px; opacity: 0.95; font-weight: 300; padding: 0 20px;
+            font-size: 1.15rem;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 20px auto 0;
+            opacity: 0.95;
+            font-weight: 300;
+            padding: 0 20px;
         }
-        @media (max-width: 768px) { .business-description { font-size: 1rem; } }
+        @media (max-width: 768px) {
+            .business-description { font-size: 1rem; padding: 0 15px; }
+        }
 
-        .subscribe-section {
-            margin: 20px auto; display: flex; align-items: center; justify-content: center;
-            gap: 15px; flex-wrap: wrap;
+        /* === SUBSCRIBE BUTTON STYLES === */
+        .subscribe-wrapper {
+            margin: 25px auto 0;
+            text-align: center;
+            max-width: 800px;
         }
-        .subscribe-count { font-size: 1.1rem; opacity: 0.9; }
-        .subscribe-btn {
-            background: #ff4081; color: white; border: none; padding: 10px 24px;
-            border-radius: 50px; font-size: 1rem; font-weight: 600; cursor: pointer;
-            transition: all 0.3s; box-shadow: 0 4px 15px rgba(255,64,129,0.4);
+        #subscribeBtn {
+            padding: 14px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 180px;
         }
-        .subscribe-btn:hover { background: #f50057; transform: translateY(-2px); }
-        .subscribe-btn.subscribed { background: #4caf50; box-shadow: 0 4px 15px rgba(76,175,80,0.4); }
-        .subscribe-btn.subscribed:hover { background: #388e3c; }
+        #subscribeBtn.follow { background: #4285f4; color: white; }
+        #subscribeBtn.follow:hover { background: #3367d6; }
+        #subscribeBtn.unfollow { background: #eee; color: #333; }
+        #subscribeBtn.unfollow:hover { background: #ddd; }
+        #subscribeBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        #subscriberCount {
+            margin-top: 10px;
+            font-size: 0.95rem;
+            opacity: 0.85;
+        }
 
         #businessProductsContainer {
-            display: flex; flex-direction: column; gap: 20px;
-            padding: 0 10px; margin: 0 auto; max-width: 1400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 0 10px;
+            margin: 0 auto;
+            max-width: 1400px;
         }
     </style>
 </head>
@@ -63,9 +118,10 @@
         <div class="categories" id="businessCategories"></div>
         <p class="business-description" id="businessDescription">Loading description...</p>
 
-        <div class="subscribe-section">
-            <span class="subscribe-count" id="subscriberCount">Loading...</span>
-            <button class="subscribe-btn" id="subscribeBtn">Subscribe</button>
+        <!-- Subscribe Button + Count -->
+        <div class="subscribe-wrapper">
+            <button id="subscribeBtn" class="follow" disabled>Loading...</button>
+            <div id="subscriberCount">— followers</div>
         </div>
     </div>
 
@@ -73,6 +129,7 @@
         <div class="hint">Loading products...</div>
     </div>
 
+    <!-- Dummy container for index.js -->
     <div id="productsContainer" style="display:none;"></div>
 
     <script>
@@ -81,25 +138,35 @@
     <script src="index.js"></script>
 
     <script>
-        // YOUR REAL WEB APP URL (same as in setup.html)
+        // CHANGE THIS TO YOUR REAL WEB APP URL
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkltpi2s6oMtq2FTfvF3taqCsBTC2RMmxeJ35bhYljOsBCmiKvjifOMwv4ggougm9Wcw/exec";
 
-        // Same device ID logic as setup.html
-        function getDeviceId() {
-            let id = localStorage.getItem('deviceId');
+        // === DEVICE ID (Persistent across visits) ===
+        function getMyDeviceId() {
+            let id = localStorage.getItem('myDeviceId');
             if (!id) {
-                id = 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('deviceId', id);
+                id = 'guest_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+                localStorage.setItem('myDeviceId', id);
             }
             return id;
         }
-        const visitorDeviceId = getDeviceId();
+        const MY_DEVICE_ID = getMyDeviceId();
 
+        // Global state
+        let businessOwnerId = null;
+        let isFollowing = false;
+
+        // DOM Elements
+        const subscribeBtn = document.getElementById('subscribeBtn');
+        const subscriberCountEl = document.getElementById('subscriberCount');
+
+        // === BACK BUTTON: Smooth slide back ===
         function goBackSmooth() {
             document.body.classList.add('page-exit');
             setTimeout(() => window.history.back(), 100);
         }
 
+        // Extract business name
         const params = new URLSearchParams(location.search);
         const targetBusiness = decodeURIComponent(params.get('name') || '').trim();
 
@@ -110,88 +177,158 @@
             document.getElementById('businessName').textContent = targetBusiness;
         }
 
-        let businessOwnerDeviceId = null;
+        // === LOAD BUSINESS DESCRIPTION + SUBSCRIBE STATE ===
+        async function loadBusinessData() {
+            if (!targetBusiness) return;
 
-        // Load business info: description + subscribers + follow state
-        async function loadBusinessInfo() {
             try {
-                // Step 1: Get any product to grab the owner's deviceId
-                const listResp = await fetch(`${SCRIPT_URL}?action=list&business=${encodeURIComponent(targetBusiness)}&callback=dummy`);
-                const text = await listResp.text();
+                // 1. Get one product to extract owner ID
+                const resp = await fetch(`${SCRIPT_URL}?action=list&business=${encodeURIComponent(targetBusiness)}&callback=dummy`);
+                const text = await resp.text();
                 const jsonMatch = text.match(/\(([\s\S]*)\)/);
                 if (!jsonMatch) throw new Error("Invalid response");
                 const data = JSON.parse(jsonMatch[1]);
 
                 if (!data.rows || data.rows.length === 0) {
-                    document.getElementById('businessDescription').textContent = "No description available.";
-                    document.getElementById('subscriberCount').textContent = "0 followers";
-                    document.getElementById('subscribeBtn').style.display = 'none';
+                    document.getElementById('businessDescription').textContent = "No products yet.";
+                    subscribeBtn.disabled = true;
+                    subscribeBtn.textContent = "No products";
                     return;
                 }
 
-                businessOwnerDeviceId = data.rows[0].businessOwnerId;
+                businessOwnerId = data.rows[0].businessOwnerId;
+                if (!businessOwnerId) {
+                    subscribeBtn.textContent = "Not subscribable";
+                    subscribeBtn.disabled = true;
+                    return;
+                }
 
-                // Step 2: Get the actual profile
-                const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerDeviceId}`);
-                const profile = await profileResp.json();
+                // Prevent self-subscribe
+                if (MY_DEVICE_ID === businessOwnerId) {
+                    subscribeBtn.textContent = "This is your business";
+                    subscribeBtn.disabled = true;
+                    subscribeBtn.className = "";
+                    return;
+                }
 
-                if (profile.result === "success" && profile.data) {
-                    const desc = profile.data.businessDescription?.trim();
+                // 2. Load owner's profile (description + subscriber count)
+                const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`);
+                const profileJson = await profileResp.json();
+
+                if (profileJson.result === "success" && profileJson.data) {
+                    const desc = profileJson.data.businessDescription?.trim();
                     document.getElementById('businessDescription').textContent = desc || "This business hasn’t added a description yet.";
+                    subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} follower${profileJson.data.subscribers !== 1 ? 's' : ''}`;
+                }
 
-                    const count = profile.data.subscribers || 0;
-                    document.getElementById('subscriberCount').textContent = 
-                        `${count.toLocaleString()} ${count === 1 ? 'follower' : 'followers'}`;
+                // 3. Check if I am following
+                const myResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${MY_DEVICE_ID}`);
+                const myJson = await myResp.json();
 
-                    // Prevent self-subscribe
-                    if (visitorDeviceId === businessOwnerDeviceId) {
-                        document.getElementById('subscribeBtn').style.display = 'none';
-                        return;
+                if (myJson.result === "success" && myJson.data?.subscribedTo) {
+                    isFollowing = myJson.data.subscribedTo.includes(businessOwnerId);
+                } else {
+                    isFollowing = false;
+                }
+
+                updateSubscribeButton();
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('businessDescription').textContent = "Failed to load business info.";
+            }
+        }
+
+        function updateSubscribeButton() {
+            if (isFollowing) {
+                subscribeBtn.textContent = "Following";
+                subscribeBtn.className = "unfollow";
+            } else {
+                subscribeBtn.textContent = "Subscribe";
+                subscribeBtn.className = "follow";
+            }
+            subscribeBtn.disabled = false;
+        }
+
+        // === SUBSCRIBE / UNSUBSCRIBE HANDLER ===
+        subscribeBtn.addEventListener('click', async () => {
+            if (subscribeBtn.disabled || !businessOwnerId) return;
+
+            subscribeBtn.disabled = true;
+            subscribeBtn.textContent = "Processing...";
+
+            const action = isFollowing ? "unfollowBusiness" : "followBusiness";
+            const payload = {
+                action: action,
+                followerId: MY_DEVICE_ID,
+                businessOwnerId: businessOwnerId
+            };
+
+            try {
+                const resp = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                const result = await resp.json();
+
+                if (result.result === "success") {
+                    isFollowing = !isFollowing;
+
+                    // Refresh subscriber count
+                    const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`);
+                    const p = await profileResp.json();
+                    if (p.data) {
+                        subscriberCountEl.textContent = `${p.data.subscribers || 0} follower${p.data.subscribers !== 1 ? 's' : ''}`;
                     }
 
-                    // Check if already following
-                    const subscribedTo = profile.data.subscribedTo || [];
-                    const isFollowing = subscribedTo.includes(visitorDeviceId);
-
-                    const btn = document.getElementById('subscribeBtn');
-                    btn.textContent = isFollowing ? "Unsubscribe" : "Subscribe";
-                    btn.classList.toggle('subscribed', isFollowing);
+                    updateSubscribeButton();
+                } else {
+                    alert("Action failed: " + (result.message || "Try again"));
+                    subscribeBtn.disabled = false;
+                    subscribeBtn.textContent = isFollowing ? "Following" : "Subscribe";
                 }
             } catch (err) {
-                console.error("Load failed:", err);
+                console.error(err);
+                alert("Network error. Please try again.");
+                subscribeBtn.disabled = false;
+                subscribeBtn.textContent = isFollowing ? "Following" : "Subscribe";
+            }
+        });
+
+        // === ORIGINAL DESCRIPTION LOADER (kept untouched) ===
+        async function loadBusinessDescription(businessName) {
+            try {
+                const listResp = await fetch(`${SCRIPT_URL}?action=list&business=${encodeURIComponent(businessName)}&callback=dummy`);
+                const text = await listResp.text();
+                const json = text.match(/\(([\s\S]*)\)/)[1];
+                const data = JSON.parse(json);
+
+                if (!data.rows || data.rows.length === 0) {
+                    document.getElementById('businessDescription').textContent = "No description available.";
+                    return;
+                }
+
+                const deviceId = data.rows[0].businessOwnerId;
+                if (!deviceId) {
+                    document.getElementById('businessDescription').textContent = "Description not set yet.";
+                    return;
+                }
+
+                const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${deviceId}`);
+                const profile = await profileResp.json();
+
+                if (profile.result === "success" && profile.data?.businessDescription?.trim()) {
+                    document.getElementById('businessDescription').textContent = profile.data.businessDescription.trim();
+                } else {
+                    document.getElementById('businessDescription').textContent = "This business hasn’t added a description yet.";
+                }
+            } catch (e) {
+                console.error(e);
                 document.getElementById('businessDescription').textContent = "Description unavailable.";
             }
         }
 
-        // Subscribe / Unsubscribe
-        document.getElementById('subscribeBtn').addEventListener('click', async () => {
-    if (!businessOwnerDeviceId || visitorDeviceId === businessOwnerDeviceId) return;
-
-    const btn = document.getElementById('subscribeBtn');
-    const isUnsub = btn.textContent === "Unsubscribe";
-    btn.disabled = true;
-    btn.textContent = "Loading...";
-
-    try {
-        await fetch(SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({
-                action: isUnsub ? "unfollowBusiness" : "followBusiness",
-                followerId: visitorDeviceId,
-                businessOwnerId: businessOwnerDeviceId
-            })
-        });
-
-        await loadBusinessInfo();  // This refreshes count + button state
-    } catch (e) {
-        alert("Subscription failed. Try again.");
-        btn.disabled = false;
-        btn.textContent = isUnsub ? "Unsubscribe" : "Subscribe";
-    }
-});
-
-        // Your existing product rendering (unchanged)
+        // === PRODUCT RENDERING (100% unchanged) ===
         function getBusinessName(p) {
             return (p.businessName || p["Business Name"] || p.BusinessName || p.businessname || "").trim();
         }
@@ -226,17 +363,24 @@
 
                 const row = document.createElement('div');
                 row.className = 'product-group-wrapper';
+
                 items.forEach(p => {
                     if (!p.rowId && p.row) p.rowId = p.row;
                     const card = createProductCard(p);
                     row.appendChild(card);
                 });
+
                 container.appendChild(row);
             }
         };
 
-        // Start
-        if (targetBusiness) loadBusinessInfo();
+        // === INITIALIZE ===
+        if (targetBusiness) {
+            loadBusinessDescription(targetBusiness);
+            loadBusinessData();  // This loads description + subscribe state
+        }
+
+        // Keep original product fetch
         fetchAndRenderProducts();
     </script>
 </body>
