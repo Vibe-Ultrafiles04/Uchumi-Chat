@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzkltpi2s6oMtq2FTfvF3taqCsBTC2RMmxeJ35bhYljOsBCmiKvjifOMwv4ggougm9Wcw/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx_j9JatNyNEkuxWZuT_RATaWzJl313JE2LZknlvPUg8u9NMqXkUt81Ectv4tb4-TwQ/exec"; // <- REPLACE THIS
 
 // ** GLOBAL FLAG: Read the flag set in the HTML files **
 const IS_ADMIN_VIEW = window.IS_ADMIN_VIEW === true;
