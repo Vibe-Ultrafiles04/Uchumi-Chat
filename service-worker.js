@@ -10,6 +10,7 @@ const ASSETS_TO_CACHE = [
   "./",
    "./setup.html",
   "./index.html",
+  "./business.html",
    "./index.js",
   "./style.css",
    "./studio.html",
