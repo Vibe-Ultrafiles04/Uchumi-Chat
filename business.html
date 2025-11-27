@@ -119,11 +119,25 @@
         <p class="business-description" id="businessDescription">Loading description...</p>
 
         <!-- Subscribe Button + Count -->
-        <div class="subscribe-wrapper">
+      <div class="subscribe-wrapper">
             <button id="subscribeBtn" class="follow" disabled>Loading...</button>
             <div id="subscriberCount">— followers</div>
         </div>
-    </div>
+
+        <div class="share-wrapper" id="shareWrapper" style="margin-top: 30px; padding: 0 20px;">
+            <p id="shareLabel" style="font-size: 1rem; margin-bottom: 10px; opacity: 0.9;">
+                Share this business page:
+            </p>
+            <div style="display: flex; gap: 10px; max-width: 600px; margin: auto;">
+                <input type="text" id="shareLinkInput" readonly 
+                       style="flex-grow: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 0.95rem; background: #fff;">
+                <button id="copyShareLinkBtn" 
+                        style="padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    Copy Link
+                </button>
+            </div>
+        </div>
+        </div>
 
     <div id="businessProductsContainer">
         <div class="hint">Loading products...</div>
@@ -374,7 +388,102 @@
             }
         };
 
+        // === LINK GENERATION AND SHARING ===
+function generateShareableLink(businessName) {
+    if (!businessName || typeof businessName !== 'string') {
+        console.warn('Invalid business name provided for shareable link');
+        return '';
+    }
+
+    const name = businessName.trim();
+    if (name.length === 0) return '';
+
+    // Build clean base URL without existing query parameters or hash
+    const baseUrl = `${location.origin}${location.pathname}`;
+    const encodedName = encodeURIComponent(name);
+
+    return `${baseUrl}?name=${encodedName}`;
+}
+
+function copyLinkToClipboard(link, button) {
+    // Fallback for older browsers + modern clipboard API
+    const fallbackCopy = () => {
+        const input = document.getElementById('shareLinkInput');
+        input.select();
+        input.setSelectionRange(0, 99999); // Mobile support
+        return document.execCommand('copy');
+    };
+
+    navigator.clipboard.writeText(link)
+        .then(() => {
+            button.textContent = "Copied!";
+            button.disabled = true;
+            setTimeout(() => {
+                button.textContent = "Copy Link";
+                button.disabled = false;
+            }, 2000);
+        })
+        .catch(err => {
+            console.error('Clipboard API failed:', err);
+            // Fallback attempt
+            try {
+                if (fallbackCopy()) {
+                    button.textContent = "Copied!";
+                    setTimeout(() => button.textContent = "Copy Link", 2000);
+                } else {
+                    throw new Error("Fallback copy failed");
+                }
+            } catch (fallbackErr) {
+                console.error('Fallback copy also failed:', fallbackErr);
+                alert("Failed to copy link. Please copy it manually.");
+            }
+        });
+}
+
+function setupSharing() {
+    const shareWrapper = document.getElementById('shareWrapper');
+    const linkInput = document.getElementById('shareLinkInput');
+    const copyBtn = document.getElementById('copyShareLinkBtn');
+
+    // Safety checks
+    if (!shareWrapper || !linkInput || !copyBtn) {
+        console.warn('Sharing elements not found in DOM');
+        return;
+    }
+
+    // If no business is loaded, hide sharing section
+    if (!targetBusiness || !targetBusiness.trim()) {
+        shareWrapper.style.display = 'none';
+        return;
+    }
+
+    shareWrapper.style.display = 'block'; // Ensure visible when business exists
+
+    // Generate and display the shareable link
+    const shareableLink = generateShareableLink(targetBusiness);
+    if (!shareableLink) {
+        linkInput.value = 'Unable to generate link';
+        copyBtn.disabled = true;
+        return;
+    }
+
+    linkInput.value = shareableLink;
+    copyBtn.disabled = false;
+
+    // Remove any previous listeners to prevent duplicates
+    copyBtn.replaceWith(copyBtn.cloneNode(true));
+    const newCopyBtn = document.getElementById('copyShareLinkBtn');
+
+    newCopyBtn.addEventListener('click', () => {
+        copyLinkToClipboard(shareableLink, newCopyBtn);
+    });
+}
+
+// Optional: Re-run setupSharing when targetBusiness changes
+// Call setupSharing() whenever a new business is loaded
         // === INITIALIZE ===
+
+        setupSharing();
         if (targetBusiness) {
             loadBusinessDescription(targetBusiness);
             loadBusinessData();  // This loads description + subscribe state
