@@ -192,247 +192,259 @@
         window.IS_ADMIN_VIEW = false;
     </script>
     <script src="index.js"></script>
+<script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIcZrqIY4RP2Zbi6-DwAeROamAFetKp8ZgZwndFtdFUdxfO_mo82KfIOG1FAJRwL8V/exec";
 
-    <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6BIVB3NRDKEuf0E_vq8jjTiOzXYP1_53X8CI-LdzgtnfjEAB4T3Yr8svdZUCdwB0p/exec";
+        function getMyDeviceId() {
+            let id = localStorage.getItem('myDeviceId');
+            if (!id) {
+                id = 'guest_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+                localStorage.setItem('myDeviceId', id);
+            }
+            return id;
+        }
+        const MY_DEVICE_ID = getMyDeviceId();
 
-        function getMyDeviceId() {
-            let id = localStorage.getItem('myDeviceId');
-            if (!id) {
-                id = 'guest_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-                localStorage.setItem('myDeviceId', id);
-            }
-            return id;
-        }
-        const MY_DEVICE_ID = getMyDeviceId();
+        let businessOwnerId = null;
+        let isFollowing = false;
+        let currentVideoViews = 0;
 
-        let businessOwnerId = null;
-        let isFollowing = false;
-        let currentVideoViews = 0;
+        const subscribeBtn = document.getElementById('subscribeBtn');
+        const subscriberCountEl = document.getElementById('subscriberCount');
+        const videoSection = document.getElementById('videoSection');
+        const videoWrapper = document.getElementById('videoWrapper');
+        const promoVideo = document.getElementById('promoVideo');
+        const videoViewsEl = document.getElementById('videoViews');
 
-        const subscribeBtn = document.getElementById('subscribeBtn');
-        const subscriberCountEl = document.getElementById('subscriberCount');
-        const videoSection = document.getElementById('videoSection');
-        const videoWrapper = document.getElementById('videoWrapper');
-        const promoVideo = document.getElementById('promoVideo');
-        const videoViewsEl = document.getElementById('videoViews');
+        function goBackSmooth() {
+            document.body.classList.add('page-exit');
+            setTimeout(() => window.history.back(), 100);
+        }
 
-        function goBackSmooth() {
-            document.body.classList.add('page-exit');
-            setTimeout(() => window.history.back(), 100);
-        }
+        const params = new URLSearchParams(location.search);
+        const targetBusiness = decodeURIComponent(params.get('name') || '').trim();
 
-        const params = new URLSearchParams(location.search);
-        const targetBusiness = decodeURIComponent(params.get('name') || '').trim();
+        if (!targetBusiness) {
+            document.getElementById('businessName').textContent = 'Invalid Link';
+            document.getElementById('businessProductsContainer').innerHTML = '<div class="hint">No business specified</div>';
+        } else {
+            document.getElementById('businessName').textContent = targetBusiness;
+        }
 
-        if (!targetBusiness) {
-            document.getElementById('businessName').textContent = 'Invalid Link';
-            document.getElementById('businessProductsContainer').innerHTML = '<div class="hint">No business specified</div>';
-        } else {
-            document.getElementById('businessName').textContent = targetBusiness;
-        }
+        // Extract Google Drive file ID from share link
+        function extractDriveId(url) {
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            return match ? match[1] : null;
+        }
 
-        // Extract Google Drive file ID from share link
-        function extractDriveId(url) {
-            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-            return match ? match[1] : null;
-        }
+        // Format view count nicely
+        function formatViews(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M views';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K views';
+            return num + (num === 1 ? ' view' : ' views');
+        }
 
-        // Format view count nicely
-        function formatViews(num) {
-            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M views';
-            if (num >= 1000) return (num / 1000).toFixed(1) + 'K views';
-            return num + (num === 1 ? ' view' : ' views');
-        }
+        // Load video (no view increment here)
+        async function loadPromotionalVideo(profileData) {
+            if (!profileData?.videoLink) {
+                videoSection.style.display = 'none';
+                return;
+            }
 
-        // Load video (no view increment here)
-        async function loadPromotionalVideo(profileData) {
-            if (!profileData?.videoLink) {
-                videoSection.style.display = 'none';
-                return;
-            }
+            const driveId = extractDriveId(profileData.videoLink);
+            if (!driveId) {
+                videoSection.style.display = 'none';
+                return;
+            }
 
-            const driveId = extractDriveId(profileData.videoLink);
-            if (!driveId) {
-                videoSection.style.display = 'none';
-                return;
-            }
+            promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
+            currentVideoViews = profileData.videoViews || 0;
+            videoViewsEl.textContent = formatViews(currentVideoViews);
+            videoSection.style.display = 'block';
+        }
 
-            promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
-            currentVideoViews = profileData.videoViews || 0;
-            videoViewsEl.textContent = formatViews(currentVideoViews);
-            videoSection.style.display = 'block';
-        }
+        // Increment view only on first click per device
+       async function countVideoView() {
+    if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
 
-        // Increment view only on first click per device
-       async function countVideoView() {
-    if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
+    // Check if video section is visible before trying to count the view.
+    // This handles the "If the video doesn't exist or the section is hidden, nothing should happen" requirement.
+    if (videoSection.style.display === 'none') return;
+    
 
-    const viewedKey = `videoViewed_${businessOwnerId}`;
-    if (localStorage.getItem(viewedKey)) return;
+    const viewedKey = `videoViewed_${businessOwnerId}`;
+    if (localStorage.getItem(viewedKey)) return;
 
-    // Mark as viewed immediately to prevent double-clicks
-    localStorage.setItem(viewedKey, 'true');
+    // Mark as viewed immediately to prevent double-counting on the same device/session
+    localStorage.setItem(viewedKey, 'true');
 
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",                    // Required for Google Apps Script
-            headers: { "Content-Type": "text/plain" },  // Helps avoid CORS preflight
-            body: JSON.stringify({
-                action: "incrementVideoView",
-                businessOwnerId: businessOwnerId,
-                viewerDeviceId: MY_DEVICE_ID     // THIS WAS MISSING → NOW FIXED!
-            })
-        });
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",                    // Required for Google Apps Script
+            headers: { "Content-Type": "text/plain" },  // Helps avoid CORS preflight
+            body: JSON.stringify({
+                action: "incrementVideoView",
+                businessOwnerId: businessOwnerId,
+                viewerDeviceId: MY_DEVICE_ID     
+            })
+        });
 
-        // Note: With no-cors, we can't read the response body
-        // But the server still processed it, so we can safely increment locally
-        currentVideoViews += 1;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
+        // Note: With no-cors, we can't read the response body
+        // But the server still processed it, so we can safely increment locally
+        currentVideoViews += 1;
+        videoViewsEl.textContent = formatViews(currentVideoViews);
 
-    } catch (err) {
-        // Even if network fails, give user visual feedback (view was likely still counted server-side)
-        currentVideoViews += 1;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
-    }
+    } catch (err) {
+        // Even if network fails, give user visual feedback (view was likely still counted server-side)
+        currentVideoViews += 1;
+        videoViewsEl.textContent = formatViews(currentVideoViews);
+    }
 }
-        async function loadBusinessData() {
-            if (!targetBusiness) return;
+        async function loadBusinessData() {
+            if (!targetBusiness) return;
 
-            try {
-                const resp = await fetch(`${SCRIPT_URL}?action=list&business=${encodeURIComponent(targetBusiness)}&callback=dummy`);
-                const text = await resp.text();
-                const jsonMatch = text.match(/\(([\s\S]*)\)/);
-                if (!jsonMatch) throw new Error("Invalid response");
-                const data = JSON.parse(jsonMatch[1]);
+            try {
+                const resp = await fetch(`${SCRIPT_URL}?action=list&business=${encodeURIComponent(targetBusiness)}&callback=dummy`);
+                const text = await resp.text();
+                const jsonMatch = text.match(/\(([\s\S]*)\)/);
+                if (!jsonMatch) throw new Error("Invalid response");
+                const data = JSON.parse(jsonMatch[1]);
 
-                if (!data.rows || data.rows.length === 0) {
-                    document.getElementById('businessDescription').textContent = "No products yet.";
-                    subscribeBtn.disabled = true;
-                    subscribeBtn.textContent = "No products";
-                    return;
-                }
+                if (!data.rows || data.rows.length === 0) {
+                    document.getElementById('businessDescription').textContent = "No products yet.";
+                    subscribeBtn.disabled = true;
+                    subscribeBtn.textContent = "No products";
+                    return;
+                }
 
-                businessOwnerId = data.rows[0].businessOwnerId;
+                businessOwnerId = data.rows[0].businessOwnerId;
 
-                if (MY_DEVICE_ID === businessOwnerId) {
-                    subscribeBtn.textContent = "This is your business";
-                    subscribeBtn.disabled = true;
-                    subscribeBtn.className = "";
-                }
+                if (MY_DEVICE_ID === businessOwnerId) {
+                    subscribeBtn.textContent = "This is your business";
+                    subscribeBtn.disabled = true;
+                    subscribeBtn.className = "";
+                }
 
-                const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`);
-                const profileJson = await profileResp.json();
+                const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`);
+                const profileJson = await profileResp.json();
 
-                if (profileJson.result === "success" && profileJson.data) {
-                    const desc = profileJson.data.businessDescription?.trim();
-                    document.getElementById('businessDescription').textContent = desc || "This business hasn’t added a description yet.";
-                    subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} follower${profileJson.data.subscribers !== 1 ? 's' : ''}`;
+                if (profileJson.result === "success" && profileJson.data) {
+                    const desc = profileJson.data.businessDescription?.trim();
+                    document.getElementById('businessDescription').textContent = desc || "This business hasn’t added a description yet.";
+                    subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} follower${profileJson.data.subscribers !== 1 ? 's' : ''}`;
 
-                    loadPromotionalVideo(profileJson.data);
-                }
+                    loadPromotionalVideo(profileJson.data);
+                    
+                    // ⭐ NEW: Automatically count video view on successful load
+                    if (profileJson.data.videoLink) {
+                        countVideoView();
+                    }
+                }
 
-                const myResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${MY_DEVICE_ID}`);
-                const myJson = await myResp.json();
-                isFollowing = myJson.result === "success" && myJson.data?.subscribedTo?.includes(businessOwnerId);
-                updateSubscribeButton();
+                const myResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${MY_DEVICE_ID}`);
+                const myJson = await myResp.json();
+                isFollowing = myJson.result === "success" && myJson.data?.subscribedTo?.includes(businessOwnerId);
+                updateSubscribeButton();
 
-            } catch (e) {
-                console.error(e);
-                document.getElementById('businessDescription').textContent = "Failed to load business info.";
-            }
-        }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('businessDescription').textContent = "Failed to load business info.";
+            }
+        }
 
-        function updateSubscribeButton() {
-            if (isFollowing) {
-                subscribeBtn.textContent = "Following";
-                subscribeBtn.className = "unfollow";
-            } else {
-                subscribeBtn.textContent = "Subscribe";
-                subscribeBtn.className = "follow";
-            }
-            subscribeBtn.disabled = false;
-        }
+        function updateSubscribeButton() {
+            if (isFollowing) {
+                subscribeBtn.textContent = "Following";
+                subscribeBtn.className = "unfollow";
+            } else {
+                subscribeBtn.textContent = "Subscribe";
+                subscribeBtn.className = "follow";
+            }
+            subscribeBtn.disabled = false;
+        }
 
-        subscribeBtn.addEventListener('click', async () => {
-            if (subscribeBtn.disabled || !businessOwnerId) return;
+        subscribeBtn.addEventListener('click', async () => {
+            if (subscribeBtn.disabled || !businessOwnerId) return;
 
-            subscribeBtn.disabled = true;
-            subscribeBtn.textContent = "Processing...";
+            subscribeBtn.disabled = true;
+            subscribeBtn.textContent = "Processing...";
 
-            const action = isFollowing ? "unfollowBusiness" : "followBusiness";
-            const payload = { action, followerId: MY_DEVICE_ID, businessOwnerId };
+            const action = isFollowing ? "unfollowBusiness" : "followBusiness";
+            const payload = { action, followerId: MY_DEVICE_ID, businessOwnerId };
 
-            try {
-                const resp = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
-                const result = await resp.json();
+            try {
+                const resp = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+                const result = await resp.json();
 
-                if (result.result === "success") {
-                    isFollowing = !isFollowing;
-                    const p = await (await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`)).json();
-                    if (p.data) subscriberCountEl.textContent = `${p.data.subscribers || 0} follower${p.data.subscribers !== 1 ? 's' : ''}`;
-                    updateSubscribeButton();
-                } else {
-                    alert("Action failed: " + (result.message || "Try again"));
-                    subscribeBtn.disabled = false;
-                }
-            } catch (err) {
-                alert("Network error");
-                subscribeBtn.disabled = false;
-            }
-        });
+                if (result.result === "success") {
+                    isFollowing = !isFollowing;
+                    const p = await (await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`)).json();
+                    if (p.data) subscriberCountEl.textContent = `${p.data.subscribers || 0} follower${p.data.subscribers !== 1 ? 's' : ''}`;
+                    updateSubscribeButton();
+                } else {
+                    alert("Action failed: " + (result.message || "Try again"));
+                    subscribeBtn.disabled = false;
+                }
+            } catch (err) {
+                alert("Network error");
+                subscribeBtn.disabled = false;
+            }
+        });
 
-        function getBusinessName(p) {
-            return (p.businessName || p["Business Name"] || p.BusinessName || p.businessname || "").trim();
-        }
+        function getBusinessName(p) {
+            return (p.businessName || p["Business Name"] || p.BusinessName || p.businessname || "").trim();
+        }
 
-        window.renderProductsToDOM = function(products) {
-            const container = document.getElementById('businessProductsContainer');
-            container.innerHTML = '';
+        window.renderProductsToDOM = function(products) {
+            const container = document.getElementById('businessProductsContainer');
+            container.innerHTML = '';
 
-            const filtered = products.filter(p => getBusinessName(p) === targetBusiness);
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="hint" style="padding:80px;text-align:center;font-size:1.2rem;">
-                    No products found for <strong>${targetBusiness}</strong>
-                </div>`;
-                return;
-            }
+            const filtered = products.filter(p => getBusinessName(p) === targetBusiness);
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="hint" style="padding:80px;text-align:center;font-size:1.2rem;">
+                    No products found for <strong>${targetBusiness}</strong>
+                </div>`;
+                return;
+            }
 
-            const cats = [...new Set(filtered.map(p => p.category || 'General').filter(Boolean))];
-            document.getElementById('businessCategories').textContent = cats.join(' • ');
+            const cats = [...new Set(filtered.map(p => p.category || 'General').filter(Boolean))];
+            document.getElementById('businessCategories').textContent = cats.join(' • ');
 
-            const byCategory = {};
-            filtered.forEach(p => {
-                const cat = p.category || 'General';
-                if (!byCategory[cat]) byCategory[cat] = [];
-                byCategory[cat].push(p);
-            });
+            const byCategory = {};
+            filtered.forEach(p => {
+                const cat = p.category || 'General';
+                if (!byCategory[cat]) byCategory[cat] = [];
+                byCategory[cat].push(p);
+            });
 
-            for (const [category, items] of Object.entries(byCategory)) {
-                const header = document.createElement('h4');
-                header.className = 'category-group-header-small';
-                header.textContent = category;
-                container.appendChild(header);
+            for (const [category, items] of Object.entries(byCategory)) {
+                const header = document.createElement('h4');
+                header.className = 'category-group-header-small';
+                header.textContent = category;
+                container.appendChild(header);
 
-                const row = document.createElement('div');
-                row.className = 'product-group-wrapper';
+                const row = document.createElement('div');
+                row.className = 'product-group-wrapper';
 
-                items.forEach(p => {
-                    if (!p.rowId && p.row) p.rowId = p.row;
-                    const card = createProductCard(p);
-                    row.appendChild(card);
-                });
+                items.forEach(p => {
+                    if (!p.rowId && p.row) p.rowId = p.row;
+                    const card = createProductCard(p);
+                    row.appendChild(card);
+                });
 
-                container.appendChild(row);
-            }
-        };
+                container.appendChild(row);
+            }
+        };
 
-        // Sharing functions - fixed event listener issue
+       // Sharing functions - fixed event listener issue
         function generateShareableLink(businessName) {
             if (!businessName?.trim()) return '';
             const encodedName = encodeURIComponent(businessName.trim());
-            return `${location.origin}${location.pathname}?name=${encodedName}`;
+            // Updated to use the static GitHub Pages URL for reliable sharing
+            const BASE_URL = 'https://vibe-ultrafiles04.github.io/Uchumi-Chat/';
+            
+            return `${BASE_URL}?name=${encodedName}`;
         }
 
         function copyLinkToClipboard() {
@@ -465,11 +477,9 @@
         if (targetBusiness) {
             loadBusinessData();
             loadBusinessDescription(targetBusiness);
-        }
-        fetchAndRenderProducts();
+        }   fetchAndRenderProducts();
 
-        // Count view only when user clicks the video wrapper (first time per device)
-        videoWrapper.addEventListener('click', countVideoView, { once: true });
-    </script>
+        // REMOVED: videoWrapper.addEventListener('click', countVideoView, { once: true });
+    </script>
 </body>
 </html>
