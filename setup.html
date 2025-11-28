@@ -8,7 +8,6 @@
     <meta name="theme-color" content="#3b6dc6" />
     <link rel="apple-touch-icon" href="inventory192.png" />
     <style>
-        /* --- CSS for Centered Form Layout --- */
         body {
             background: #f9f9f9;
             margin: 0;
@@ -26,13 +25,10 @@
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             text-align: center;
         }
-        h2 {
-            color: #3b6dc6;
-            margin-bottom: 25px;
-        }
+        h2 { color: #3b6dc6; margin-bottom: 25px; }
         input, textarea {
             width: 100%;
             padding: 12px;
@@ -41,7 +37,6 @@
             border: 1px solid #ccc;
             border-radius: 8px;
             box-sizing: border-box;
-            resize: vertical;
         }
         button {
             width: 100%;
@@ -52,262 +47,289 @@
             border-radius: 8px;
             font-size: 18px;
             cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 20px;
-        }
-        button:hover {
-            background: #325a9e;
-        }
-        .hint {
-            color: #888;
-            font-size: 14px;
-            margin-top: 5px;
-            text-align: left; /* Ensure hints align with labels */
-        }
-        .error {
-            color: red;
-            margin: 10px 0;
-            font-size: 14px;
-            display: none;
-        }
-        .count-display {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #f5f5f5;
-        }
-        .count-grid {
-            text-align: center;
-        }
-        .count-grid p {
-            font-size: 32px; /* Larger count display */
-            font-weight: bold;
-            color: #3b6dc6;
-            margin: 5px 0 5px 0;
-        }
-        label {
-            display: block;
-            text-align: left;
             margin-top: 15px;
-            font-size: 14px;
+            transition: background 0.2s;
+        }
+        button:hover { background: #325a9e; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        .hint { color: #888; font-size: 14px; margin-top: 5px; text-align: left; }
+        .error { color: red; margin: 15px 0; font-size: 15px; display: none; }
+        .warning-box {
+            background: #ffebee;
+            border: 2px solid #f44336;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
             font-weight: bold;
+            color: #c62828;
+        }
+        .owner-key-display {
+            background: #f0f0f0;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 18px;
+            letter-spacing: 1px;
+            border-radius: 8px;
+            margin: 15px 0;
+            word-break: break-all;
+        }
+        .hidden { display: none; }
+        label { display: block; text-align: left; margin-top: 15px; font-weight: bold; font-size: 14px; }
+        .recover-link {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #3b6dc6;
+            text-decoration: underline;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="profile-box">
         <h2 id="formTitle">Setup Your Business Profile</h2>
-        <p class="error" id="errorMsg">Please fill in all required fields.</p>
-        
-        <form id="profileForm">
-            <label for="businessNameInput">Business Name*</label>
-            <input type="text" id="businessNameInput" placeholder="e.g., Jane's Trinkets" required />
+        <p class="error" id="errorMsg"></p>
 
-            <label for="businessDescriptionInput">Business Description*</label>
-            <textarea id="businessDescriptionInput" placeholder="A brief description of your business." rows="3" required></textarea>
+        <!-- MAIN SETUP FORM -->
+        <div id="mainSetup">
+            <form id="profileForm">
+                <label for="businessNameInput">Business Name*</label>
+                <input type="text" id="businessNameInput" placeholder="e.g., Jane's Trinkets" required />
 
-            <div id="countContainer">
-                <label for="subscribersCount">Initial Subscribers Count</label>
-                <input type="number" id="subscribersCount" placeholder="0" value="0" min="0"/>
-                <div class="hint">The number of users currently subscribed to your business (can be 0).</div>
+                <label for="businessDescriptionInput">Business Description*</label>
+                <textarea id="businessDescriptionInput" placeholder="A brief description of your business." rows="3" required></textarea>
+
+                <div id="countContainer">
+                    <label for="subscribersCount">Initial Subscribers Count</label>
+                    <input type="number" id="subscribersCount" placeholder="0" value="0" min="0"/>
+                    <div class="hint">The number of users currently subscribed to your business (can be 0).</div>
+                </div>
+
+                <button type="submit" id="setupButton">Set Up Profile</button>
+                <p class="hint">Your device will be permanently linked to this business.</p>
+            </form>
+
+            <!-- Recover Link (only if no business linked) -->
+            <div id="recoverLink" class="recover-link">Already have a business? Recover with Owner Key</div>
+        </div>
+
+        <!-- OWNER KEY DISPLAY (after first setup) -->
+        <div id="ownerKeySection" class="hidden">
+            <div class="warning-box">
+                This key is shown ONLY ONCE.<br>
+                Save it now — you will never see it again.<br>
+                It is required to recover or transfer ownership.
             </div>
+            <p><strong>Your Owner Key:</strong></p>
+            <div class="owner-key-display" id="ownerKeyDisplay"></div>
+            <button id="copyKeyBtn">Copy Key</button>
+            <button id="continueBtn">I Saved the Key → Continue</button>
+        </div>
 
-            <button type="submit" id="setupButton">Set Up Profile</button>
-            
-            <p class="hint">Your device ID will be permanently linked to this business name.</p>
-            <button type="button" id="goBackBtn" style="display: none; background: #6c757d; margin-top: 10px;">Go Back to Home page</button>
-        </form>
+        <!-- RECOVER OWNERSHIP MODE -->
+        <div id="recoverMode" class="hidden">
+            <h2>Recover Ownership</h2>
+            <p>Paste your Owner Key to link this device to your existing business.</p>
+            <input type="text" id="recoverKeyInput" placeholder="Enter your 32-character Owner Key" maxlength="32" />
+            <button id="linkDeviceBtn">Link This Device</button>
+            <button type="button" id="backToSetupBtn" style="background:#6c757d; margin-top:10px;">← Back to Setup</button>
+        </div>
+
+        <button type="button" id="goBackBtn" style="display:none; background:#6c757d; margin-top:20px;">Go Back to Home</button>
     </div>
 
     <script>
-        // --- CONFIGURATION ---
-        // Apps Script URL (REPLACE WITH YOUR ACTUAL URL)
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzqR8gf-VZTYmiw43sB_HnP4neZn1C7g-TJmkkJQb2cykIgV72wxJbISNSTPi8y5Aj6/exec";
-        
-        // Local Storage Keys
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxWl0G21w0vPeIB-Cy58iw7eZ6TVNoDBWNvVJW4zvKzRw1GBD-oGFg6YMD78T1IburP/exec";
         const DEVICE_ID_KEY = 'uniqueDeviceId';
         const OWNER_BUSINESS_KEY = 'ownerBusinessName';
-        
-        // --- DOM REFERENCES ---
-        const form = document.getElementById('profileForm');
-        const setupButton = document.getElementById('setupButton');
-        const errorMsg = document.getElementById('errorMsg');
-        const businessNameInput = document.getElementById('businessNameInput');
-        const businessDescriptionInput = document.getElementById('businessDescriptionInput');
-        const subscribersCountInput = document.getElementById('subscribersCount');
-        const countContainer = document.getElementById('countContainer');
-        const goBackBtn = document.getElementById('goBackBtn');
-        
-        // --- HELPER FUNCTIONS ---
 
-        /**
-         * Retrieves or creates a unique device ID for the browser/device.
-         * @returns {string} The unique device ID.
-         */
+        const mainSetup = document.getElementById('mainSetup');
+        const ownerKeySection = document.getElementById('ownerKeySection');
+        const recoverMode = document.getElementById('recoverMode');
+        const recoverLink = document.getElementById('recoverLink');
+        const profileForm = document.getElementById('profileForm');
+        const errorMsg = document.getElementById('errorMsg');
+        const ownerKeyDisplay = document.getElementById('ownerKeyDisplay');
+        const setupButton = document.getElementById('setupButton');
+        const goBackBtn = document.getElementById('goBackBtn');
+
         function getOrCreateDeviceId() {
             let id = localStorage.getItem(DEVICE_ID_KEY);
             if (!id) {
-                // Generate a simple unique ID
-                id = 'dev-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+                const array = new Uint8Array(16);
+                crypto.getRandomValues(array);
+                id = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
                 localStorage.setItem(DEVICE_ID_KEY, id);
             }
             return id;
         }
 
-        /**
-         * Fetches the business profile data for the current device from the Apps Script.
-         * @param {string} deviceId 
-         * @returns {Promise<object|null>} Profile data object or null on failure.
-         */
+        function generateOwnerKey() {
+            const array = new Uint8Array(16);
+            crypto.getRandomValues(array);
+            return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+        }
+
         async function fetchProfileData(deviceId) {
             try {
-                // NOTE: Apps Script must have a doGet handler for action=getBusinessProfile
-                const url = `${WEB_APP_URL}?action=getBusinessProfile&deviceId=${deviceId}`;
-                const res = await fetch(url);
+                const res = await fetch(`${WEB_APP_URL}?action=getBusinessProfile&deviceId=${deviceId}`);
                 const json = await res.json();
-                
-                if (json.result === 'success' && json.data) {
-                    return json.data;
-                }
-                return null;
+                return json.result === 'success' && json.data ? json.data : null;
             } catch (e) {
-                console.error("Failed to fetch profile data:", e);
+                console.error(e);
                 return null;
             }
         }
 
-        // --- INITIALIZATION (DOMContentLoaded) ---
         document.addEventListener('DOMContentLoaded', async () => {
-            const params = new URLSearchParams(window.location.search);
+            const params = new URLSearchParams(location.search);
             const isEditMode = params.get('mode') === 'edit';
-            
-            const OWNER_BUSINESS_NAME = localStorage.getItem(OWNER_BUSINESS_KEY);
+            const businessName = localStorage.getItem(OWNER_BUSINESS_KEY);
             const deviceId = getOrCreateDeviceId();
 
-            // 1. Redirection Check (If profile exists and we are NOT editing)
-            if (OWNER_BUSINESS_NAME && !isEditMode) {
-                console.log("Business already set up. Redirecting to index.html");
+            if (businessName && !isEditMode) {
                 window.location.href = 'index.html';
                 return;
             }
 
-            // 2. Edit Mode Setup
             if (isEditMode) {
                 document.getElementById('formTitle').textContent = "Edit Your Business Profile";
-                document.getElementById('pageTitle').textContent = "Edit Profile";
                 setupButton.textContent = 'Save Changes';
                 goBackBtn.style.display = 'block';
-                
-                // Hide the initial count input, as the live count will be displayed
-                countContainer.style.display = 'none';
+                document.getElementById('countContainer').style.display = 'none';
+                recoverLink.style.display = 'none';
 
                 const profile = await fetchProfileData(deviceId);
-                
                 if (profile) {
-                    // Pre-fill editable fields
-                    businessNameInput.value = profile.businessName || '';
-                    businessDescriptionInput.value = profile.businessDescription || '';
-                    
-                    // Display live read-only counts
-                    const subscribersCount = profile.subscribers || 0;
-                    
-                    // Re-inject the read-only count display
-                    countContainer.style.display = 'block'; 
-                    countContainer.innerHTML = `
-                        <div class="count-display">
-                            <label>Live Subscriber Count (Read-Only)</label>
-                            <div class="count-grid">
-                                <div>
-                                    <p>${subscribersCount}</p>
-                                    <div class="hint">Subscribers TO YOU (Followers)</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    document.getElementById('businessNameInput').value = profile.businessName || '';
+                    document.getElementById('businessDescriptionInput').value = profile.businessDescription || '';
                 } else {
-                    errorMsg.textContent = "Could not load profile data for editing. Please try again from the index page.";
+                    errorMsg.textContent = "Could not load profile.";
                     errorMsg.style.display = 'block';
-                    setupButton.disabled = true;
                 }
+            } else if (!businessName) {
+                // First-time setup: show recover link
+                recoverLink.style.display = 'block';
             }
+
+            // Recover mode toggle
+            recoverLink.onclick = () => {
+                mainSetup.classList.add('hidden');
+                recoverMode.classList.remove('hidden');
+            };
+
+            document.getElementById('backToSetupBtn').onclick = () => {
+                recoverMode.classList.add('hidden');
+                mainSetup.classList.remove('hidden');
+            };
+
+            document.getElementById('linkDeviceBtn').onclick = async () => {
+                const key = document.getElementById('recoverKeyInput').value.trim();
+                if (key.length !== 32) {
+                    errorMsg.textContent = "Owner Key must be exactly 32 characters.";
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                errorMsg.style.display = 'none';
+                const payload = { action: "recoverWithOwnerKey", ownerKey: key, deviceId };
+                try {
+                    const res = await fetch(WEB_APP_URL, {
+                        method: "POST",
+                        mode: "cors",
+                        headers: { "Content-Type": "text/plain" },
+                        body: JSON.stringify(payload)
+                    });
+                    const json = await res.json();
+                    if (json.result === "success") {
+                        localStorage.setItem(OWNER_BUSINESS_KEY, json.businessName);
+                        alert("Ownership recovered successfully!");
+                        window.location.href = 'index.html';
+                    } else {
+                        errorMsg.textContent = json.message || "Invalid Owner Key.";
+                        errorMsg.style.display = 'block';
+                    }
+                } catch (e) {
+                    errorMsg.textContent = "Network error.";
+                    errorMsg.style.display = 'block';
+                }
+            };
+
+            goBackBtn.onclick = () => window.location.href = 'index.html';
         });
 
-        // Handle Go Back button
-        goBackBtn.addEventListener('click', () => {
+        // Copy Owner Key
+        document.getElementById('copyKeyBtn').onclick = () => {
+            navigator.clipboard.writeText(ownerKeyDisplay.textContent);
+            alert("Owner Key copied to clipboard!");
+        };
+
+        document.getElementById('continueBtn').onclick = () => {
             window.location.href = 'index.html';
-        });
-        
-        // --- FORM SUBMISSION HANDLER ---
-        form.addEventListener('submit', async (e) => {
+        };
+
+        // Form Submit (Setup or Edit)
+        profileForm.onsubmit = async (e) => {
             e.preventDefault();
-            
-            const params = new URLSearchParams(window.location.search);
-            const isEditMode = params.get('mode') === 'edit';
-            
-            const businessName = businessNameInput.value.trim();
-            const businessDescription = businessDescriptionInput.value.trim();
+            const isEditMode = new URLSearchParams(location.search).get('mode') === 'edit';
+            const businessName = document.getElementById('businessNameInput').value.trim();
+            const businessDescription = document.getElementById('businessDescriptionInput').value.trim();
             const deviceId = getOrCreateDeviceId();
-            
+
             if (!businessName || !businessDescription) {
-                errorMsg.textContent = "Business Name and Description are required.";
+                errorMsg.textContent = "All fields are required.";
                 errorMsg.style.display = 'block';
                 return;
             }
 
             setupButton.disabled = true;
-            setupButton.textContent = isEditMode ? 'Saving Changes...' : 'Submitting Profile...';
-            errorMsg.style.display = 'none';
-            
-            // Determine action for Apps Script
-            const actionType = isEditMode ? "updateBusinessProfile" : "setupBusinessProfile";
+            setupButton.textContent = isEditMode ? "Saving..." : "Creating...";
 
-            // Base Payload
             const payload = {
-                action: actionType,
-                deviceId: deviceId,
-                businessName: businessName,
-                businessDescription: businessDescription, // Use the correct key for consistency
+                action: isEditMode ? "updateBusinessProfile" : "setupBusinessProfile",
+                deviceId,
+                businessName,
+                businessDescription,
                 timestamp: new Date().toISOString()
             };
-            
-            // Only include initial counts if setting up (not editing)
+
             if (!isEditMode) {
-                payload.subscribersCount = parseInt(subscribersCountInput.value) || 0; // Followers TO YOU
-                payload.subscribedCount = 0;                                     // Businesses YOU follow
-                payload.subscribedTo = [];                                     // List of businesses you follow
+                payload.subscribersCount = parseInt(document.getElementById('subscribersCount').value) || 0;
+                payload.ownerKey = generateOwnerKey(); // Only generated on first setup
             }
 
             try {
                 const res = await fetch(WEB_APP_URL, {
                     method: "POST",
-                    mode: "cors",
                     headers: { "Content-Type": "text/plain" },
                     body: JSON.stringify(payload)
                 });
-                
-                // Note: The Apps Script doPost must return JSON for this to work
                 const json = await res.json();
-                
-                if (json && json.result === "success") {
-                    // Update local storage business name
-                    localStorage.setItem(OWNER_BUSINESS_KEY, businessName); 
-                    
-                    alert(`Profile for "${businessName}" successfully ${isEditMode ? 'updated' : 'created'}!`);
-                    window.location.href = 'index.html'; // Go to the main view
+
+                if (json.result === "success") {
+                    localStorage.setItem(OWNER_BUSINESS_KEY, businessName);
+
+                    if (!isEditMode && json.ownerKey) {
+                        // Show Owner Key screen
+                        mainSetup.classList.add('hidden');
+                        ownerKeyDisplay.textContent = json.ownerKey;
+                        ownerKeySection.classList.remove('hidden');
+                    } else {
+                        alert(`Profile ${isEditMode ? 'updated' : 'created'} successfully!`);
+                        window.location.href = 'index.html';
+                    }
                 } else {
-                    errorMsg.textContent = "Failed to process request: " + (json?.message || res.statusText);
+                    errorMsg.textContent = json.message || "Operation failed.";
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                console.error("Error sending profile request:", err);
-                errorMsg.textContent = "An error occurred during network submission.";
+                errorMsg.textContent = "Network error.";
                 errorMsg.style.display = 'block';
             } finally {
-                setupButton.textContent = isEditMode ? 'Save Changes' : 'Set Up Profile';
                 setupButton.disabled = false;
+                setupButton.textContent = isEditMode ? "Save Changes" : "Set Up Profile";
             }
-        });
+        };
     </script>
 </body>
 </html>
