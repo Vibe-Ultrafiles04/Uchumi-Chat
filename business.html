@@ -114,6 +114,7 @@
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             background: #000;
+            cursor: pointer;
         }
         .video-wrapper iframe {
             position: absolute;
@@ -172,8 +173,8 @@
     </div>
 
     <!-- PROMOTIONAL VIDEO (appears only if set) -->
-    <div class="video-section" id="videoSection">
-        <div class="video-wrapper">
+    <div class="video-section" id="videoSection" style="display:none;">
+        <div class="video-wrapper" id="videoWrapper">
             <iframe id="promoVideo" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
         </div>
         <div class="video-info">
@@ -193,7 +194,7 @@
     <script src="index.js"></script>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyR1WhQhJKOUnlWZ8NOF3I5F_8d3OOhN6JeLrYdk7Nm8tXX9BC-2SOt_rxLljpYQYjZ/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwne5RznCpPYDt3yIN4_ixRGnpxj8bwcOFNyg9vdAxJC9mCWFA5AYdQLDUxTgX3bciUsQ/exec";
 
         function getMyDeviceId() {
             let id = localStorage.getItem('myDeviceId');
@@ -207,10 +208,12 @@
 
         let businessOwnerId = null;
         let isFollowing = false;
+        let currentVideoViews = 0;
 
         const subscribeBtn = document.getElementById('subscribeBtn');
         const subscriberCountEl = document.getElementById('subscriberCount');
         const videoSection = document.getElementById('videoSection');
+        const videoWrapper = document.getElementById('videoWrapper');
         const promoVideo = document.getElementById('promoVideo');
         const videoViewsEl = document.getElementById('videoViews');
 
@@ -235,14 +238,14 @@
             return match ? match[1] : null;
         }
 
-        // Format view count nicely (1.2K, 5M etc.)
+        // Format view count nicely
         function formatViews(num) {
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M views';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K views';
             return num + (num === 1 ? ' view' : ' views');
         }
 
-        // Load video + increment view count
+        // Load video (no view increment here)
         async function loadPromotionalVideo(profileData) {
             if (!profileData?.videoLink) {
                 videoSection.style.display = 'none';
@@ -255,25 +258,31 @@
                 return;
             }
 
-            // Embed video
             promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
-
-            // Show views
-            const views = profileData.videoViews || 0;
-            videoViewsEl.textContent = formatViews(views);
-
+            currentVideoViews = profileData.videoViews || 0;
+            videoViewsEl.textContent = formatViews(currentVideoViews);
             videoSection.style.display = 'block';
+        }
 
-            // Only count view if not the owner
-            if (MY_DEVICE_ID !== businessOwnerId) {
-                fetch(SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        action: "incrementVideoView",
-                        businessOwnerId: businessOwnerId
-                    })
-                }).catch(() => {}); // fire and forget
-            }
+        // Increment view only on first click per device
+        async function countVideoView() {
+            if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
+
+            const viewedKey = `videoViewed_${businessOwnerId}`;
+            if (localStorage.getItem(viewedKey)) return;
+
+            localStorage.setItem(viewedKey, 'true');
+
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "incrementVideoView",
+                    businessOwnerId: businessOwnerId
+                })
+            }).then(() => {
+                currentVideoViews += 1;
+                videoViewsEl.textContent = formatViews(currentVideoViews);
+            }).catch(() => {});
         }
 
         async function loadBusinessData() {
@@ -301,7 +310,6 @@
                     subscribeBtn.className = "";
                 }
 
-                // Load profile (description + video + views)
                 const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`);
                 const profileJson = await profileResp.json();
 
@@ -310,11 +318,9 @@
                     document.getElementById('businessDescription').textContent = desc || "This business hasn’t added a description yet.";
                     subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} follower${profileJson.data.subscribers !== 1 ? 's' : ''}`;
 
-                    // Load video
                     loadPromotionalVideo(profileJson.data);
                 }
 
-                // Check follow status
                 const myResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${MY_DEVICE_ID}`);
                 const myJson = await myResp.json();
                 isFollowing = myJson.result === "success" && myJson.data?.subscribedTo?.includes(businessOwnerId);
@@ -365,7 +371,6 @@
             }
         });
 
-        // Keep all your existing functions (sharing, product rendering, etc.)
         function getBusinessName(p) {
             return (p.businessName || p["Business Name"] || p.BusinessName || p.businessname || "").trim();
         }
@@ -411,14 +416,16 @@
             }
         };
 
-        // Sharing functions unchanged
+        // Sharing functions - fixed event listener issue
         function generateShareableLink(businessName) {
             if (!businessName?.trim()) return '';
             const encodedName = encodeURIComponent(businessName.trim());
             return `${location.origin}${location.pathname}?name=${encodedName}`;
         }
 
-        function copyLinkToClipboard(link, button) {
+        function copyLinkToClipboard() {
+            const link = document.getElementById('shareLinkInput').value;
+            const button = document.getElementById('copyShareLinkBtn');
             navigator.clipboard.writeText(link).then(() => {
                 button.textContent = "Copied!";
                 setTimeout(() => button.textContent = "Copy Link", 2000);
@@ -427,24 +434,30 @@
 
         function setupSharing() {
             const shareWrapper = document.getElementById('shareWrapper');
-            if (!targetBusiness) { shareWrapper.style.display = 'none'; return; }
+            if (!targetBusiness) {
+                shareWrapper.style.display = 'none';
+                return;
+            }
             shareWrapper.style.display = 'block';
 
             const link = generateShareableLink(targetBusiness);
             document.getElementById('shareLinkInput').value = link;
 
-            const btn = document.getElementById('copyShareLinkBtn');
-            btn.replaceWith(btn.cloneNode(true));
-            document.getElementById('copyShareLinkBtn').addEventListener('click', () => copyLinkToClipboard(link, btn));
+            // Proper event attachment without breaking listener
+            const copyBtn = document.getElementById('copyShareLinkBtn');
+            copyBtn.onclick = copyLinkToClipboard;
         }
 
         // Init
         setupSharing();
         if (targetBusiness) {
             loadBusinessData();
-            loadBusinessDescription(targetBusiness); // fallback if needed
+            loadBusinessDescription(targetBusiness);
         }
         fetchAndRenderProducts();
+
+        // Count view only when user clicks the video wrapper (first time per device)
+        videoWrapper.addEventListener('click', countVideoView, { once: true });
     </script>
 </body>
 </html>
