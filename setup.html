@@ -21,6 +21,7 @@
         }
         .profile-box {
             background: white;
+            background: white;
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
@@ -84,6 +85,45 @@
             text-decoration: underline;
             cursor: pointer;
         }
+
+        /* Video Preview Styles */
+        .video-preview-container {
+            margin: 15px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+            max-width: 100%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .video-preview-container img {
+            width: 100%;
+            display: block;
+        }
+        .play-button-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 68px;
+            height: 68px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .play-button-overlay::after {
+            content: "";
+            width: 0;
+            height: 0;
+            border-left: 20px solid #3b6dc6;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            margin-left: 6px;
+        }
     </style>
 </head>
 <body>
@@ -100,6 +140,22 @@
                 <label for="businessDescriptionInput">Business Description*</label>
                 <textarea id="businessDescriptionInput" placeholder="A brief description of your business." rows="3" required></textarea>
 
+                <!-- VIDEO LINK INPUT + PREVIEW -->
+                <label for="videoLinkInput">Promotional Video (Google Drive link) <small style="font-weight:normal;color:#666;">– optional</small></label>
+                <input type="url" 
+                       id="videoLinkInput" 
+                       placeholder="https://drive.google.com/file/d/.../view?usp=sharing" 
+                       style="margin-bottom:5px;" />
+                <div class="hint">
+                    Make sure the video is set to “Anyone with the link can view”.<br>
+                    A nice preview will appear below once pasted.
+                </div>
+
+                <div id="videoPreview" class="video-preview-container hidden">
+                    <img id="videoThumbnail" src="" alt="Video preview">
+                    <div class="play-button-overlay"></div>
+                </div>
+
                 <div id="countContainer">
                     <label for="subscribersCount">Initial Subscribers Count</label>
                     <input type="number" id="subscribersCount" placeholder="0" value="0" min="0"/>
@@ -110,11 +166,10 @@
                 <p class="hint">Your device will be permanently linked to this business.</p>
             </form>
 
-            <!-- Recover Link (only if no business linked) -->
             <div id="recoverLink" class="recover-link">Already have a business? Recover with Owner Key</div>
         </div>
 
-        <!-- OWNER KEY DISPLAY (after first setup) -->
+        <!-- OWNER KEY DISPLAY -->
         <div id="ownerKeySection" class="hidden">
             <div class="warning-box">
                 This key is shown ONLY ONCE.<br>
@@ -127,20 +182,20 @@
             <button id="continueBtn">I Saved the Key → Continue</button>
         </div>
 
-        <!-- RECOVER OWNERSHIP MODE -->
+        <!-- RECOVER MODE -->
         <div id="recoverMode" class="hidden">
             <h2>Recover Ownership</h2>
             <p>Paste your Owner Key to link this device to your existing business.</p>
             <input type="text" id="recoverKeyInput" placeholder="Enter your 32-character Owner Key" maxlength="32" />
             <button id="linkDeviceBtn">Link This Device</button>
-            <button type="button" id="backToSetupBtn" style="background:#6c757d; margin-top:10px;">← Back to Setup</button>
+            <button type="button" id="backToSetupBtn" style="background:#6c757d; margin-top:10px;">Back to Setup</button>
         </div>
 
         <button type="button" id="goBackBtn" style="display:none; background:#6c757d; margin-top:20px;">Go Back to Home</button>
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxWl0G21w0vPeIB-Cy58iw7eZ6TVNoDBWNvVJW4zvKzRw1GBD-oGFg6YMD78T1IburP/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyR1WhQhJKOUnlWZ8NOF3I5F_8d3OOhN6JeLrYdk7Nm8tXX9BC-2SOt_rxLljpYQYjZ/exec";
         const DEVICE_ID_KEY = 'uniqueDeviceId';
         const OWNER_BUSINESS_KEY = 'ownerBusinessName';
 
@@ -153,6 +208,11 @@
         const ownerKeyDisplay = document.getElementById('ownerKeyDisplay');
         const setupButton = document.getElementById('setupButton');
         const goBackBtn = document.getElementById('goBackBtn');
+
+        // Video preview elements
+        const videoLinkInput = document.getElementById('videoLinkInput');
+        const videoPreview = document.getElementById('videoPreview');
+        const videoThumbnail = document.getElementById('videoThumbnail');
 
         function getOrCreateDeviceId() {
             let id = localStorage.getItem(DEVICE_ID_KEY);
@@ -182,6 +242,22 @@
             }
         }
 
+        // Extract Google Drive file ID and show thumbnail
+        function updateVideoPreview() {
+            const url = videoLinkInput.value.trim();
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                const fileId = match[1];
+                videoThumbnail.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+                videoPreview.classList.remove('hidden');
+            } else {
+                videoPreview.classList.add('hidden');
+            }
+        }
+
+        videoLinkInput.addEventListener('input', updateVideoPreview);
+        videoLinkInput.addEventListener('paste', () => setTimeout(updateVideoPreview, 100));
+
         document.addEventListener('DOMContentLoaded', async () => {
             const params = new URLSearchParams(location.search);
             const isEditMode = params.get('mode') === 'edit';
@@ -204,26 +280,27 @@
                 if (profile) {
                     document.getElementById('businessNameInput').value = profile.businessName || '';
                     document.getElementById('businessDescriptionInput').value = profile.businessDescription || '';
+                    if (profile.videoLink) {
+                        videoLinkInput.value = profile.videoLink;
+                        updateVideoPreview(); // show existing preview
+                    }
                 } else {
                     errorMsg.textContent = "Could not load profile.";
                     errorMsg.style.display = 'block';
                 }
             } else if (!businessName) {
-                // First-time setup: show recover link
                 recoverLink.style.display = 'block';
             }
 
-            // Recover mode toggle
+            // Recover mode handlers (unchanged)
             recoverLink.onclick = () => {
                 mainSetup.classList.add('hidden');
                 recoverMode.classList.remove('hidden');
             };
-
             document.getElementById('backToSetupBtn').onclick = () => {
                 recoverMode.classList.add('hidden');
                 mainSetup.classList.remove('hidden');
             };
-
             document.getElementById('linkDeviceBtn').onclick = async () => {
                 const key = document.getElementById('recoverKeyInput').value.trim();
                 if (key.length !== 32) {
@@ -234,12 +311,7 @@
                 errorMsg.style.display = 'none';
                 const payload = { action: "recoverWithOwnerKey", ownerKey: key, deviceId };
                 try {
-                    const res = await fetch(WEB_APP_URL, {
-                        method: "POST",
-                        mode: "cors",
-                        headers: { "Content-Type": "text/plain" },
-                        body: JSON.stringify(payload)
-                    });
+                    const res = await fetch(WEB_APP_URL, { method: "POST", mode: "cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
                     const json = await res.json();
                     if (json.result === "success") {
                         localStorage.setItem(OWNER_BUSINESS_KEY, json.businessName);
@@ -268,16 +340,17 @@
             window.location.href = 'index.html';
         };
 
-        // Form Submit (Setup or Edit)
+        // FORM SUBMIT – now includes videoLink
         profileForm.onsubmit = async (e) => {
             e.preventDefault();
             const isEditMode = new URLSearchParams(location.search).get('mode') === 'edit';
             const businessName = document.getElementById('businessNameInput').value.trim();
             const businessDescription = document.getElementById('businessDescriptionInput').value.trim();
+            const videoLink = videoLinkInput.value.trim() || null;
             const deviceId = getOrCreateDeviceId();
 
             if (!businessName || !businessDescription) {
-                errorMsg.textContent = "All fields are required.";
+                errorMsg.textContent = "Business Name and Description are required.";
                 errorMsg.style.display = 'block';
                 return;
             }
@@ -290,12 +363,13 @@
                 deviceId,
                 businessName,
                 businessDescription,
+                videoLink,                     // ← NEW FIELD
                 timestamp: new Date().toISOString()
             };
 
             if (!isEditMode) {
                 payload.subscribersCount = parseInt(document.getElementById('subscribersCount').value) || 0;
-                payload.ownerKey = generateOwnerKey(); // Only generated on first setup
+                payload.ownerKey = generateOwnerKey();
             }
 
             try {
@@ -310,7 +384,6 @@
                     localStorage.setItem(OWNER_BUSINESS_KEY, businessName);
 
                     if (!isEditMode && json.ownerKey) {
-                        // Show Owner Key screen
                         mainSetup.classList.add('hidden');
                         ownerKeyDisplay.textContent = json.ownerKey;
                         ownerKeySection.classList.remove('hidden');
