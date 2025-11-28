@@ -437,14 +437,12 @@
             }
         };
 
-       // Sharing functions - fixed event listener issue
+              // Sharing functions - NOW POINTS TO business.html
         function generateShareableLink(businessName) {
             if (!businessName?.trim()) return '';
             const encodedName = encodeURIComponent(businessName.trim());
-            // Updated to use the static GitHub Pages URL for reliable sharing
-            const BASE_URL = 'https://vibe-ultrafiles04.github.io/Uchumi-Chat/';
-            
-            return `${BASE_URL}?name=${encodedName}`;
+            // Forces the link to open business.html (works everywhere: WhatsApp, Telegram, etc.)
+            return `https://vibe-ultrafiles04.github.io/Uchumi-Chat/business.html?name=${encodedName}`;
         }
 
         function copyLinkToClipboard() {
@@ -477,8 +475,7 @@
         if (targetBusiness) {
             loadBusinessData();
             loadBusinessDescription(targetBusiness);
-        }   fetchAndRenderProducts();
-
+        }   fetchAndRenderProducts();
         // REMOVED: videoWrapper.addEventListener('click', countVideoView, { once: true });
     </script>
 </body>
