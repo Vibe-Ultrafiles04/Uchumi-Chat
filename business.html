@@ -208,7 +208,7 @@
         let businessOwnerId = null;
         let isFollowing = false;
         let currentVideoViews = 0;
-        let currentVideoId = null;  // ← Will be set in loadPromotionalVideo
+        
 
         const subscribeBtn = document.getElementById('subscribeBtn');
         const subscriberCountEl = document.getElementById('subscriberCount');
@@ -257,7 +257,7 @@
                 videoSection.style.display = 'none';
                 return;
             }
-            currentVideoId = driveId;  // ← This makes the magic work
+           
 
             promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
             currentVideoViews = profileData.videoViews || 0;
@@ -266,45 +266,42 @@
         }
 
         // Increment view only on first click per device
+       async function countVideoView() {
+    if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
+
+    // Check if video section is visible before trying to count the view.
+    // This handles the "If the video doesn't exist or the section is hidden, nothing should happen" requirement.
+    if (videoSection.style.display === 'none') return;
     
 
-// →→→ REPLACE YOUR ENTIRE countVideoView() FUNCTION WITH THIS ONE ←←←
-async function countVideoView() {
-    if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
-    if (videoSection.style.display === 'none') return;
-    if (!currentVideoId) return; // Safety: no video loaded yet
+    const viewedKey = `videoViewed_${businessOwnerId}`;
+    if (localStorage.getItem(viewedKey)) return;
 
-    // SMART KEY: Resets when:
-    // 1. Video link changes (new currentVideoId)
-    // 2. Admin resets views to 0 (currentVideoViews changes to 0)
-    const viewedKey = `videoViewed_${businessOwnerId}_${currentVideoId}_v${currentVideoViews}`;
+    // Mark as viewed immediately to prevent double-counting on the same device/session
+    localStorage.setItem(viewedKey, 'true');
 
-    // If this exact video + this counter state was already viewed → skip
-    if (localStorage.getItem(viewedKey)) return;
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",                    // Required for Google Apps Script
+            headers: { "Content-Type": "text/plain" },  // Helps avoid CORS preflight
+            body: JSON.stringify({
+                action: "incrementVideoView",
+                businessOwnerId: businessOwnerId,
+                viewerDeviceId: MY_DEVICE_ID     
+            })
+        });
 
-    // Mark as viewed for THIS specific video AND this counter value
-    localStorage.setItem(viewedKey, 'true');
+        // Note: With no-cors, we can't read the response body
+        // But the server still processed it, so we can safely increment locally
+        currentVideoViews += 1;
+        videoViewsEl.textContent = formatViews(currentVideoViews);
 
-    try {
-        await fetch(SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({
-                action: "incrementVideoView",
-                businessOwnerId: businessOwnerId,
-                viewerDeviceId: MY_DEVICE_ID
-            })
-        });
-
-        currentVideoViews += 1;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
-
-    } catch (err) {
-        // Still give visual feedback even if offline
-        currentVideoViews += 1;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
-    }
+    } catch (err) {
+        // Even if network fails, give user visual feedback (view was likely still counted server-side)
+        currentVideoViews += 1;
+        videoViewsEl.textContent = formatViews(currentVideoViews);
+    }
 }
         async function loadBusinessData() {
             if (!targetBusiness) return;
