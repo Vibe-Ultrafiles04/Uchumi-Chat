@@ -303,7 +303,7 @@
         videoViewsEl.textContent = formatViews(currentVideoViews);
     }
 }
-        async function loadBusinessData() {
+       async function loadBusinessData() {
             if (!targetBusiness) return;
 
             try {
@@ -338,6 +338,12 @@
 
                     loadPromotionalVideo(profileJson.data);
                     
+                    // ⭐ NEW LOGIC: Check if backend count is 0 and remove local storage key
+                    if (profileJson.data.videoLink && profileJson.data.videoViews === 0) {
+                        const viewedKey = `videoViewed_${businessOwnerId}`;
+                        localStorage.removeItem(viewedKey);
+                    }
+                    
                     // ⭐ NEW: Automatically count video view on successful load
                     if (profileJson.data.videoLink) {
                         countVideoView();
@@ -354,7 +360,6 @@
                 document.getElementById('businessDescription').textContent = "Failed to load business info.";
             }
         }
-
         function updateSubscribeButton() {
             if (isFollowing) {
                 subscribeBtn.textContent = "Following";
