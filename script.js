@@ -355,10 +355,18 @@ function createProductCard(r) {
     const businessName = r.businessName;
     const categoryName = r.category;    
 
-    // --- NEW: Extract Device Ownership ID and Check Authorization ---
+    // --- NEW: Extract Device Ownership ID and Check Authorization (FIXED FOR RECOVERY) ---
     const productOwnerId = r.businessOwnerId || ""; 
-    // Check if the current device is the creator (or if the ID is missing for legacy data)
-    const canEdit = productOwnerId === DEVICE_ID || !productOwnerId; 
+    const productBusinessName = r.businessName || ""; // Get business name from card data
+
+    // CRITICAL FIX: Allow editing if the product's business name matches the locally stored owner business name.
+    const isOwnerBusinessMatch = OWNER_BUSINESS_NAME && productBusinessName === OWNER_BUSINESS_NAME;
+
+    // Authorization Check:
+    // 1. Does the product's business name match the locally stored owner business name? (This enables access after recovery)
+    // 2. OR Is the current device ID the creator? (Original device check)
+    // 3. OR Is the product legacy data (no productOwnerId)?
+    const canEdit = isOwnerBusinessMatch || productOwnerId === DEVICE_ID || !productOwnerId; 
     // --- END NEW CHECK ---
     
     // IMPORTANT: The app script should now return the original link under 'driveLink' 
@@ -457,7 +465,8 @@ function createProductCard(r) {
         });
     } else {
         updateBtn.disabled = true;
-        updateBtn.title = "Only the device that created this product can update its stock.";
+        // Updated title to reflect the new, more permissive logic
+        updateBtn.title = `Only the device registered to business "${productBusinessName}" can update stock.`;
         updateBtn.style.opacity = '0.5';
     }
     
