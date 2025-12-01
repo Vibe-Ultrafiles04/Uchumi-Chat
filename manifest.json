@@ -1,6 +1,6 @@
 {
-  "name": "Smart Inventory",
-  "short_name": "Inventory",
+  "name": "Uchumi Chat",
+  "short_name": "UCHUMI CHAT",
   "description": "A smart PWA for managing business inventory in real-time using Google Sheets as the backend.",
   "start_url": "./index.html",
   "scope": "./",
