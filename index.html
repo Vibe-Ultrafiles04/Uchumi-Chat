@@ -3,11 +3,20 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Our Stock - Live View</title>
+    <title>Uchumi Chat | Find Business Products</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#3b6dc6" />
     <link rel="apple-touch-icon" href="inventory192.png" />
+    
+    <meta property="og:title" content="Uchumi Chat: Find Local Businesses & Products">
+    <meta property="og:url" content="https://vibe-ultrafiles04.github.io/Uchumi-Chat/index.html">
+    <meta property="og:description" content="Search local business profiles, compare products, and connect instantly via chat!">
+    <meta property="og:image" content="https://vibe-ultrafiles04.github.io/Uchumi-Chat/Uchumi101.png">
+    <meta property="og:type" content="website">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://vibe-ultrafiles04.github.io/Uchumi-Chat/Uchumi101.png">
 
     <style>
         body {
@@ -104,6 +113,23 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(59, 109, 198, 0.4);
         }
+
+        #shareAppBtn {
+    /* Use small button sizing */
+    background: #463dc5; /* Green */
+    color: white;
+    border: 1px solid #218838;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 5px;
+    transition: background 0.2s;
+}
+
+#shareAppBtn:hover {
+    background: #218838;
+}
     </style>
 </head>
 <body>
@@ -111,7 +137,8 @@
     <!-- Profile Header Section -->
     <section id="profileHeader">
         <div id="ownerBusinessNameDisplay">Loading profile...</div>
-        <div>
+       <div>
+            <button id="shareAppBtn">Share App Link</button> 
             <button id="editProfileBtn">Edit Profile</button>
             <button id="logoutBtn">Logout</button>
         </div>
@@ -120,11 +147,12 @@
     <!-- Main Content -->
     <main class="page">
          <!-- My Studio Button (Only visible to owner) -->
-    <button id="myStudioBtn">My Studio</button>
-        <h1>#ADVERT #CHONJO #UNAWEZA #JITUME</h1>
+  <button id="myStudioBtn">My Studio</button>
+       
+    <h1>#ADVERT #CHONJO #UNAWEZA #JITUME</h1>
          
         <div class="filter-bar">
-            <label for="businessFilterInput">Filter by Business:</label>
+            <label for="businessFilterInput">Search Business:</label>
             <input type="text" id="businessFilterInput" placeholder="Type the business name...">
         </div>
 
@@ -243,6 +271,43 @@
 
             logoutBtn.style.display = "none";
             myStudioBtn.style.display = "none";
+        }
+    });
+</script>
+<script>
+    // ===================================
+    // SIMPLIFIED SHARE APP LOGIC (COPY TO CLIPBOARD ONLY)
+    // ===================================
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        const shareAppBtn = document.getElementById('shareAppBtn');
+        const appLink = "https://vibe-ultrafiles04.github.io/Uchumi-Chat/";
+        
+        // Ensure the button exists before attaching the listener
+        if (!shareAppBtn) return; 
+
+        shareAppBtn.onclick = () => {
+            copyToClipboard(appLink);
+        };
+        
+        function copyToClipboard(link) {
+            // Use the modern navigator.clipboard API
+            navigator.clipboard.writeText(link)
+                .then(() => {
+                    // Provide user feedback
+                    const originalText = shareAppBtn.textContent;
+                    shareAppBtn.textContent = "✅ Link Copied!";
+                    
+                    // Revert the button text after 2 seconds
+                    setTimeout(() => { 
+                        shareAppBtn.textContent = originalText; 
+                    }, 2000);
+                })
+                .catch(err => {
+                    // Fallback alert if clipboard access is denied
+                    alert('Could not copy link to clipboard. Please copy manually: ' + link);
+                    console.error('Copy failed:', err);
+                });
         }
     });
 </script>
