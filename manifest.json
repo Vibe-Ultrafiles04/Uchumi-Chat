@@ -1,6 +1,6 @@
 {
-  "name": "Uchumi Chat",
-  "short_name": "UCHUMI CHAT",
+  "name": "Kona Mart",
+  "short_name": "Kona Mart",
   "description": "A smart PWA for managing business inventory in real-time using Google Sheets as the backend.",
   "start_url": "./index.html",
   "scope": "./",
