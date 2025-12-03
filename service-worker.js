@@ -3,7 +3,7 @@
    Makes app installable, works offline, and loads faster
    ====================================================== */
 
-const CACHE_NAME = "smart-inventory-cache-v1";
+const CACHE_NAME = "Kona-Mart-cache-v1";
 const OFFLINE_URL = "index.html";
 
 const ASSETS_TO_CACHE = [
@@ -16,6 +16,8 @@ const ASSETS_TO_CACHE = [
    "./studio.html",
   "./script.js",
   "./manifest.json",
+  "./Kona100.png",
+  "./Kona101.png",
   "./inventory192.png",
   "./inventory512.png",
   "./inventory512maskable.png"
