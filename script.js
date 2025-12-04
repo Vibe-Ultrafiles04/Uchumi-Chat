@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzYHmdkfhUOFJVEZNm8ANV1jd_BA5KN_rnbycJqmihvwAdRCK17d7CVjBYzZX7T5Tjv/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3q556_0EfFtmwOzYT7_jXdqR_XMrGDJ9E1JmNOwqM7mJJQjsxBIqib75vLkPHIrnjnw/exec"; // <- REPLACE THIS
 
 /// New Gallery DOM refs
 const CURRENCY_SYMBOL = "KES";
@@ -38,6 +38,8 @@ const updateProductName = document.getElementById("updateProductName");
 const sellQuantityInput = document.getElementById("sellQuantity");
 const restockQuantityInput = document.getElementById("restockQuantity");
 const executeUpdateButton = document.getElementById("executeUpdateButton");
+// NEW DOM REFERENCE for the Edit Page Link Button
+const goToEditPageButton = document.getElementById("goToEditPageButton");
 
 let DEVICE_ID = getOrCreateDeviceId();
 let OWNER_BUSINESS_NAME = localStorage.getItem(OWNER_BUSINESS_KEY);
@@ -827,6 +829,32 @@ function handleInventoryData(json) {
             productsContainer.appendChild(categoryGroupWrapper);
         }
     }
+}
+
+// --- NEW FUNCTION: Direct Navigation to Edit Page ---
+
+/**
+ * Creates the URL for the edit page, passing the business name for filtering.
+ * Assumes the target page is 'edit.html'.
+ */
+function navigateToEditPage() {
+    // 1. Check for the registered business name
+    if (!OWNER_BUSINESS_NAME) {
+        alert("🔒 Access Denied: You must register a business name by adding a product first.");
+        return;
+    }
+
+    // 2. Construct the URL to the edit page with the business name as a query parameter
+    // This allows the edit.html page to know which products to load.
+    const editUrl = `edit.html?business=${encodeURIComponent(OWNER_BUSINESS_NAME)}`;
+
+    // 3. Navigate to the new page
+    window.location.href = editUrl;
+}
+
+// 4. Attach the handler to the button
+if (goToEditPageButton) {
+    goToEditPageButton.addEventListener("click", navigateToEditPage);
 }
 // *** NEW FUNCTION: Applies the filter to the rendered products ***
 function applyBusinessFilter(filterTerm) {

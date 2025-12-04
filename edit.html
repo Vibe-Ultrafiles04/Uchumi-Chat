@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Editor - Manage Details</title>
+    <style>
+        /* Minimal required styling for a functional table editor */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #007bff;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+        }
+        #productTable {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        #productTable th, #productTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #productTable th {
+            background-color: #007bff;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        #productTable td input, #productTable td textarea {
+            width: 95%;
+            padding: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        .action-button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        .action-button:hover {
+            background-color: #218838;
+        }
+        .back-link {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <a href="studio.html" class="back-link">← Back to Studio (Add Products)</a>
+        <h1 id="pageTitle">Product Editor: Loading...</h1>
+        <button id="saveChangesBtn" class="action-button" disabled>Save All Changes (0)</button>
+    </div>
+
+    <p id="statusMessage" class="loading">Loading products...</p>
+
+    <div id="tableContainer">
+        <table id="productTable">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Product Name</th>
+                    <th>Quantity</th>
+                    <th>Cost Price (Ksh)</th>
+                    <th>Sell Price (Ksh)</th>
+                    <th>Description</th>
+                    <th>Details</th>
+                    <th>Image Link</th>
+                </tr>
+            </thead>
+            <tbody id="productTableBody">
+                </tbody>
+        </table>
+    </div>
+
+    <p style="margin-top: 20px;">
+        <button id="saveChangesBtnBottom" class="action-button" disabled>Save All Changes (0)</button>
+    </p>
+
+    <script>
+        // ==========================================================
+        // CONFIGURATION (MUST MATCH YOUR MAIN FILE)
+        // ==========================================================
+        // IMPORTANT: Replace this with your actual Web App URL
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx3q556_0EfFtmwOzYT7_jXdqR_XMrGDJ9E1JmNOwqM7mJJQjsxBIqib75vLkPHIrnjnw/exec'; 
+        const CURRENCY_SYMBOL = "KES"; 
+        const OWNER_BUSINESS_KEY = 'ownerBusinessName';
+
+        // --- Global State ---
+        let businessName = null;
+        let productsData = []; // Array of product objects from the server
+        let changedProducts = new Set(); // Stores the productId of products with unsaved changes
+        // ---------------------------------------------------------
+
+        // ==========================================================
+        // DOM REFERENCES
+        // ==========================================================
+        const pageTitle = document.getElementById("pageTitle");
+        const statusMessage = document.getElementById("statusMessage");
+        const productTableBody = document.getElementById("productTableBody");
+        const saveChangesBtnTop = document.getElementById("saveChangesBtn");
+        const saveChangesBtnBottom = document.getElementById("saveChangesBtnBottom");
+
+
+        // ==========================================================
+        // UTILITY FUNCTIONS
+        // ==========================================================
+
+        /**
+         * Reads the business name from the URL query string.
+         */
+        function getBusinessNameFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const name = urlParams.get('business');
+            return name ? decodeURIComponent(name) : null;
+        }
+
+        /**
+         * Helper to remove number formatting (commas).
+         */
+        function unformatNumber(value) {
+            if (typeof value !== 'string') return value;
+            return value.replace(/,/g, ''); 
+        }
+
+        /**
+         * Updates the Save buttons with the count of changes.
+         */
+        function updateSaveButtonCount() {
+            const count = changedProducts.size;
+            const text = `Save All Changes (${count})`;
+            saveChangesBtnTop.textContent = text;
+            saveChangesBtnBottom.textContent = text;
+            saveChangesBtnTop.disabled = count === 0;
+            saveChangesBtnBottom.disabled = count === 0;
+        }
+
+        // ==========================================================
+        // DATA FETCHING AND RENDERING
+        // ==========================================================
+
+        /**
+         * Fetches product data for the specific business.
+         */
+        async function fetchProductsForBusiness(business) {
+            statusMessage.textContent = `Fetching products for: ${business}...`;
+            statusMessage.className = 'loading';
+
+            try {
+                const payload = {
+                    action: "getProductsByBusiness",
+                    businessName: business
+                };
+                
+                const res = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    mode: "cors",
+                    headers: {"Content-Type": "text/plain"}, 
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                
+                if (json && Array.isArray(json.rows)) {
+                    // Store products globally
+                    productsData = json.rows;
+                    renderEditableTable(productsData);
+                    statusMessage.style.display = 'none';
+                } else {
+                    statusMessage.textContent = `Error: Could not retrieve products for "${business}". Message: ${json.message || 'Unknown error.'}`;
+                    statusMessage.className = 'error';
+                }
+            } catch (err) {
+                console.error("Fetch error:", err);
+                statusMessage.textContent = "Network Error: Failed to connect to the backend.";
+                statusMessage.className = 'error';
+            }
+        }
+
+        /**
+         * Renders the products in an editable table.
+         */
+        function renderEditableTable(products) {
+            productTableBody.innerHTML = '';
+            if (products.length === 0) {
+                productTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No products found for this business.</td></tr>';
+                return;
+            }
+
+            products.forEach(product => {
+                const row = productTableBody.insertRow();
+                row.dataset.id = product.id; // CRITICAL: Store the unique ID for reference
+
+                const fields = [
+                    { key: 'category', type: 'text', value: product.category },
+                    { key: 'name', type: 'text', value: product.name },
+                    { key: 'quantity', type: 'number', value: product.quantity, min: 0 },
+                    { key: 'buy', type: 'number', value: product.buy, step: 0.01, min: 0 },
+                    { key: 'sell', type: 'number', value: product.sell, step: 0.01, min: 0 },
+                    { key: 'description', type: 'text', value: product.description },
+                    { key: 'details', type: 'textarea', value: product.details }, // Use textarea for multi-line
+                    { key: 'driveLink', type: 'url', value: product.driveLink }
+                ];
+
+                fields.forEach(field => {
+                    const cell = row.insertCell();
+                    let inputElement;
+
+                    if (field.type === 'textarea') {
+                        inputElement = document.createElement('textarea');
+                        inputElement.rows = 2;
+                        inputElement.textContent = field.value || '';
+                    } else {
+                        inputElement = document.createElement('input');
+                        inputElement.type = field.type;
+                        inputElement.value = field.value || '';
+                        if (field.min !== undefined) inputElement.min = field.min;
+                        if (field.step !== undefined) inputElement.step = field.step;
+                    }
+
+                    inputElement.dataset.field = field.key;
+                    inputElement.dataset.original = field.value; // Store original value
+                    inputElement.addEventListener('input', handleInputChange);
+                    cell.appendChild(inputElement);
+                });
+            });
+        }
+
+        /**
+         * Handles changes in table inputs and updates the change tracker.
+         */
+        function handleInputChange(event) {
+            const input = event.target;
+            const row = input.closest('tr');
+            const productId = row.dataset.id;
+            const fieldName = input.dataset.field;
+            const originalValue = input.dataset.original;
+            
+            // Normalize values for comparison
+            const currentValue = input.value.trim();
+            const isChanged = currentValue !== originalValue;
+
+            if (isChanged) {
+                // Mark row as changed
+                row.style.backgroundColor = '#fff3cd'; // Light yellow to indicate unsaved changes
+                changedProducts.add(productId);
+            } else {
+                // Unmark if reverted to original
+                let reverted = true;
+                row.querySelectorAll('input, textarea').forEach(el => {
+                    if (el.value.trim() !== el.dataset.original) {
+                        reverted = false;
+                    }
+                });
+
+                if (reverted) {
+                    row.style.backgroundColor = '';
+                    changedProducts.delete(productId);
+                }
+            }
+            updateSaveButtonCount();
+        }
+
+        // ==========================================================
+        // SAVE FUNCTIONALITY
+        // ==========================================================
+
+        /**
+         * Gathers all changed products and submits a bulk update request.
+         */
+        async function saveAllChanges() {
+            if (changedProducts.size === 0) {
+                alert("No changes detected.");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to save ${changedProducts.size} product changes?`)) {
+                return;
+            }
+
+            saveChangesBtnTop.disabled = true;
+            saveChangesBtnBottom.disabled = true;
+            statusMessage.style.display = 'block';
+            statusMessage.className = 'loading';
+            statusMessage.textContent = `Saving ${changedProducts.size} changes... Please wait.`;
+
+            const updates = [];
+            
+            changedProducts.forEach(productId => {
+                const row = productTableBody.querySelector(`[data-id="${productId}"]`);
+                if (row) {
+                    // Find the product in the original data array
+                    const originalProduct = productsData.find(p => p.id === productId);
+
+                    const updatedProduct = {
+                        id: productId, // CRITICAL: Unique ID
+                        businessName: businessName // Passed for security/scoping on backend
+                    };
+
+                    // Loop through all inputs/textareas to find the current values
+                    row.querySelectorAll('input, textarea').forEach(input => {
+                        const field = input.dataset.field;
+                        let value = input.value.trim();
+
+                        // Handle numerical fields (convert to number/float if needed)
+                        if (['quantity', 'buy', 'sell'].includes(field)) {
+                            value = unformatNumber(value);
+                            updatedProduct[field] = (field === 'quantity') ? parseInt(value) : parseFloat(value);
+                        } else {
+                            updatedProduct[field] = value;
+                        }
+                    });
+
+                    updates.push(updatedProduct);
+                }
+            });
+
+            const payload = {
+                action: "bulkUpdateProducts",
+                updates: updates 
+            };
+
+            try {
+                const res = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    mode: "cors",
+                    headers: {"Content-Type": "text/plain"}, 
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                
+                if (json && json.result === "success") {
+                    alert(`✅ Successfully saved ${json.updatedCount || updates.length} products.`);
+                    // Clear change tracking and re-render/refresh the page
+                    changedProducts.clear();
+                    updateSaveButtonCount();
+                    window.location.reload(); 
+                } else {
+                    alert("❌ Failed to save updates: " + (json && json.message ? json.message : 'Unknown server error.'));
+                }
+            } catch (err) {
+                console.error("Bulk save error:", err);
+                alert("An error occurred during the bulk save process.");
+            } finally {
+                // Re-enable buttons if an error occurs
+                if (changedProducts.size > 0) {
+                    saveChangesBtnTop.disabled = false;
+                    saveChangesBtnBottom.disabled = false;
+                }
+                statusMessage.style.display = 'none';
+            }
+        }
+
+        // ==========================================================
+        // INITIALIZATION
+        // ==========================================================
+
+        function initEditPage() {
+            // 1. Get business name from URL
+            businessName = getBusinessNameFromUrl();
+            const localOwner = localStorage.getItem(OWNER_BUSINESS_KEY);
+            
+            // 2. Access Control and Setup
+            if (!businessName || businessName !== localOwner) {
+                pageTitle.textContent = "Access Denied 🔒";
+                statusMessage.className = 'error';
+                if (!localOwner) {
+                    statusMessage.textContent = "Error: This device is not registered to a business. Please register on the studio page first.";
+                } else {
+                    statusMessage.textContent = `Error: You do not have permission to edit products for business "${businessName || 'Unknown'}". This device is registered to "${localOwner}".`;
+                }
+                statusMessage.style.display = 'block';
+                return;
+            }
+
+            // Set page title
+            pageTitle.textContent = `Product Editor: ${businessName}`;
+            
+            // 3. Fetch Data
+            fetchProductsForBusiness(businessName);
+            
+            // 4. Attach save event listeners
+            saveChangesBtnTop.addEventListener('click', saveAllChanges);
+            saveChangesBtnBottom.addEventListener('click', saveAllChanges);
+            updateSaveButtonCount(); // Initialize button state
+        }
+
+        // Run initialization when the page loads
+        document.addEventListener('DOMContentLoaded', initEditPage);
+    </script>
+</body>
+</html>
