@@ -124,6 +124,32 @@
             border-bottom: 12px solid transparent;
             margin-left: 6px;
         }
+
+        /* Add to your existing <style> block */
+.name-option {
+    display: inline-block;
+    cursor: pointer;
+    margin: 5px 8px 5px 0; /* Adjusted margin */
+    padding: 8px 15px;
+    border: 1px solid #3b6dc6;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: #3b6dc6;
+    background-color: #f0f4ff; /* Light blue background */
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.name-option:hover {
+    background-color: #3b6dc6;
+    color: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#nameSuggestionsContainer {
+    margin: 15px 0 10px;
+    text-align: left;
+}
     </style>
 </head>
 <body>
@@ -135,9 +161,10 @@
         <div id="mainSetup">
             <form id="profileForm">
                 <label for="businessNameInput">Business Name*</label>
-                <input type="text" id="businessNameInput" placeholder="e.g., Jane's Trinkets" required />
+        <input type="text" id="businessNameInput" placeholder="e.g., Jane's Trinkets" required />
 
-                <label for="businessDescriptionInput">Business Description*</label>
+       <div id="nameSuggestionsContainer"></div>
+       <label for="businessDescriptionInput">Business Description*</label>
                 <textarea id="businessDescriptionInput" placeholder="A brief description of your business." rows="3" required></textarea>
 
                 <!-- VIDEO LINK INPUT + PREVIEW -->
@@ -194,176 +221,270 @@
         <button type="button" id="goBackBtn" style="display:none; background:#6c757d; margin-top:20px;">Go Back to Home</button>
     </div>
 
-    <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3q556_0EfFtmwOzYT7_jXdqR_XMrGDJ9E1JmNOwqM7mJJQjsxBIqib75vLkPHIrnjnw/exec";
-        const DEVICE_ID_KEY = 'uniqueDeviceId';
-        const OWNER_BUSINESS_KEY = 'ownerBusinessName';
+   <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyB3cPQr7mDuNRZ9Bcid1sPj8zMN0gcQMxwWQ4UauLyRkJ1c64ReOK8VWvQ9GaCaTlbzw/exec";
+    const DEVICE_ID_KEY = 'uniqueDeviceId';
+    const OWNER_BUSINESS_KEY = 'ownerBusinessName';
 
-        const mainSetup = document.getElementById('mainSetup');
-        const ownerKeySection = document.getElementById('ownerKeySection');
-        const recoverMode = document.getElementById('recoverMode');
-        const recoverLink = document.getElementById('recoverLink');
-        const profileForm = document.getElementById('profileForm');
-        const errorMsg = document.getElementById('errorMsg');
-        const ownerKeyDisplay = document.getElementById('ownerKeyDisplay');
-        const setupButton = document.getElementById('setupButton');
-        const goBackBtn = document.getElementById('goBackBtn');
+    const mainSetup = document.getElementById('mainSetup');
+    const ownerKeySection = document.getElementById('ownerKeySection');
+    const recoverMode = document.getElementById('recoverMode');
+    const recoverLink = document.getElementById('recoverLink');
+    const profileForm = document.getElementById('profileForm');
+    const errorMsg = document.getElementById('errorMsg');
+    const ownerKeyDisplay = document.getElementById('ownerKeyDisplay');
+    const setupButton = document.getElementById('setupButton');
+    const goBackBtn = document.getElementById('goBackBtn');
 
-        // Video preview elements
-        const videoLinkInput = document.getElementById('videoLinkInput');
-        const videoPreview = document.getElementById('videoPreview');
-        const videoThumbnail = document.getElementById('videoThumbnail');
+    // Video preview elements
+    const videoLinkInput = document.getElementById('videoLinkInput');
+    const videoPreview = document.getElementById('videoPreview');
+    const videoThumbnail = document.getElementById('videoThumbnail');
+    const businessNameInput = document.getElementById('businessNameInput');
 
-        function getOrCreateDeviceId() {
-            let id = localStorage.getItem(DEVICE_ID_KEY);
-            if (!id) {
-                const array = new Uint8Array(16);
-                crypto.getRandomValues(array);
-                id = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
-                localStorage.setItem(DEVICE_ID_KEY, id);
-            }
-            return id;
-        }
-
-        function generateOwnerKey() {
+    function getOrCreateDeviceId() {
+        let id = localStorage.getItem(DEVICE_ID_KEY);
+        if (!id) {
             const array = new Uint8Array(16);
             crypto.getRandomValues(array);
-            return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+            id = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+            localStorage.setItem(DEVICE_ID_KEY, id);
         }
+        return id;
+    }
 
-        async function fetchProfileData(deviceId) {
-            try {
-                const res = await fetch(`${WEB_APP_URL}?action=getBusinessProfile&deviceId=${deviceId}`);
-                const json = await res.json();
-                return json.result === 'success' && json.data ? json.data : null;
-            } catch (e) {
-                console.error(e);
-                return null;
-            }
+    function generateOwnerKey() {
+        const array = new Uint8Array(16);
+        crypto.getRandomValues(array);
+        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+
+    async function fetchProfileData(deviceId) {
+        try {
+            const res = await fetch(`${WEB_APP_URL}?action=getBusinessProfile&deviceId=${deviceId}`);
+            const json = await res.json();
+            return json.result === 'success' && json.data ? json.data : null;
+        } catch (e) {
+            console.error(e);
+            return null;
         }
-
-        // Extract Google Drive file ID and show thumbnail
-        function updateVideoPreview() {
-            const url = videoLinkInput.value.trim();
-            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-            if (match && match[1]) {
-                const fileId = match[1];
-                videoThumbnail.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
-                videoPreview.classList.remove('hidden');
-            } else {
-                videoPreview.classList.add('hidden');
-            }
+    }
+    
+    // Function to check Name Availability and Get Suggestions
+    async function checkBusinessNameAvailability(businessName, deviceId) {
+        // The Apps Script backend must support 'checkName' action for case-sensitive uniqueness.
+        const url = `${WEB_APP_URL}?action=checkName&name=${encodeURIComponent(businessName)}&deviceId=${deviceId}`;
+        try {
+            const res = await fetch(url);
+            const json = await res.json();
+            
+            // Expected response: { result: "available" } OR { result: "taken", suggestions: ["Name_01", "Name_02"] }
+            return json;
+        } catch (e) {
+            console.error("Error checking name availability:", e);
+            return { result: "error", message: "Failed to connect to validation service." };
         }
+    }
 
-        videoLinkInput.addEventListener('input', updateVideoPreview);
-        videoLinkInput.addEventListener('paste', () => setTimeout(updateVideoPreview, 100));
+    // Extract Google Drive file ID and show thumbnail
+    function updateVideoPreview() {
+        const url = videoLinkInput.value.trim();
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            const fileId = match[1];
+            videoThumbnail.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+            videoPreview.classList.remove('hidden');
+        } else {
+            videoPreview.classList.add('hidden');
+        }
+    }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const params = new URLSearchParams(location.search);
-            const isEditMode = params.get('mode') === 'edit';
-            const businessName = localStorage.getItem(OWNER_BUSINESS_KEY);
-            const deviceId = getOrCreateDeviceId();
+    videoLinkInput.addEventListener('input', updateVideoPreview);
+    videoLinkInput.addEventListener('paste', () => setTimeout(updateVideoPreview, 100));
 
-            if (businessName && !isEditMode) {
-                window.location.href = 'index.html';
-                return;
-            }
+    document.addEventListener('DOMContentLoaded', async () => {
+        const params = new URLSearchParams(location.search);
+        const isEditMode = params.get('mode') === 'edit';
+        const businessName = localStorage.getItem(OWNER_BUSINESS_KEY);
+        const deviceId = getOrCreateDeviceId();
 
-            if (isEditMode) {
-                document.getElementById('formTitle').textContent = "Edit Your Business Profile";
-                setupButton.textContent = 'Save Changes';
-                goBackBtn.style.display = 'block';
-                document.getElementById('countContainer').style.display = 'none';
-                recoverLink.style.display = 'none';
-
-                const profile = await fetchProfileData(deviceId);
-                if (profile) {
-                    document.getElementById('businessNameInput').value = profile.businessName || '';
-                    document.getElementById('businessDescriptionInput').value = profile.businessDescription || '';
-                    if (profile.videoLink) {
-                        videoLinkInput.value = profile.videoLink;
-                        updateVideoPreview(); // show existing preview
-                    }
-                } else {
-                    errorMsg.textContent = "Could not load profile.";
-                    errorMsg.style.display = 'block';
-                }
-            } else if (!businessName) {
-                recoverLink.style.display = 'block';
-            }
-
-            // Recover mode handlers (unchanged)
-            recoverLink.onclick = () => {
-                mainSetup.classList.add('hidden');
-                recoverMode.classList.remove('hidden');
-            };
-            document.getElementById('backToSetupBtn').onclick = () => {
-                recoverMode.classList.add('hidden');
-                mainSetup.classList.remove('hidden');
-            };
-            document.getElementById('linkDeviceBtn').onclick = async () => {
-                const key = document.getElementById('recoverKeyInput').value.trim();
-                if (key.length !== 32) {
-                    errorMsg.textContent = "Owner Key must be exactly 32 characters.";
-                    errorMsg.style.display = 'block';
-                    return;
-                }
-                errorMsg.style.display = 'none';
-                const payload = { action: "recoverWithOwnerKey", ownerKey: key, deviceId };
-                try {
-                    const res = await fetch(WEB_APP_URL, { method: "POST", mode: "cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
-                    const json = await res.json();
-                    if (json.result === "success") {
-                        localStorage.setItem(OWNER_BUSINESS_KEY, json.businessName);
-                        alert("Ownership recovered successfully!");
-                        window.location.href = 'index.html';
-                    } else {
-                        errorMsg.textContent = json.message || "Invalid Owner Key.";
-                        errorMsg.style.display = 'block';
-                    }
-                } catch (e) {
-                    errorMsg.textContent = "Network error.";
-                    errorMsg.style.display = 'block';
-                }
-            };
-
-            goBackBtn.onclick = () => window.location.href = 'index.html';
-        });
-
-        // Copy Owner Key
-        document.getElementById('copyKeyBtn').onclick = () => {
-            navigator.clipboard.writeText(ownerKeyDisplay.textContent);
-            alert("Owner Key copied to clipboard!");
-        };
-
-        document.getElementById('continueBtn').onclick = () => {
+        if (businessName && !isEditMode) {
             window.location.href = 'index.html';
+            return;
+        }
+
+        if (isEditMode) {
+            document.getElementById('formTitle').textContent = "Edit Your Business Profile";
+            setupButton.textContent = 'Save Changes';
+            goBackBtn.style.display = 'block';
+            document.getElementById('countContainer').style.display = 'none';
+            recoverLink.style.display = 'none';
+
+            const profile = await fetchProfileData(deviceId);
+            if (profile) {
+                document.getElementById('businessNameInput').value = profile.businessName || '';
+                document.getElementById('businessDescriptionInput').value = profile.businessDescription || '';
+                if (profile.videoLink) {
+                    videoLinkInput.value = profile.videoLink;
+                    updateVideoPreview(); // show existing preview
+                }
+            } else {
+                errorMsg.textContent = "Could not load profile.";
+                errorMsg.style.display = 'block';
+            }
+        } else if (!businessName) {
+            recoverLink.style.display = 'block';
+        }
+
+        // Recover mode handlers (unchanged)
+        recoverLink.onclick = () => {
+            mainSetup.classList.add('hidden');
+            recoverMode.classList.remove('hidden');
         };
-
-        // FORM SUBMIT – now includes videoLink
-        profileForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const isEditMode = new URLSearchParams(location.search).get('mode') === 'edit';
-            const businessName = document.getElementById('businessNameInput').value.trim();
-            const businessDescription = document.getElementById('businessDescriptionInput').value.trim();
-            const videoLink = videoLinkInput.value.trim() || null;
-            const deviceId = getOrCreateDeviceId();
-
-            if (!businessName || !businessDescription) {
-                errorMsg.textContent = "Business Name and Description are required.";
+        document.getElementById('backToSetupBtn').onclick = () => {
+            recoverMode.classList.add('hidden');
+            mainSetup.classList.remove('hidden');
+        };
+        document.getElementById('linkDeviceBtn').onclick = async () => {
+            const key = document.getElementById('recoverKeyInput').value.trim();
+            if (key.length !== 32) {
+                errorMsg.textContent = "Owner Key must be exactly 32 characters.";
                 errorMsg.style.display = 'block';
                 return;
             }
+            errorMsg.style.display = 'none';
+            const payload = { action: "recoverWithOwnerKey", ownerKey: key, deviceId };
+            try {
+                const res = await fetch(WEB_APP_URL, { method: "POST", mode: "cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+                const json = await res.json();
+                if (json.result === "success") {
+                    localStorage.setItem(OWNER_BUSINESS_KEY, json.businessName);
+                    alert("Ownership recovered successfully!");
+                    window.location.href = 'index.html';
+                } else {
+                    errorMsg.textContent = json.message || "Invalid Owner Key.";
+                    errorMsg.style.display = 'block';
+                }
+            } catch (e) {
+                errorMsg.textContent = "Network error.";
+                errorMsg.style.display = 'block';
+            }
+        };
 
-            setupButton.disabled = true;
-            setupButton.textContent = isEditMode ? "Saving..." : "Creating...";
+        goBackBtn.onclick = () => window.location.href = 'index.html';
+    });
 
+    // Copy Owner Key
+    document.getElementById('copyKeyBtn').onclick = () => {
+        navigator.clipboard.writeText(ownerKeyDisplay.textContent);
+        alert("Owner Key copied to clipboard!");
+    };
+
+    document.getElementById('continueBtn').onclick = () => {
+        window.location.href = 'index.html';
+    };
+    
+
+    // --- NEW FUNCTION ---
+function handleNameSuggestions(originalName, suggestions) {
+    const errorContainer = document.getElementById('nameSuggestionsContainer');
+    const inputField = document.getElementById('businessNameInput');
+    const errorMsgElement = document.getElementById('errorMsg');
+    
+    // Clear the main error message element
+    errorMsgElement.style.display = 'none';
+    
+    // 1. Clear previous content and display the main alert message in the new container
+    errorContainer.innerHTML = `
+        <p style="color:red; font-size:15px; margin-bottom:10px;">
+            ⚠️ The name <strong>${originalName}</strong> is already taken. Try one of these options, or choose your own unique name:
+        </p>
+    `;
+
+    // 2. Create and attach event listeners to each suggestion
+    if (suggestions && suggestions.length > 0) {
+        suggestions.forEach(name => {
+            const optionSpan = document.createElement('span');
+            optionSpan.textContent = name;
+            optionSpan.className = 'name-option';
+            
+            // **CRUCIAL: The click handler**
+            optionSpan.addEventListener('click', () => {
+                // Fill the input field with the clicked name
+                inputField.value = name;
+                
+                // Clear the suggestions container
+                errorContainer.innerHTML = '';
+                
+                // Reset the form submit button state
+                setupButton.disabled = false;
+                setupButton.textContent = "Set Up Profile";
+                
+                // Optional: Visually confirm the name is now available
+                inputField.style.border = '1px solid green';
+                setTimeout(() => { inputField.style.border = '1px solid #ccc'; }, 2000);
+            });
+
+            errorContainer.appendChild(optionSpan);
+        });
+    } else {
+        errorContainer.innerHTML += '<p class="hint">No unique options suggested. Please try another name.</p>';
+    }
+}
+// --- END NEW FUNCTION ---
+    // 🚀 UPDATED FORM SUBMIT HANDLER with Name Validation 🚀
+    profileForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const params = new URLSearchParams(location.search);
+        const isEditMode = params.get('mode') === 'edit';
+        const businessName = businessNameInput.value.trim();
+        const businessDescription = document.getElementById('businessDescriptionInput').value.trim();
+        const videoLink = videoLinkInput.value.trim() || null;
+        const deviceId = getOrCreateDeviceId();
+
+        if (!businessName || !businessDescription) {
+            errorMsg.textContent = "Business Name and Description are required.";
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        setupButton.disabled = true;
+        setupButton.textContent = isEditMode ? "Saving..." : "Checking Name...";
+        errorMsg.style.display = 'none'; 
+
+        try {
+            // 1. Check Name Uniqueness (Only for NEW profiles)
+          // 1. Check Name Uniqueness (Only for NEW profiles)
+if (!isEditMode) {
+    // Ensure the suggestions container is clear before check
+    document.getElementById('nameSuggestionsContainer').innerHTML = '';
+
+    const nameCheck = await checkBusinessNameAvailability(businessName, deviceId);
+    if (nameCheck.result === "taken") {
+        setupButton.disabled = false;
+        setupButton.textContent = "Set Up Profile";
+
+        // USE THE NEW HANDLER HERE
+        handleNameSuggestions(businessName, nameCheck.suggestions);
+
+        return; // Stop form submission
+    } else if (nameCheck.result === "error") {
+        throw new Error(nameCheck.message || "Name validation failed due to a server error.");
+    }
+    // If result is "available", continue with setup
+    setupButton.textContent = "Creating...";
+} else {
+    setupButton.textContent = "Saving...";
+}
+
+
+            // 2. Proceed with API call (Setup or Update)
             const payload = {
                 action: isEditMode ? "updateBusinessProfile" : "setupBusinessProfile",
                 deviceId,
                 businessName,
                 businessDescription,
-                videoLink,                     // ← NEW FIELD
+                videoLink,                     
                 timestamp: new Date().toISOString()
             };
 
@@ -372,37 +493,38 @@
                 payload.ownerKey = generateOwnerKey();
             }
 
-            try {
-                const res = await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain" },
-                    body: JSON.stringify(payload)
-                });
-                const json = await res.json();
+            const res = await fetch(WEB_APP_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
 
-                if (json.result === "success") {
-                    localStorage.setItem(OWNER_BUSINESS_KEY, businessName);
+            if (json.result === "success") {
+                localStorage.setItem(OWNER_BUSINESS_KEY, businessName);
 
-                    if (!isEditMode && json.ownerKey) {
-                        mainSetup.classList.add('hidden');
-                        ownerKeyDisplay.textContent = json.ownerKey;
-                        ownerKeySection.classList.remove('hidden');
-                    } else {
-                        alert(`Profile ${isEditMode ? 'updated' : 'created'} successfully!`);
-                        window.location.href = 'index.html';
-                    }
+                if (!isEditMode && json.ownerKey) {
+                    mainSetup.classList.add('hidden');
+                    ownerKeyDisplay.textContent = json.ownerKey;
+                    ownerKeySection.classList.remove('hidden');
                 } else {
-                    errorMsg.textContent = json.message || "Operation failed.";
-                    errorMsg.style.display = 'block';
+                    alert(`Profile ${isEditMode ? 'updated' : 'created'} successfully!`);
+                    window.location.href = 'index.html';
                 }
-            } catch (err) {
-                errorMsg.textContent = "Network error.";
+            } else {
+                // Handle server errors that might include non-name related issues
+                errorMsg.textContent = json.message || "Operation failed.";
                 errorMsg.style.display = 'block';
-            } finally {
-                setupButton.disabled = false;
-                setupButton.textContent = isEditMode ? "Save Changes" : "Set Up Profile";
             }
-        };
-    </script>
+        } catch (err) {
+            console.error(err);
+            errorMsg.textContent = err.message || "Network or server error.";
+            errorMsg.style.display = 'block';
+        } finally {
+            setupButton.disabled = false;
+            setupButton.textContent = isEditMode ? "Save Changes" : "Set Up Profile";
+        }
+    };
+</script>
 </body>
 </html>
