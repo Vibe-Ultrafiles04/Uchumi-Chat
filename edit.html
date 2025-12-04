@@ -24,10 +24,19 @@
         .loading {
             text-align: center;
             padding: 50px;
-            font-size: 1.2em;
+            font-size: 1.Range2em;
         }
-        #productTable {
+
+        /* --- NEW/MODIFIED STYLES FOR SCROLLING AND INPUT SIZING --- */
+        .table-responsive {
+            overflow-x: auto; /* Enables horizontal scrolling */
             width: 100%;
+            margin-bottom: 20px;
+        }
+
+        #productTable {
+            width: 100%; 
+            min-width: 900px; /* Ensure table minimum size for scrolling */
             border-collapse: collapse;
             background-color: white;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -36,6 +45,7 @@
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
+            vertical-align: top; /* Align content to the top */
         }
         #productTable th {
             background-color: #007bff;
@@ -48,8 +58,17 @@
             padding: 5px;
             border: 1px solid #ccc;
             box-sizing: border-box;
+            /* NEW: Set a minimum width for all input/textarea */
+            min-width: 100px; 
         }
-        /* ADDED: Style for the image thumbnail */
+        /* NEW: Specific minimum widths for wider fields */
+        #productTable td input[data-field="description"], 
+        #productTable td textarea[data-field="details"] {
+            min-width: 200px; /* Ensure description/details are wide enough */
+        }
+        /* END NEW/MODIFIED STYLES */
+
+        /* Existing Image Preview Style */
         .image-preview-thumb {
             width: 50px;
             height: 50px;
@@ -89,14 +108,14 @@
 <body>
 
     <div class="header-container">
-        <a href="studio.html" class="back-link">← Back to Studio (Add Products)</a>
+        <a href="studio.html" class="back-link">Back to Studio (Add Products)</a>
         <h1 id="pageTitle">Product Editor: Loading...</h1>
         <button id="saveChangesBtn" class="action-button" disabled>Save All Changes (0)</button>
     </div>
 
     <p id="statusMessage" class="loading">Loading products...</p>
 
-    <div id="tableContainer">
+    <div id="tableContainer" class="table-responsive">
         <table id="productTable">
             <thead>
                 <tr>
@@ -108,16 +127,18 @@
                     <th>Description</th>
                     <th>Details</th>
                     <th>Image Link (URL)</th>
-                    <th>Image Preview 🖼️</th> </tr>
+                    <th>Image Preview</th> 
+                </tr>
             </thead>
             <tbody id="productTableBody">
-                </tbody>
+            </tbody>
         </table>
     </div>
 
     <p style="margin-top: 20px;">
         <button id="saveChangesBtnBottom" class="action-button" disabled>Save All Changes (0)</button>
     </p>
+
    <script>
     // ==========================================================
     // CONFIGURATION (MUST MATCH YOUR MAIN FILE)
