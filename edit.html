@@ -331,8 +331,10 @@
             
             if (json && Array.isArray(json.rows)) {
                 // Store products globally
-                productsData = json.rows;
-                renderEditableTable(productsData);
+              productsData = json.rows.reverse(); // NEWEST FIRST
+renderEditableTable(productsData);
+
+
                 
                 if (productsData.length === 0) {
                     statusMessage.textContent = 'No products found for this business.';
