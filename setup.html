@@ -247,368 +247,400 @@
         <button type="button" id="goBackBtn" style="display:none; background:#6c757d; margin-top:20px;">Go Back to Home</button>
     </div>
 <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzqTcEcbaTAEIlPmUWzQfy5SuZgRH0z4m4XVm27lgEKo8r8NnPyFYm2mxhrLMPouNtl/exec";
-    const DEVICE_ID_KEY = 'uniqueDeviceId';
-    const OWNER_BUSINESS_KEY = 'ownerBusinessName';
-    
-    // Global state variable for real-time validation
-    let nameValidationState = null; // 'available', 'taken', 'checking', 'error', null 
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzqTcEcbaTAEIlPmUWzQfy5SuZgRH0z4m4XVm27lgEKo8r8NnPyFYm2mxhrLMPouNtl/exec";
+    const DEVICE_ID_KEY = 'uniqueDeviceId';
+    const OWNER_BUSINESS_KEY = 'ownerBusinessName';
+    
+    // Global state variable for real-time validation
+    let nameValidationState = null; // 'available', 'taken', 'checking', 'error', null 
+    // New global variable to store the original name in edit mode
+    let originalBusinessName = ''; 
 
-    const mainSetup = document.getElementById('mainSetup');
-    const ownerKeySection = document.getElementById('ownerKeySection');
-    const recoverMode = document.getElementById('recoverMode');
-    const recoverLink = document.getElementById('recoverLink');
-    const profileForm = document.getElementById('profileForm');
-    const errorMsg = document.getElementById('errorMsg');
-    const ownerKeyDisplay = document.getElementById('ownerKeyDisplay');
-    const setupButton = document.getElementById('setupButton');
-    const goBackBtn = document.getElementById('goBackBtn');
-    const businessNameInput = document.getElementById('businessNameInput');
-    const nameSuggestionsContainer = document.getElementById('nameSuggestionsContainer');
-    const nameValidationFeedback = document.getElementById('nameValidationFeedback');
+    const mainSetup = document.getElementById('mainSetup');
+    const ownerKeySection = document.getElementById('ownerKeySection');
+    const recoverMode = document.getElementById('recoverMode');
+    const recoverLink = document.getElementById('recoverLink');
+    const profileForm = document.getElementById('profileForm');
+    const errorMsg = document.getElementById('errorMsg');
+    const ownerKeyDisplay = document.getElementById('ownerKeyDisplay');
+    const setupButton = document.getElementById('setupButton');
+    const goBackBtn = document.getElementById('goBackBtn');
+    const businessNameInput = document.getElementById('businessNameInput');
+    const nameSuggestionsContainer = document.getElementById('nameSuggestionsContainer');
+    const nameValidationFeedback = document.getElementById('nameValidationFeedback');
 
-    // Video preview elements
-    const videoLinkInput = document.getElementById('videoLinkInput');
-    const videoPreview = document.getElementById('videoPreview');
-    const videoThumbnail = document.getElementById('videoThumbnail');
+    // Video preview elements
+    const videoLinkInput = document.getElementById('videoLinkInput');
+    const videoPreview = document.getElementById('videoPreview');
+    const videoThumbnail = document.getElementById('videoThumbnail');
 
-    // Helper function for debouncing input events
-    const debounce = (func, delay) => {
-        let timeoutId;
-        return (...args) => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(null, args);
-            }, delay);
-        };
-    };
+    // Helper function for debouncing input events
+    const debounce = (func, delay) => {
+        let timeoutId;
+        return (...args) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                func.apply(null, args);
+            }, delay);
+        };
+    };
 
-    function getOrCreateDeviceId() {
-        let id = localStorage.getItem(DEVICE_ID_KEY);
-        if (!id) {
-            const array = new Uint8Array(16);
-            crypto.getRandomValues(array);
-            id = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
-            localStorage.setItem(DEVICE_ID_KEY, id);
-        }
-        return id;
-    }
+    function getOrCreateDeviceId() {
+        let id = localStorage.getItem(DEVICE_ID_KEY);
+        if (!id) {
+            const array = new Uint8Array(16);
+            crypto.getRandomValues(array);
+            id = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+            localStorage.setItem(DEVICE_ID_KEY, id);
+        }
+        return id;
+    }
 
-    function generateOwnerKey() {
-        const array = new Uint8Array(16);
-        crypto.getRandomValues(array);
-        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
-    }
+    function generateOwnerKey() {
+        const array = new Uint8Array(16);
+        crypto.getRandomValues(array);
+        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
 
-    async function fetchProfileData(deviceId) {
-        try {
-            const res = await fetch(`${WEB_APP_URL}?action=getBusinessProfile&deviceId=${deviceId}`);
-            const json = await res.json();
-            return json.result === 'success' && json.data ? json.data : null;
-        } catch (e) {
-            console.error(e);
-            return null;
-        }
-    }
-    
-    // Function to check Name Availability and Get Suggestions
-    async function checkBusinessNameAvailability(businessName, deviceId) {
-        // The Apps Script backend must support 'checkName' action for case-sensitive uniqueness.
-        const url = `${WEB_APP_URL}?action=checkName&name=${encodeURIComponent(businessName)}&deviceId=${deviceId}`;
-        try {
-            const res = await fetch(url);
-            const json = await res.json();
-            
-            // Expected response: { result: "available" } OR { result: "taken", suggestions: ["Name_01", "Name_02"] }
-            return json;
-        } catch (e) {
-            console.error("Error checking name availability:", e);
-            return { result: "error", message: "Failed to connect to validation service." };
-        }
-    }
+    async function fetchProfileData(deviceId) {
+        try {
+            const res = await fetch(`${WEB_APP_URL}?action=getBusinessProfile&deviceId=${deviceId}`);
+            const json = await res.json();
+            return json.result === 'success' && json.data ? json.data : null;
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
+    
+    // Function to check Name Availability and Get Suggestions
+    // NOTE: This should also handle a parameter indicating if it's an edit and the current name.
+    // For simplicity, we assume the backend (Apps Script) 'checkName' is smart enough 
+    // to allow the current business owner (via deviceId) to keep their existing name.
+    // Since the original checkName used deviceId:
+    // const url = `${WEB_APP_URL}?action=checkName&name=${encodeURIComponent(businessName)}&deviceId=${deviceId}`;
+    // We rely on the backend to handle the 'is my name the same as the name I'm checking?' logic.
+    // But we still call it now in edit mode.
+    async function checkBusinessNameAvailability(businessName, deviceId) {
+        // The Apps Script backend must support 'checkName' action for case-sensitive uniqueness.
+        const url = `${WEB_APP_URL}?action=checkName&name=${encodeURIComponent(businessName)}&deviceId=${deviceId}`;
+        try {
+            const res = await fetch(url);
+            const json = await res.json();
+            
+            // Expected response: { result: "available" } OR { result: "taken", suggestions: ["Name_01", "Name_02"] }
+            return json;
+        } catch (e) {
+            console.error("Error checking name availability:", e);
+            return { result: "error", message: "Failed to connect to validation service." };
+        }
+    }
 
-    // Extract Google Drive file ID and show thumbnail
-    function updateVideoPreview() {
-        const url = videoLinkInput.value.trim();
-        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-            const fileId = match[1];
-            videoThumbnail.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
-            videoPreview.classList.remove('hidden');
-        } else {
-            videoPreview.classList.add('hidden');
-        }
-    }
+    // Extract Google Drive file ID and show thumbnail
+    function updateVideoPreview() {
+        const url = videoLinkInput.value.trim();
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            const fileId = match[1];
+            videoThumbnail.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+            videoPreview.classList.remove('hidden');
+        } else {
+            videoPreview.classList.add('hidden');
+        }
+    }
 
-    videoLinkInput.addEventListener('input', updateVideoPreview);
-    videoLinkInput.addEventListener('paste', () => setTimeout(updateVideoPreview, 100));
-    
-    // --- NEW FUNCTION: Real-time Name Validation ---
-    async function validateBusinessName() {
-        const businessName = businessNameInput.value.trim();
-        const isEditMode = new URLSearchParams(location.search).get('mode') === 'edit';
-        
-        // Skip validation in edit mode
-        if (isEditMode) return;
-        
-        // Reset state for short names or empty fields
-        if (businessName.length < 3) {
-            nameValidationState = null;
-            businessNameInput.classList.remove('input-available', 'input-taken');
-            nameValidationFeedback.textContent = 'Name should be at least 3 characters.';
-            nameSuggestionsContainer.innerHTML = '';
-            setupButton.disabled = true;
-            return;
-        }
+    videoLinkInput.addEventListener('input', updateVideoPreview);
+    videoLinkInput.addEventListener('paste', () => setTimeout(updateVideoPreview, 100));
+    
+    // --- UPDATED FUNCTION: Real-time Name Validation ---
+    async function validateBusinessName() {
+        const businessName = businessNameInput.value.trim();
+        const params = new URLSearchParams(location.search);
+        const isEditMode = params.get('mode') === 'edit';
 
-        // Set checking state
-        nameValidationState = 'checking';
-        setupButton.disabled = true;
-        nameValidationFeedback.textContent = 'Checking availability...';
-        nameValidationFeedback.classList.remove('feedback-taken', 'feedback-available');
-        businessNameInput.classList.remove('input-available', 'input-taken');
-        nameSuggestionsContainer.innerHTML = '';
-        
-        try {
-            const deviceId = getOrCreateDeviceId();
-            const nameCheck = await checkBusinessNameAvailability(businessName, deviceId);
+        // Reset state for short names or empty fields
+        if (businessName.length < 3) {
+            nameValidationState = null;
+            businessNameInput.classList.remove('input-available', 'input-taken');
+            nameValidationFeedback.textContent = 'Name should be at least 3 characters.';
+            nameSuggestionsContainer.innerHTML = '';
+            // Only disable setup button if not in edit mode (where other fields might be enough for saving)
+            // But if the name is too short, we should probably still disable it.
+            setupButton.disabled = true; 
+            return;
+        }
+        
+        // --- NEW EDIT MODE CHECK LOGIC ---
+        // If in edit mode AND the name hasn't changed, assume availability.
+        if (isEditMode && businessName === originalBusinessName) {
+            nameValidationState = 'available';
+            nameValidationFeedback.textContent = 'Current name confirmed.';
+            nameValidationFeedback.classList.add('feedback-available');
+            businessNameInput.classList.add('input-available');
+            setupButton.disabled = false; // Enable submit
+            nameSuggestionsContainer.innerHTML = '';
+            return;
+        }
+        // --- END NEW EDIT MODE CHECK LOGIC ---
 
-            if (nameCheck.result === "available") {
-                nameValidationState = 'available';
-                nameValidationFeedback.textContent = '✅ Name is available!';
-                nameValidationFeedback.classList.add('feedback-available');
-                businessNameInput.classList.add('input-available');
-                setupButton.disabled = false; // Enable submit
-            } else if (nameCheck.result === "taken") {
-                nameValidationState = 'taken';
-                nameValidationFeedback.innerHTML = `⚠️ Name **${businessName}** is taken. Try:`;
-                nameValidationFeedback.classList.add('feedback-taken');
-                businessNameInput.classList.add('input-taken');
-                setupButton.disabled = true; // Disable submit
+        // Set checking state
+        nameValidationState = 'checking';
+        setupButton.disabled = true;
+        nameValidationFeedback.textContent = 'Checking availability...';
+        nameValidationFeedback.classList.remove('feedback-taken', 'feedback-available');
+        businessNameInput.classList.remove('input-available', 'input-taken');
+        nameSuggestionsContainer.innerHTML = '';
+        
+        try {
+            const deviceId = getOrCreateDeviceId();
+            // Call name check even in edit mode if the name has changed!
+            const nameCheck = await checkBusinessNameAvailability(businessName, deviceId);
 
-                // Display and handle suggestions
-                handleNameSuggestions(businessName, nameCheck.suggestions);
+            if (nameCheck.result === "available") {
+                nameValidationState = 'available';
+                nameValidationFeedback.textContent = '✅ Name is available!';
+                nameValidationFeedback.classList.add('feedback-available');
+                businessNameInput.classList.add('input-available');
+                setupButton.disabled = false; // Enable submit
+            } else if (nameCheck.result === "taken") {
+                nameValidationState = 'taken';
+                nameValidationFeedback.innerHTML = `⚠️ Name **${businessName}** is taken. Try:`;
+                nameValidationFeedback.classList.add('feedback-taken');
+                businessNameInput.classList.add('input-taken');
+                setupButton.disabled = true; // Disable submit
 
-            } else {
-                throw new Error(nameCheck.message || "Failed to validate name.");
-            }
-        } catch (e) {
-            nameValidationState = 'error';
-            nameValidationFeedback.textContent = 'Error: Could not check name availability.';
-            nameValidationFeedback.classList.add('feedback-taken');
-            setupButton.disabled = false; // Allow submission on network error, but show error
-            console.error("Validation error:", e);
-        }
-    }
+                // Display and handle suggestions
+                handleNameSuggestions(businessName, nameCheck.suggestions);
 
-    // Attach debounced validation to the input event
-    businessNameInput.addEventListener('input', debounce(validateBusinessName, 500));
-    // Attach validation on blur as a fallback for slow typers
-    businessNameInput.addEventListener('blur', validateBusinessName);
+            } else {
+                throw new Error(nameCheck.message || "Failed to validate name.");
+            }
+        } catch (e) {
+            nameValidationState = 'error';
+            nameValidationFeedback.textContent = 'Error: Could not check name availability.';
+            nameValidationFeedback.classList.add('feedback-taken');
+            // If network fails, allow submission only if the name is the original name
+            setupButton.disabled = !(isEditMode && businessName === originalBusinessName); 
+            console.error("Validation error:", e);
+        }
+    }
+
+    // Attach debounced validation to the input event
+    businessNameInput.addEventListener('input', debounce(validateBusinessName, 500));
+    // Attach validation on blur as a fallback for slow typers
+    businessNameInput.addEventListener('blur', validateBusinessName);
 
 
-    // Function to create suggestion buttons
-    function handleNameSuggestions(originalName, suggestions) {
-        // Clear suggestions, but the main feedback is already in nameValidationFeedback
-        nameSuggestionsContainer.innerHTML = '';
-        
-        // Create and attach event listeners to each suggestion
-        if (suggestions && suggestions.length > 0) {
-            suggestions.forEach(name => {
-                const optionSpan = document.createElement('span');
-                optionSpan.textContent = name;
-                optionSpan.className = 'name-option';
-                
-                // Click handler: uses the suggested name, clears all warnings, and enables the button
-                optionSpan.addEventListener('click', () => {
-                    businessNameInput.value = name;
-                    nameSuggestionsContainer.innerHTML = '';
-                    
-                    // Manually set state to available, and update feedback/button
-                    nameValidationState = 'available';
-                    nameValidationFeedback.textContent = `✅ Name ${name} selected!`;
-                    nameValidationFeedback.className = 'validation-feedback feedback-available';
-                    businessNameInput.classList.remove('input-taken');
-                    businessNameInput.classList.add('input-available');
-                    setupButton.disabled = false;
-                });
+    // Function to create suggestion buttons
+    function handleNameSuggestions(originalName, suggestions) {
+        // Clear suggestions, but the main feedback is already in nameValidationFeedback
+        nameSuggestionsContainer.innerHTML = '';
+        
+        // Create and attach event listeners to each suggestion
+        if (suggestions && suggestions.length > 0) {
+            suggestions.forEach(name => {
+                const optionSpan = document.createElement('span');
+                optionSpan.textContent = name;
+                optionSpan.className = 'name-option';
+                
+                // Click handler: uses the suggested name, clears all warnings, and enables the button
+                optionSpan.addEventListener('click', () => {
+                    businessNameInput.value = name;
+                    nameSuggestionsContainer.innerHTML = '';
+                    
+                    // Manually set state to available, and update feedback/button
+                    nameValidationState = 'available';
+                    nameValidationFeedback.textContent = `✅ Name ${name} selected!`;
+                    nameValidationFeedback.className = 'validation-feedback feedback-available';
+                    businessNameInput.classList.remove('input-taken');
+                    businessNameInput.classList.add('input-available');
+                    setupButton.disabled = false;
+                });
 
-                nameSuggestionsContainer.appendChild(optionSpan);
-            });
-        } else {
-            nameSuggestionsContainer.innerHTML = '<p class="hint">No unique options suggested. Please try another name.</p>';
-        }
-    }
-    // --- END NEW FUNCTION ---
+                nameSuggestionsContainer.appendChild(optionSpan);
+            });
+        } else {
+            nameSuggestionsContainer.innerHTML = '<p class="hint">No unique options suggested. Please try another name.</p>';
+        }
+    }
+    // --- END UPDATED FUNCTION ---
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        const params = new URLSearchParams(location.search);
-        const isEditMode = params.get('mode') === 'edit';
-        const businessName = localStorage.getItem(OWNER_BUSINESS_KEY);
-        const deviceId = getOrCreateDeviceId();
+    document.addEventListener('DOMContentLoaded', async () => {
+        const params = new URLSearchParams(location.search);
+        const isEditMode = params.get('mode') === 'edit';
+        const localBusinessName = localStorage.getItem(OWNER_BUSINESS_KEY); // Renamed to avoid confusion
+        const deviceId = getOrCreateDeviceId();
 
-        if (businessName && !isEditMode) {
-            window.location.href = 'index.html';
-            return;
-        }
+        if (localBusinessName && !isEditMode) {
+            window.location.href = 'index.html';
+            return;
+        }
 
-        if (isEditMode) {
-            document.getElementById('formTitle').textContent = "Edit Your Business Profile";
-            setupButton.textContent = 'Save Changes';
-            goBackBtn.style.display = 'block';
-            document.getElementById('countContainer').style.display = 'none';
-            recoverLink.style.display = 'none';
-            nameValidationFeedback.style.display = 'none'; // Hide name validation in edit mode
-            
-            const profile = await fetchProfileData(deviceId);
-            if (profile) {
-                businessNameInput.value = profile.businessName || '';
-                document.getElementById('businessDescriptionInput').value = profile.businessDescription || '';
-                if (profile.videoLink) {
-                    videoLinkInput.value = profile.videoLink;
-                    updateVideoPreview(); // show existing preview
-                }
-            } else {
-                errorMsg.textContent = "Could not load profile.";
-                errorMsg.style.display = 'block';
-            }
-        } else if (!businessName) {
-            recoverLink.style.display = 'block';
-            setupButton.disabled = true; // Initially disable the button until name is valid
-        }
+        if (isEditMode) {
+            document.getElementById('formTitle').textContent = "Edit Your Business Profile";
+            setupButton.textContent = 'Save Changes';
+            goBackBtn.style.display = 'block';
+            document.getElementById('countContainer').style.display = 'none';
+            recoverLink.style.display = 'none';
+            nameValidationFeedback.style.display = 'block'; // KEEP name validation feedback visible in edit mode!
+            
+            const profile = await fetchProfileData(deviceId);
+            if (profile) {
+                businessNameInput.value = profile.businessName || '';
+                // --- CRUCIAL: Store the original name on load ---
+                originalBusinessName = profile.businessName || ''; 
+                nameValidationFeedback.textContent = 'You may change your business name.'; // Initial feedback
+                // --- End CRUCIAL ---
+                document.getElementById('businessDescriptionInput').value = profile.businessDescription || '';
+                if (profile.videoLink) {
+                    videoLinkInput.value = profile.videoLink;
+                    updateVideoPreview(); // show existing preview
+                }
+                // Since the form loads with the existing, valid name, set state to available initially
+                nameValidationState = 'available'; 
+                businessNameInput.classList.add('input-available');
+                setupButton.disabled = false;
+            } else {
+                errorMsg.textContent = "Could not load profile.";
+                errorMsg.style.display = 'block';
+                setupButton.disabled = true;
+            }
+        } else if (!localBusinessName) {
+            recoverLink.style.display = 'block';
+            setupButton.disabled = true; // Initially disable the button until name is valid
+        }
 
-        // Recover mode handlers (unchanged)
-        recoverLink.onclick = () => {
-            mainSetup.classList.add('hidden');
-            recoverMode.classList.remove('hidden');
-        };
-        document.getElementById('backToSetupBtn').onclick = () => {
-            recoverMode.classList.add('hidden');
-            mainSetup.classList.remove('hidden');
-        };
-        document.getElementById('linkDeviceBtn').onclick = async () => {
-            const key = document.getElementById('recoverKeyInput').value.trim();
-            if (key.length !== 32) {
-                errorMsg.textContent = "Owner Key must be exactly 32 characters.";
-                errorMsg.style.display = 'block';
-                return;
-            }
-            errorMsg.style.display = 'none';
-            const payload = { action: "recoverWithOwnerKey", ownerKey: key, deviceId };
-            try {
-                const res = await fetch(WEB_APP_URL, { method: "POST", mode: "cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
-                const json = await res.json();
-                if (json.result === "success") {
-                    localStorage.setItem(OWNER_BUSINESS_KEY, json.businessName);
-                    alert("Ownership recovered successfully!");
-                    window.location.href = 'index.html';
-                } else {
-                    errorMsg.textContent = json.message || "Invalid Owner Key.";
-                    errorMsg.style.display = 'block';
-                }
-            } catch (e) {
-                errorMsg.textContent = "Network error.";
-                errorMsg.style.display = 'block';
-            }
-        };
+        // Recover mode handlers (unchanged)
+        recoverLink.onclick = () => {
+            mainSetup.classList.add('hidden');
+            recoverMode.classList.remove('hidden');
+        };
+        document.getElementById('backToSetupBtn').onclick = () => {
+            recoverMode.classList.add('hidden');
+            mainSetup.classList.remove('hidden');
+        };
+        document.getElementById('linkDeviceBtn').onclick = async () => {
+            const key = document.getElementById('recoverKeyInput').value.trim();
+            if (key.length !== 32) {
+                errorMsg.textContent = "Owner Key must be exactly 32 characters.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+            errorMsg.style.display = 'none';
+            const payload = { action: "recoverWithOwnerKey", ownerKey: key, deviceId };
+            try {
+                const res = await fetch(WEB_APP_URL, { method: "POST", mode: "cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+                const json = await res.json();
+                if (json.result === "success") {
+                    localStorage.setItem(OWNER_BUSINESS_KEY, json.businessName);
+                    alert("Ownership recovered successfully!");
+                    window.location.href = 'index.html';
+                } else {
+                    errorMsg.textContent = json.message || "Invalid Owner Key.";
+                    errorMsg.style.display = 'block';
+                }
+            } catch (e) {
+                errorMsg.textContent = "Network error.";
+                errorMsg.style.display = 'block';
+            }
+        };
 
-        goBackBtn.onclick = () => window.location.href = 'index.html';
-    });
+        goBackBtn.onclick = () => window.location.href = 'index.html';
+    });
 
-    // Copy Owner Key
-    document.getElementById('copyKeyBtn').onclick = () => {
-        navigator.clipboard.writeText(ownerKeyDisplay.textContent);
-        alert("Owner Key copied to clipboard!");
-    };
+    // Copy Owner Key
+    document.getElementById('copyKeyBtn').onclick = () => {
+        navigator.clipboard.writeText(ownerKeyDisplay.textContent);
+        alert("Owner Key copied to clipboard!");
+    };
 
-    document.getElementById('continueBtn').onclick = () => {
-        window.location.href = 'index.html';
-    };
-    
+    document.getElementById('continueBtn').onclick = () => {
+        window.location.href = 'index.html';
+    };
+    
 
-    // 🚀 UPDATED FORM SUBMIT HANDLER with Real-time Validation Integration 🚀
-    profileForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const params = new URLSearchParams(location.search);
-        const isEditMode = params.get('mode') === 'edit';
-        const businessName = businessNameInput.value.trim();
-        const businessDescription = document.getElementById('businessDescriptionInput').value.trim();
-        const videoLink = videoLinkInput.value.trim() || null;
-        const deviceId = getOrCreateDeviceId();
+    // 🚀 UPDATED FORM SUBMIT HANDLER with Real-time Validation Integration 🚀
+    profileForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const params = new URLSearchParams(location.search);
+        const isEditMode = params.get('mode') === 'edit';
+        const businessName = businessNameInput.value.trim();
+        const businessDescription = document.getElementById('businessDescriptionInput').value.trim();
+        const videoLink = videoLinkInput.value.trim() || null;
+        const deviceId = getOrCreateDeviceId();
 
-        if (!businessName || !businessDescription) {
-            errorMsg.textContent = "Business Name and Description are required.";
-            errorMsg.style.display = 'block';
-            return;
-        }
+        if (!businessName || !businessDescription) {
+            errorMsg.textContent = "Business Name and Description are required.";
+            errorMsg.style.display = 'block';
+            return;
+        }
 
-        // --- CRUCIAL: Check the real-time validation state before submitting ---
-        if (!isEditMode && nameValidationState !== 'available') {
-            // Re-run validation if the state is not 'available' to catch last-second changes
-            await validateBusinessName(); 
-            
-            if (nameValidationState !== 'available') {
-                errorMsg.textContent = "Please fix the Business Name errors before continuing.";
-                errorMsg.style.display = 'block';
-                return; // Stop submission
-            }
-        }
-        // --- END CRUCIAL CHECK ---
-        
-        setupButton.disabled = true;
-        setupButton.textContent = isEditMode ? "Saving..." : "Creating...";
-        errorMsg.style.display = 'none'; 
+        // --- CRUCIAL: Check the real-time validation state before submitting (Works for both setup AND edit) ---
+        if (nameValidationState !== 'available') {
+            // Re-run validation if the state is not 'available' to catch last-second changes
+            await validateBusinessName(); 
+            
+            if (nameValidationState !== 'available') {
+                errorMsg.textContent = "Please fix the Business Name errors before continuing.";
+                errorMsg.style.display = 'block';
+                return; // Stop submission
+            }
+        }
+        // --- END CRUCIAL CHECK ---
+        
+        setupButton.disabled = true;
+        setupButton.textContent = isEditMode ? "Saving..." : "Creating...";
+        errorMsg.style.display = 'none'; 
 
-        try {
-            // 1. Skip Name Uniqueness check since it's handled in real-time now.
-            
-            // 2. Proceed with API call (Setup or Update)
-            const payload = {
-                action: isEditMode ? "updateBusinessProfile" : "setupBusinessProfile",
-                deviceId,
-                businessName,
-                businessDescription,
-                videoLink,                     
-                timestamp: new Date().toISOString()
-            };
+        try {
+            
+            // 2. Proceed with API call (Setup or Update)
+            const payload = {
+                action: isEditMode ? "updateBusinessProfile" : "setupBusinessProfile",
+                deviceId,
+                businessName,
+                businessDescription,
+                videoLink,                     
+                timestamp: new Date().toISOString()
+            };
 
-            if (!isEditMode) {
-                payload.subscribersCount = parseInt(document.getElementById('subscribersCount').value) || 0;
-                payload.ownerKey = generateOwnerKey();
-            }
+            if (!isEditMode) {
+                payload.subscribersCount = parseInt(document.getElementById('subscribersCount').value) || 0;
+                payload.ownerKey = generateOwnerKey();
+            }
 
-            const res = await fetch(WEB_APP_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify(payload)
-            });
-            const json = await res.json();
+            const res = await fetch(WEB_APP_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
 
-            if (json.result === "success") {
-                localStorage.setItem(OWNER_BUSINESS_KEY, businessName);
+            if (json.result === "success") {
+                localStorage.setItem(OWNER_BUSINESS_KEY, businessName);
 
-                if (!isEditMode && json.ownerKey) {
-                    mainSetup.classList.add('hidden');
-                    ownerKeyDisplay.textContent = json.ownerKey;
-                    ownerKeySection.classList.remove('hidden');
-                } else {
-                    alert(`Profile ${isEditMode ? 'updated' : 'created'} successfully!`);
-                    window.location.href = 'index.html';
-                }
-            } else {
-                // Handle server errors that might include non-name related issues
-                errorMsg.textContent = json.message || "Operation failed.";
-                errorMsg.style.display = 'block';
-            }
-        } catch (err) {
-            console.error(err);
-            errorMsg.textContent = err.message || "Network or server error.";
-            errorMsg.style.display = 'block';
-        } finally {
-            setupButton.disabled = false;
-            setupButton.textContent = isEditMode ? "Save Changes" : "Set Up Profile";
-        }
-    };
+                if (!isEditMode && json.ownerKey) {
+                    mainSetup.classList.add('hidden');
+                    ownerKeyDisplay.textContent = json.ownerKey;
+                    ownerKeySection.classList.remove('hidden');
+                } else {
+                    alert(`Profile ${isEditMode ? 'updated' : 'created'} successfully!`);
+                    window.location.href = 'index.html';
+                }
+            } else {
+                // Handle server errors that might include non-name related issues
+                errorMsg.textContent = json.message || "Operation failed.";
+                errorMsg.style.display = 'block';
+            }
+        } catch (err) {
+            console.error(err);
+            errorMsg.textContent = err.message || "Network or server error.";
+            errorMsg.style.display = 'block';
+        } finally {
+            setupButton.disabled = false;
+            setupButton.textContent = isEditMode ? "Save Changes" : "Set Up Profile";
+        }
+    };
 </script>
 </body>
 </html>
