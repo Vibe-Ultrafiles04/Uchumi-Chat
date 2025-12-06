@@ -301,7 +301,94 @@ body {
     border-bottom: 1px solid #eee;
 }
 /* --- Global Product Grouping Headers --- */
+.promotional-video-wrapper {
+    /* 🚨 CRITICAL CHANGES FOR STACKING */
+    position: absolute; /* Take it out of the Flex flow */
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10; /* Ensure it is layered on top of other header content */
+    
+    /* ❌ REMOVED FIXED HEIGHT to allow aspect ratio container to define height */
+    /* height: 180px; */ 
+    
+    margin-bottom: 0; /* No need for margin since it's absolute */
+    border-radius: 16px 16px 0 0; /* Use rounded corners that match the container */
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
 
+/* === ASPECT RATIO CONTAINER (New or Updated) === */
+/* Assumes this class wraps the iframe in your JS */
+.iframe-responsive-container {
+    position: relative;
+    width: 100%;
+    
+    /* CRITICAL: Defines the 16:9 aspect ratio (9 / 16 = 56.25%) */
+    padding-top: 56.25%; 
+    
+    /* Ensure any inline style (like pointer-events) is overridden if necessary */
+    pointer-events: auto !important; 
+}
+
+/* Ensure the iframe fills the responsive container */
+.iframe-responsive-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+.promotional-video-wrapper .latest-product-image {
+    /* Use the same class but ensure it's slightly taller or distinct if needed */
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.video-label {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #007bff; /* Primary blue for video */
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    z-index: 5;
+}
+
+.play-button-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    z-index: 10;
+    transition: transform 0.2s ease;
+}
+
+.play-button-overlay::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 55%;
+    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 15px solid white;
+}
+
+.promotional-video-wrapper:hover .play-button-overlay {
+    transform: translate(-50%, -50%) scale(1.1);
+}
 /* The main Business Name header (H2) */
 .business-group-header {
     margin-top: 30px;
@@ -478,22 +565,44 @@ body {
 
 /* === HEADER (CLICKABLE) === */
 .business-card-header {
-    background: linear-gradient(135deg, #9b9bf9 0%, #144efe 100%); /* Deeper royal blue gradient */
+    background: linear-gradient(135deg, #9b9bf9 0%, #144efe 100%); 
     color: #050505;
-    padding: 24px 5px;
+    /* 🚨 ADJUSTED PADDING: Padding removed from top and added back to the sides/bottom. */
+    /* We must calculate the required padding-top based on the video's aspect ratio. */
+    padding: 24px 5px; 
+    
     display: flex;
     align-items: center;
     gap: 2px;
     cursor: pointer;
-    position: relative;
+    position: relative; 
     transition: background 0.3s ease;
     user-select: none;
+    
+    /* 🚨 UPDATED PADDING-TOP: Estimate space for video + the original 24px content padding.
+       (e.g., if the video max-width is 1100px, 56.25% of that is ~618px, but this
+       padding is for the collapsed state, so a fixed, safe size works better.)
+       Let's use a safe, generous fixed value that covers the video area.
+    */
+    padding-top: 250px; /* Increased from 200px to accommodate the full 16:9 area */
 }
 
 .business-card-header:hover {
     background: linear-gradient(135deg, #6573ab 0%, #3550c0 100%);
 }
+@media (min-width: 900px) {
+    /* For wider PC screens where the card takes up more space */
+    .business-card-header {
+        padding-top: 500px; /* Example value for wider screens */
+    }
+}
 
+@media (min-width: 1200px) {
+    /* For very wide screens, matching the max-width of your container */
+    .business-card-header {
+        padding-top: 650px; /* Covers the 1100px max-width 16:9 video */
+    }
+}
 /* Image container */
 .latest-product-image-container {
     width: 130px;

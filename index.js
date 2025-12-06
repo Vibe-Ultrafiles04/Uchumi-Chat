@@ -137,67 +137,173 @@ function escapeHtml(s){
 // ----------------------------------------------------------------------
 // *** CORE RENDERING LOGIC ***
 // ----------------------------------------------------------------------
-// NEW: Function to create the business header card element
+/**
+ * NOTE: This function assumes the following helper functions are defined 
+ * and available globally (e.g., in index.js):
+ * - fetchBusinessProfileVideo(businessName): Fetches the Google Drive video link.
+ * - getThumbnailUrl(driveLink, size): Generates the Google Drive thumbnail URL.
+ * - createDriveEmbedUrl(driveLink): Converts the Google Drive link to the embeddable preview URL.
+ * - escapeHtml(str): For safe string rendering.
+ */
 function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
     const businessCard = document.createElement("div");
     businessCard.className = "business-card-header";
+    // Unique ID for the container where we will prepend the video element
+    const uniqueIdForContainer = businessName.replace(/\s/g, '_').replace(/[^\w]/g, '');
+    businessCard.id = `card_${uniqueIdForContainer}`;
 
     const latestProductLink = latestProduct.driveLink || "";
     const latestThumbUrl = getThumbnailUrl(latestProductLink, 800);
 
     const categoriesText = categoryNames.length ? categoryNames.join(' | ') : '';
 
-    businessCard.innerHTML = `
-       <!-- Image on top -->
-    <div class="latest-product-image-wrapper">
-        <div class="latest-product-image-container">
-            ${latestThumbUrl 
-                ? `<img src="${latestThumbUrl}" alt="Latest product from ${escapeHtml(businessName)}" class="latest-product-image" loading="lazy">`
-                : `<div class="placeholder-image-large">Latest Product</div>`
-            }
-        </div>
-
-        <!-- Badge label -->
-        <div class="latest-product-label">
-            Latest Product
-        </div>
-    </div>
-
-       <!-- Text content below the image -->
-<div class="business-info-below">
-    <div class="business-name-wrapper">
-        <span class="name-label">Business Name:</span>
-        <h2 class="business-name">${escapeHtml(businessName)}</h2>
-    </div>
-
-    ${categoriesText
-        ? `<div class="product-categories">
-               <span class="categories-label">Categories:</span>
-               <span class="categories-list">${escapeHtml(categoriesText)}</span>
-           </div>`
-        : `<div class="product-categories empty">No categories listed</div>`
-    }
-</div>
-
-        <!-- Button at the very bottom -->
-        <button class="btn-black open-business-card-btn">Click card to open</button>
-    `;
-
-    // Your exact smooth navigation (unchanged)
-    businessCard.querySelector(".open-business-card-btn").addEventListener('click', (e) => {
-        e.preventDefault();
-        
+    // Function for smooth navigation (reused for the bottom button)
+    const navigateToBusinessPage = (e) => {
+        e.preventDefault(); 
         document.body.style.animation = 'slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards';
-        
         const encodedName = encodeURIComponent(businessName.trim());
-        
         setTimeout(() => {
             window.location.href = `business.html?name=${encodedName}`;
         }, 100);
+    };
+
+    businessCard.innerHTML = `
+        <div id="videoContainer_${uniqueIdForContainer}">
+            </div>
+        
+        <div class="latest-product-image-wrapper">
+            <div class="latest-product-image-container">
+                ${latestThumbUrl 
+                    ? `<img src="${latestThumbUrl}" alt="Latest product from ${escapeHtml(businessName)}" class="latest-product-image" loading="lazy">`
+                    : `<div class="placeholder-image-large">Latest Product</div>`
+                }
+            </div>
+
+            <div class="latest-product-label">
+                Latest Product
+            </div>
+        </div>
+
+        <div class="business-info-below">
+            <div class="business-name-wrapper">
+                <span class="name-label">Business Name:</span>
+                <h2 class="business-name">${escapeHtml(businessName)}</h2>
+            </div>
+
+            ${categoriesText
+                ? `<div class="product-categories">
+                        <span class="categories-label">Categories:</span>
+                        <span class="categories-list">${escapeHtml(categoriesText)}</span>
+                    </div>`
+                : `<div class="product-categories empty">No categories listed</div>`
+            }
+        </div>
+
+        <button class="btn-black open-business-card-btn">Click card to open</button>
+    `;
+
+    // --- ASYNCHRONOUS VIDEO FETCH AND PREPEND ---
+    const videoContainer = businessCard.querySelector(`#videoContainer_${uniqueIdForContainer}`);
+
+    fetchBusinessProfileVideo(businessName).then(driveLink => {
+        if (driveLink) {
+            // No need for videoThumbUrl if we render the video directly
+            const embedUrl = createDriveEmbedUrl(driveLink);
+
+            if (embedUrl) {
+                // RENDER THE IFRAME DIRECTLY. 
+                // Set autoplay=0 to ensure it's paused initially.
+                // The Google Drive player's native play button will handle playback.
+                videoContainer.innerHTML = `
+                    <div class="promotional-video-wrapper" style="z-index: 100;">
+                        <div class="iframe-responsive-container" style="pointer-events: auto;">
+                            <iframe 
+                                src="${embedUrl}?autoplay=0&controls=1" 
+                                allow="fullscreen; picture-in-picture" 
+                                allowfullscreen 
+                                loading="eager"
+                                frameborder="0"
+                                style="width: 100%; height: 100%;">
+                            </iframe>
+                        </div>
+                        <div class="video-label">Promotional Video</div>
+                    </div>
+                `;
+                
+                // NO CLICK HANDLER IS ATTACHED, as the iframe controls playback.
+            } else {
+                // Fallback for missing embed URL if the link was bad
+                videoContainer.innerHTML = `<div class="placeholder-image-large">Video link broken or unavailable.</div>`;
+            }
+        }
+    }).catch(e => {
+        console.error("Video fetch failed:", e);
+        // Display a fallback message if the fetch operation fails
+        videoContainer.innerHTML = `<div class="placeholder-image-large">Failed to load video.</div>`;
     });
+
+    // Attach navigation to the bottom button
+    businessCard.querySelector(".open-business-card-btn").addEventListener('click', navigateToBusinessPage);
 
     return businessCard;
 }
+
+// This helper function must be defined globally for the above logic to work
+function createDriveEmbedUrl(driveLink) {
+    const driveId = extractDriveId(driveLink); 
+    if (driveId) {
+        // Correct Google Drive embed format (preview is essential for embed)
+        return `https://drive.google.com/file/d/${driveId}/preview`;
+    }
+    return null;
+}
+// index.js (or main script file where core logic resides)
+
+// ... (existing helper functions like getThumbnailUrl, extractDriveId, etc.)
+
+// NEW HELPER: Fetches the video link from the business profile by name.
+async function fetchBusinessProfileVideo(businessName) {
+    // NOTE: This uses the SCRIPT_URL from business.html, but assumes it's available.
+    // We must define SCRIPT_URL here, or pass it, or read it from a shared config.
+    // Assuming WEB_APP_URL is the same as SCRIPT_URL.
+    
+    // 1. Get the Owner ID first (since the profile is stored by ID)
+    const url_find_owner = `${WEB_APP_URL}?action=findOwnerByName&name=${encodeURIComponent(businessName)}`;
+    let ownerId = null;
+
+    try {
+        const resp = await fetch(url_find_owner);
+        const json = await resp.json();
+        if (json.result === "success" && json.deviceId) {
+            ownerId = json.deviceId;
+        } else {
+            console.warn(`Owner ID not found for business: ${businessName}`);
+            return null;
+        }
+    } catch (e) {
+        console.error("Error finding owner by name:", e);
+        return null;
+    }
+    
+    // 2. Use the Owner ID to get the full profile data (including videoLink)
+    if (ownerId) {
+        const url_get_profile = `${WEB_APP_URL}?action=getBusinessProfile&deviceId=${ownerId}`;
+        try {
+            const profileResp = await fetch(url_get_profile);
+            const profileJson = await profileResp.json();
+            
+            if (profileJson.result === "success" && profileJson.data?.videoLink) {
+                return profileJson.data.videoLink;
+            }
+        } catch (e) {
+            console.error(`Error fetching profile for ID: ${ownerId}`, e);
+        }
+    }
+
+    return null; // Return null if fetching fails at any point
+}
+
+// ... (rest of index.js content)
 // Helper function to create a single product card DOM element (CONDITIONAL)
 function createProductCard(r) {
     // Data extraction
