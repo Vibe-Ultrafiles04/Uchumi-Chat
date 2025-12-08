@@ -626,9 +626,9 @@ body {
 
 /* Optional: Icon for visual interest */
 .subscriber-count::before {
-    content: "👍"; 
-    margin-right: 5px; /* Reduced margin */
-    font-size: 1em; /* Kept relative size, but overall size is smaller due to parent font size */
+    content: "\1F465"; /* Two People Icon (Unicode for 'busts in silhouette') */
+    margin-right: 5px; 
+    font-size: 1em; 
 }
 /* Image container */
 .latest-product-image-container {
