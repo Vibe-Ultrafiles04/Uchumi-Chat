@@ -178,7 +178,7 @@
 
         <div class="subscribe-wrapper">
             <button id="subscribeBtn" class="follow" disabled>Loading...</button>
-            <div id="subscriberCount">— followers</div>
+            <div id="subscriberCount">— ss</div>
         </div>
 
         <div class="share-wrapper" id="shareWrapper" style="margin-top: 30px; padding: 0 20px;">
@@ -232,7 +232,7 @@
     let businessOwnerId = null;
     let isFollowing = false;
     let currentVideoViews = 0;
-    
+    let activeVideoDriveId = null;
 
     const subscribeBtn = document.getElementById('subscribeBtn');
     const subscriberCountEl = document.getElementById('subscriberCount');
@@ -271,62 +271,71 @@
     }
 
     // Load video (no view increment here)
-    async function loadPromotionalVideo(profileData) {
-        if (!profileData?.videoLink) {
-            videoSection.style.display = 'none';
-            return;
-        }
+async function loadPromotionalVideo(profileData) {
+  
 
-        const driveId = extractDriveId(profileData.videoLink);
-        if (!driveId) {
-            videoSection.style.display = 'none';
-            return;
-        }
-        
-
-        promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
-        currentVideoViews = profileData.videoViews || 0;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
-        videoSection.style.display = 'block';
+    if (!profileData?.videoLink) {
+        videoSection.style.display = 'none';
+        activeVideoDriveId = null; // Clear the active ID if no video is present
+        return;
     }
 
-    // Increment view only on first click per device
-    async function countVideoView() {
-        if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
-
-        // Check if video section is visible before trying to count the view.
-        if (videoSection.style.display === 'none') return;
-        
-        const viewedKey = `videoViewed_${businessOwnerId}`;
-        if (localStorage.getItem(viewedKey)) return;
-
-        // Mark as viewed immediately to prevent double-counting on the same device/session
-        localStorage.setItem(viewedKey, 'true');
-
-        try {
-            const response = await fetch(SCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors",                    // Required for Google Apps Script
-                headers: { "Content-Type": "text/plain" },  // Helps avoid CORS preflight
-                body: JSON.stringify({
-                    action: "incrementVideoView",
-                    businessOwnerId: businessOwnerId,
-                    viewerDeviceId: MY_DEVICE_ID     
-                })
-            });
-
-            // Note: With no-cors, we can't read the response body
-            // But the server still processed it, so we can safely increment locally
-            currentVideoViews += 1;
-            videoViewsEl.textContent = formatViews(currentVideoViews);
-
-        } catch (err) {
-            // Even if network fails, give user visual feedback (view was likely still counted server-side)
-            currentVideoViews += 1;
-            videoViewsEl.textContent = formatViews(currentVideoViews);
-        }
+    const driveId = extractDriveId(profileData.videoLink);
+    if (!driveId) {
+        videoSection.style.display = 'none';
+        activeVideoDriveId = null; // Clear the active ID if extraction fails
+        return;
     }
     
+    // ⭐ FIX 1: Store the unique Drive ID globally
+    activeVideoDriveId = driveId;
+
+    promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
+    currentVideoViews = profileData.videoViews || 0;
+    videoViewsEl.textContent = formatViews(currentVideoViews);
+    videoSection.style.display = 'block';
+}
+
+// Increment view only on first click per device
+async function countVideoView() {
+   
+
+    if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
+
+    // Check if video section is visible before trying to count the view.
+    if (videoSection.style.display === 'none') return;
+    
+    const videoId = activeVideoDriveId; // Use the globally set variable
+    if (!videoId) return; // Exit if no video ID is active
+
+    // ⭐ FIX 2: Use videoId instead of businessOwnerId for the local storage key
+    const viewedKey = `videoViewed_${videoId}`;
+    if (localStorage.getItem(viewedKey)) return;
+
+    // Mark as viewed immediately to prevent double-counting on the same device/session
+    localStorage.setItem(viewedKey, 'true');
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors", 
+            headers: { "Content-Type": "text/plain" }, 
+            body: JSON.stringify({
+                action: "incrementVideoView",
+                businessOwnerId: businessOwnerId,
+                viewerDeviceId: MY_DEVICE_ID 
+            })
+        });
+
+        currentVideoViews += 1;
+        videoViewsEl.textContent = formatViews(currentVideoViews);
+
+    } catch (err) {
+        // Fallback for network error
+        currentVideoViews += 1;
+        videoViewsEl.textContent = formatViews(currentVideoViews);
+    }
+}
     // NEW HELPER FUNCTION
     async function findOwnerIdByBusinessName(businessName) {
         try {
@@ -377,76 +386,77 @@
         return ownerId; // Will be null if all steps fail
     }
 
-    // NEW FUNCTION TO LOAD PROFILE (Description, Video, Subscribers)
-    async function loadProfileData(ownerId) {
-        if (!ownerId) {
-            businessDescriptionEl.textContent = "No owner ID found for this business.";
-            subscribeBtn.disabled = true;
-            subscribeBtn.textContent = "Unavailable";
-            return;
-        }
-
-        businessOwnerId = ownerId; // Set the global ID
-
-        if (MY_DEVICE_ID === businessOwnerId) {
-            subscribeBtn.textContent = "This is your business";
-            subscribeBtn.disabled = true;
-            subscribeBtn.className = "";
-            window.IS_ADMIN_VIEW = true; // NEW: Set admin view flag
-        } else {
-            window.IS_ADMIN_VIEW = false;
-        }
-
-        // 1. Load Business Profile
-        try {
-            const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`);
-            const profileJson = await profileResp.json();
-
-            if (profileJson.result === "success" && profileJson.data) {
-                const desc = profileJson.data.businessDescription?.trim();
-                businessDescriptionEl.textContent = desc || "This business hasn’t added a description yet.";
-                subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} follower${profileJson.data.subscribers !== 1 ? 's' : ''}`;
-
-                loadPromotionalVideo(profileJson.data);
-                
-                // Check if backend count is 0 and remove local storage key
-                if (profileJson.data.videoLink && profileJson.data.videoViews === 0) {
-                    const viewedKey = `videoViewed_${businessOwnerId}`;
-                    localStorage.removeItem(viewedKey);
-                }
-                
-                // Automatically count video view on successful load
-                // NOTE: The previous logic of calling countVideoView was kept here
-                if (profileJson.data.videoLink) {
-                    countVideoView();
-                }
-
-            } else {
-                businessDescriptionEl.textContent = "Business profile not found or data error.";
-                subscribeBtn.disabled = true;
-                subscribeBtn.textContent = "Unavailable";
-            }
-
-        } catch (e) {
-            console.error("Error loading profile:", e);
-            businessDescriptionEl.textContent = "Failed to load business profile info.";
-            subscribeBtn.disabled = true;
-            subscribeBtn.textContent = "Unavailable";
-            return;
-        }
-
-        // 2. Load Subscription Status
-        try {
-            const myResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${MY_DEVICE_ID}`);
-            const myJson = await myResp.json();
-            isFollowing = myJson.result === "success" && myJson.data?.subscribedTo?.includes(businessOwnerId);
-            updateSubscribeButton();
-        } catch (e) {
-            console.error("Error loading subscription status:", e);
-            updateSubscribeButton(); // Still update button, just keep disabled if no ownerId
-        }
+   // NEW FUNCTION TO LOAD PROFILE (Description, Video, Subscribers)
+async function loadProfileData(ownerId) {
+    if (!ownerId) {
+        businessDescriptionEl.textContent = "No owner ID found for this business.";
+        subscribeBtn.disabled = true;
+        subscribeBtn.textContent = "Unavailable";
+        return;
     }
 
+    businessOwnerId = ownerId; // Set the global ID
+
+    if (MY_DEVICE_ID === businessOwnerId) {
+        subscribeBtn.textContent = "This is your business";
+        subscribeBtn.disabled = true;
+        subscribeBtn.className = "";
+        window.IS_ADMIN_VIEW = true; // NEW: Set admin view flag
+    } else {
+        window.IS_ADMIN_VIEW = false;
+    }
+
+    // 1. Load Business Profile
+    try {
+        const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`);
+        const profileJson = await profileResp.json();
+
+        if (profileJson.result === "success" && profileJson.data) {
+            const desc = profileJson.data.businessDescription?.trim();
+            businessDescriptionEl.textContent = desc || "This business hasn’t added a description yet.";
+            subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} Patrons${profileJson.data.subscribers !== 1 ? 's' : ''}`;
+
+            loadPromotionalVideo(profileJson.data);
+            
+            // ⭐ FIX: REMOVED redundant local storage clearing block.
+            // The logic below is no longer needed because the local storage key is now based on the unique
+            // video ID (`videoViewed_${videoId}`), ensuring a fresh view count when the video link changes.
+            /* if (profileJson.data.videoLink && profileJson.data.videoViews === 0) {
+                const viewedKey = `videoViewed_${businessOwnerId}`;
+                localStorage.removeItem(viewedKey);
+            }
+            */
+            
+            // Automatically count video view on successful load
+            if (profileJson.data.videoLink) {
+                countVideoView();
+            }
+
+        } else {
+            businessDescriptionEl.textContent = "Business profile not found or data error.";
+            subscribeBtn.disabled = true;
+            subscribeBtn.textContent = "Unavailable";
+        }
+
+    } catch (e) {
+        console.error("Error loading profile:", e);
+        businessDescriptionEl.textContent = "Failed to load business profile info.";
+        subscribeBtn.disabled = true;
+        subscribeBtn.textContent = "Unavailable";
+        return;
+    }
+
+    // 2. Load Subscription Status
+    try {
+        const myResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${MY_DEVICE_ID}`);
+        const myJson = await myResp.json();
+        isFollowing = myJson.result === "success" && myJson.data?.subscribedTo?.includes(businessOwnerId);
+        updateSubscribeButton();
+    } catch (e) {
+        console.error("Error loading subscription status:", e);
+        updateSubscribeButton(); // Still update button, just keep disabled if no ownerId
+    }
+}
 
     /**
      * B. Refactored fetchAndRenderProducts:
@@ -520,7 +530,7 @@
                 isFollowing = !isFollowing;
                 // Re-fetch profile to get updated subscriber count
                 const p = await (await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`)).json();
-                if (p.data) subscriberCountEl.textContent = `${p.data.subscribers || 0} follower${p.data.subscribers !== 1 ? 's' : ''}`;
+                if (p.data) subscriberCountEl.textContent = `${p.data.subscribers || 0} Patrons${p.data.subscribers !== 1 ? 's' : ''}`;
                 updateSubscribeButton();
             } else {
                 alert("Action failed: " + (result.message || "Try again"));

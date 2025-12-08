@@ -138,9 +138,8 @@ function escapeHtml(s){
 // *** CORE RENDERING LOGIC ***
 // ----------------------------------------------------------------------
 /**
- * NOTE: This function assumes the following helper functions are defined 
- * and available globally (e.g., in index.js):
- * - fetchBusinessProfileVideo(businessName): Fetches the Google Drive video link.
+ * NOTE: This function now requires 'fetchBusinessProfileData' instead of 'fetchBusinessProfileVideo'.
+ * - fetchBusinessProfileData(businessName): Fetches the full business profile object (Video Link, Subscribers, Owner ID).
  * - getThumbnailUrl(driveLink, size): Generates the Google Drive thumbnail URL.
  * - createDriveEmbedUrl(driveLink): Converts the Google Drive link to the embeddable preview URL.
  * - escapeHtml(str): For safe string rendering.
@@ -148,6 +147,7 @@ function escapeHtml(s){
 function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
     const businessCard = document.createElement("div");
     businessCard.className = "business-card-header";
+
     // Unique ID for the container where we will prepend the video element
     const uniqueIdForContainer = businessName.replace(/\s/g, '_').replace(/[^\w]/g, '');
     businessCard.id = `card_${uniqueIdForContainer}`;
@@ -159,7 +159,7 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
 
     // Function for smooth navigation (reused for the bottom button)
     const navigateToBusinessPage = (e) => {
-        e.preventDefault(); 
+        e.preventDefault();
         document.body.style.animation = 'slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards';
         const encodedName = encodeURIComponent(businessName.trim());
         setTimeout(() => {
@@ -167,9 +167,12 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
         }, 100);
     };
 
+    // NEW: Placeholder for the subscriber count
+    const subscriberPlaceholderId = `sub-count-${uniqueIdForContainer}`;
+
     businessCard.innerHTML = `
         <div id="videoContainer_${uniqueIdForContainer}">
-            </div>
+        </div>
         
         <div class="latest-product-image-wrapper">
             <div class="latest-product-image-container">
@@ -189,12 +192,16 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
                 <span class="name-label">Business Name:</span>
                 <h2 class="business-name">${escapeHtml(businessName)}</h2>
             </div>
+            
+            <div class="subscriber-count" id="${subscriberPlaceholderId}">
+                Loading Patrons...
+            </div>
 
             ${categoriesText
                 ? `<div class="product-categories">
                         <span class="categories-label">Categories:</span>
                         <span class="categories-list">${escapeHtml(categoriesText)}</span>
-                    </div>`
+                   </div>`
                 : `<div class="product-categories empty">No categories listed</div>`
             }
         </div>
@@ -202,44 +209,53 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
         <button class="btn-black open-business-card-btn">Click card to open</button>
     `;
 
-    // --- ASYNCHRONOUS VIDEO FETCH AND PREPEND ---
+    // --- ASYNCHRONOUS DATA FETCH AND RENDER ---
     const videoContainer = businessCard.querySelector(`#videoContainer_${uniqueIdForContainer}`);
+    const subscriberEl = businessCard.querySelector(`#${subscriberPlaceholderId}`);
 
-    fetchBusinessProfileVideo(businessName).then(driveLink => {
-        if (driveLink) {
-            // No need for videoThumbUrl if we render the video directly
-            const embedUrl = createDriveEmbedUrl(driveLink);
+    // Use the new function to fetch all required profile data
+    fetchBusinessProfileData(businessName).then(data => {
+        if (data) {
+            // 1. UPDATE SUBSCRIBER COUNT
+            const count = data.subscribers || 0;
+            subscriberEl.textContent = `${count} Patrons${count !== 1 ? 's' : ''}`;
 
-            if (embedUrl) {
-                // RENDER THE IFRAME DIRECTLY. 
-                // Set autoplay=0 to ensure it's paused initially.
-                // The Google Drive player's native play button will handle playback.
-                videoContainer.innerHTML = `
-                    <div class="promotional-video-wrapper" style="z-index: 100;">
-                        <div class="iframe-responsive-container" style="pointer-events: auto;">
-                            <iframe 
-                                src="${embedUrl}?autoplay=0&controls=1" 
-                                allow="fullscreen; picture-in-picture" 
-                                allowfullscreen 
-                                loading="eager"
-                                frameborder="0"
-                                style="width: 100%; height: 100%;">
-                            </iframe>
+            // 2. RENDER PROMOTIONAL VIDEO (using the videoLink from the fetched data)
+            const driveLink = data.videoLink;
+
+            if (driveLink) {
+                const embedUrl = createDriveEmbedUrl(driveLink);
+
+                if (embedUrl) {
+                    // RENDER THE IFRAME DIRECTLY
+                    videoContainer.innerHTML = `
+                        <div class="promotional-video-wrapper" style="z-index: 100;">
+                            <div class="iframe-responsive-container" style="pointer-events: auto;">
+                                <iframe 
+                                    src="${embedUrl}?autoplay=0&controls=1" 
+                                    allow="fullscreen; picture-in-picture" 
+                                    allowfullscreen 
+                                    loading="eager"
+                                    frameborder="0"
+                                    style="width: 100%; height: 100%;">
+                                </iframe>
+                            </div>
+                            <div class="video-label">Promotional Video</div>
                         </div>
-                        <div class="video-label">Promotional Video</div>
-                    </div>
-                `;
-                
-                // NO CLICK HANDLER IS ATTACHED, as the iframe controls playback.
-            } else {
-                // Fallback for missing embed URL if the link was bad
-                videoContainer.innerHTML = `<div class="placeholder-image-large">Video link broken or unavailable.</div>`;
+                    `;
+                } else {
+                    videoContainer.innerHTML = `<div class="placeholder-image-large">Video link broken or unavailable.</div>`;
+                }
             }
+        } else {
+            // Handle case where profile data fetch failed
+            subscriberEl.textContent = "Patrons Unavailable";
+            videoContainer.innerHTML = `<div class="placeholder-image-large">Failed to load video/profile.</div>`;
         }
     }).catch(e => {
-        console.error("Video fetch failed:", e);
-        // Display a fallback message if the fetch operation fails
+        console.error("Profile data fetch failed:", e);
         videoContainer.innerHTML = `<div class="placeholder-image-large">Failed to load video.</div>`;
+        subscriberEl.textContent = "Patrons Unavailable (Error)";
     });
 
     // Attach navigation to the bottom button
@@ -248,7 +264,7 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
     return businessCard;
 }
 
-// This helper function must be defined globally for the above logic to work
+// NOTE: The 'createDriveEmbedUrl' function remains unchanged:
 function createDriveEmbedUrl(driveLink) {
     const driveId = extractDriveId(driveLink); 
     if (driveId) {
@@ -261,12 +277,12 @@ function createDriveEmbedUrl(driveLink) {
 
 // ... (existing helper functions like getThumbnailUrl, extractDriveId, etc.)
 
-// NEW HELPER: Fetches the video link from the business profile by name.
-async function fetchBusinessProfileVideo(businessName) {
-    // NOTE: This uses the SCRIPT_URL from business.html, but assumes it's available.
-    // We must define SCRIPT_URL here, or pass it, or read it from a shared config.
-    // Assuming WEB_APP_URL is the same as SCRIPT_URL.
-    
+/**
+ * REFACTORED: Fetches the full profile data (Video Link, Subscribers, and Owner ID)
+ * Now returns an object: { videoLink: string, ownerId: string, subscribers: number }
+ * Assumes WEB_APP_URL is globally available.
+ */
+async function fetchBusinessProfileData(businessName) {
     // 1. Get the Owner ID first (since the profile is stored by ID)
     const url_find_owner = `${WEB_APP_URL}?action=findOwnerByName&name=${encodeURIComponent(businessName)}`;
     let ownerId = null;
@@ -274,6 +290,7 @@ async function fetchBusinessProfileVideo(businessName) {
     try {
         const resp = await fetch(url_find_owner);
         const json = await resp.json();
+
         if (json.result === "success" && json.deviceId) {
             ownerId = json.deviceId;
         } else {
@@ -284,25 +301,32 @@ async function fetchBusinessProfileVideo(businessName) {
         console.error("Error finding owner by name:", e);
         return null;
     }
-    
-    // 2. Use the Owner ID to get the full profile data (including videoLink)
+
+    // 2. Use the Owner ID to get the full profile data (including videoLink and subscribers)
     if (ownerId) {
         const url_get_profile = `${WEB_APP_URL}?action=getBusinessProfile&deviceId=${ownerId}`;
+
         try {
             const profileResp = await fetch(url_get_profile);
             const profileJson = await profileResp.json();
-            
-            if (profileJson.result === "success" && profileJson.data?.videoLink) {
-                return profileJson.data.videoLink;
+
+            if (profileJson.result === "success" && profileJson.data) {
+                // Return the necessary fields
+                return {
+                    videoLink:   profileJson.data.videoLink   || null,
+                    subscribers: profileJson.data.subscribers || 0,
+                    ownerId:     ownerId
+                };
             }
         } catch (e) {
             console.error(`Error fetching profile for ID: ${ownerId}`, e);
         }
     }
 
-    return null; // Return null if fetching fails at any point
+    // If anything went wrong above, return null
+    return null;
 }
-
+// NOTE: The old 'fetchBusinessProfileVideo' is removed/replaced by the above.
 // ... (rest of index.js content)
 // Helper function to create a single product card DOM element (CONDITIONAL)
 function createProductCard(r) {

@@ -603,6 +603,33 @@ body {
         padding-top: 650px; /* Covers the 1100px max-width 16:9 video */
     }
 }
+.subscriber-count {
+    /* Layout - Reduced Padding for smaller size */
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px; /* Reduced padding */
+    margin: 8px 0 10px 0;
+    
+    /* Appearance - Blue Gradient */
+    background: linear-gradient(45deg, #1A73E8, #4285F4); /* Google Blue-style gradient */
+    color: white; 
+    border-radius: 16px; /* Slightly smaller pill shape */
+    box-shadow: 0 3px 6px rgba(26, 115, 232, 0.3); /* Subtle blue lift */
+    
+    /* Typography - Smaller Text */
+    font-size: 0.8rem; /* Reduced font size (e.g., 0.8rem) */
+    font-weight: 700; 
+    letter-spacing: 0.3px; /* Slightly tighter letter spacing */
+    text-transform: uppercase;
+    width: fit-content;
+}
+
+/* Optional: Icon for visual interest */
+.subscriber-count::before {
+    content: "👍"; 
+    margin-right: 5px; /* Reduced margin */
+    font-size: 1em; /* Kept relative size, but overall size is smaller due to parent font size */
+}
 /* Image container */
 .latest-product-image-container {
     width: 130px;
