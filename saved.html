@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saved Businesses • My Favorites</title>
+
+  <!-- Reuse your existing CSS (adjust path if needed) -->
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      padding: 30px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 16px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      font-weight: 700;
+    }
+
+    .header p {
+      margin: 10px 0 0;
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .saved-count {
+      font-size: 3rem;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+      font-size: 1.3rem;
+    }
+
+    .empty-state img {
+      width: 120px;
+      opacity: 0.4;
+      margin-bottom: 20px;
+    }
+
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 28px;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: all 0.3s;
+    }
+
+    .back-btn:hover {
+      background: #000;
+      transform: scale(1.1);
+    }
+
+    /* Reuse your business card header style but slightly smaller */
+    .business-card-header {
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .business-card-header:hover {
+      transform: translateY(-5px);
+    }
+
+    #savedContainer {
+      display: grid;
+      gap: 30px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 { font-size: 1.8rem; }
+      .saved-count { font-size: 2.5rem; }
+    }
+
+    
+  </style>
+</head>
+<body>
+
+  <button class="back-btn" onclick="history.back()" title="Go Back">←</button>
+
+  <div class="header">
+    <h1>My Saved Businesses</h1>
+    <div class="saved-count" id="savedCount">0</div>
+    <p>Your favorite businesses in one place</p>
+  </div>
+
+  <div id="savedContainer">
+    <div class="empty-state">
+      <img src="https://img.icons8.com/ios-filled/100/000000/heart.png" alt="Empty">
+      <p>No saved businesses yet.<br><br>
+         Go back and tap the <strong>heart</strong> on any business card to save it here!</p>
+    </div>
+  </div>
+
+  <!-- Reuse your shared JS logic -->
+  <script src="index.js"></script>
+
+ <script>
+    // Override the global flag so admin buttons don't appear
+    window.IS_ADMIN_VIEW = false;
+
+    const savedContainer = document.getElementById("savedContainer");
+    const savedCountEl = document.getElementById("savedCount");
+    
+    // --- UTILITY FUNCTION (MUST BE DEFINED HERE OR IN index.js) ---
+    // Assuming this function is available from the context of createBusinessCardHeader
+    function getSavedBusinesses() {
+        try {
+            const saved = localStorage.getItem('savedBusinesses');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            console.error("Error reading from localStorage:", e);
+            return [];
+        }
+    };
+    // ----------------------------------------------------------------
+
+    function loadSavedBusinesses() {
+        const savedNames = getSavedBusinesses();
+        savedCountEl.textContent = savedNames.length;
+
+        if (savedNames.length === 0) {
+            savedContainer.innerHTML = `
+                <div class="empty-state">
+                    <img src="https://img.icons8.com/ios-filled/100/000000/heart.png" alt="Empty">
+                    <p>No saved businesses yet.<br><br>
+                        Go back and tap the <strong style="color:#e91e63">♥ heart</strong> on any business card to save it here!</p>
+                </div>
+            `;
+            return;
+        }
+
+        savedContainer.innerHTML = '<div class="hint">Loading your favorites...</div>';
+
+        // Fetch all products once
+        fetchAllProductsAndRenderSaved(savedNames);
+    }
+
+    // Fetch all products and filter only saved ones
+    async function fetchAllProductsAndRenderSaved(savedBusinessNames) {
+        const callbackName = 'renderSavedBusinessesCallback';
+        window[callbackName] = function(json) {
+            if (!json || !json.rows || json.rows.length === 0) {
+                savedContainer.innerHTML = '<div class="hint">No products found.</div>';
+                return;
+            }
+
+            // Products are expected to be in descending order (latest first) from the API.
+            const allProducts = json.rows.slice();
+            
+            // 1. Filter products to include only those from saved businesses
+            const savedProducts = allProducts.filter(p => 
+                savedBusinessNames.includes(p.businessName?.trim())
+            );
+
+            renderSavedBusinesses(savedProducts, savedBusinessNames);
+            delete window[callbackName];
+        };
+
+        const script = document.createElement('script');
+        // NOTE: WEB_APP_URL must be defined in index.js or globally.
+        script.src = `${WEB_APP_URL}?action=list&callback=${callbackName}`;
+        document.head.appendChild(script);
+    }
+
+    // Render only saved businesses (grouped like on main page)
+    function renderSavedBusinesses(products, savedNames) {
+        savedContainer.innerHTML = "";
+
+        if (products.length === 0) {
+            savedContainer.innerHTML = '<div class="hint">Saved businesses have no products yet.</div>';
+            return;
+        }
+
+        // --- CORE LOGIC FIX: Group by business name and identify the true latest product ---
+        const groupedData = products.reduce((acc, p) => {
+            const name = p.businessName?.trim() || "Unknown";
+            
+            if (!savedNames.includes(name)) return acc; // Safety check
+
+            if (!acc[name]) {
+                acc[name] = { 
+                    latestProduct: p, // The first one encountered in the API list is the latest.
+                    categories: new Set(),
+                    productCount: 0
+                };
+            }
+            // Collect all unique categories
+            acc[name].categories.add(p.category || "General");
+            acc[name].productCount++;
+
+            return acc;
+        }, {});
+        // -----------------------------------------------------------------------------------
+
+        savedNames.forEach(businessName => {
+            const data = groupedData[businessName];
+            
+            // Skip if the saved business has no products in the fetched list
+            if (!data) return; 
+
+            // The third argument is now explicitly the latest product object
+            const header = createBusinessCardHeader(
+                businessName,
+                Array.from(data.categories),
+                data.latestProduct 
+            );
+
+            // Highlight that it's saved
+            const saveBtn = header.querySelector('.save-business-btn');
+            if (saveBtn) {
+                // Ensure the button is styled as saved and has the correct functionality
+                saveBtn.classList.add('saved');
+                saveBtn.innerHTML = '♥';
+                saveBtn.title = 'Saved • Click to unsave';
+            }
+
+            // Make entire card clickable
+            header.style.cursor = "pointer";
+            header.addEventListener('click', (e) => {
+                // IMPORTANT: Prevent navigation if the save button was clicked
+                if (e.target.closest('.save-business-btn')) return; 
+                
+                const encoded = encodeURIComponent(businessName);
+                document.body.style.animation = 'slideOutToLeft 0.5s ease forwards';
+                setTimeout(() => {
+                    window.location.href = `business.html?name=${encoded}`;
+                }, 100);
+            });
+
+            savedContainer.appendChild(header);
+        });
+    }
+
+    // Auto-refresh when storage changes (e.g., from another tab)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'savedBusinesses') {
+            loadSavedBusinesses();
+        }
+    });
+
+    // Initial load
+    document.addEventListener("DOMContentLoaded", loadSavedBusinesses);
+</script>
+</body>
+</html>

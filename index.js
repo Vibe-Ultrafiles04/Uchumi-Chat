@@ -143,8 +143,36 @@ function escapeHtml(s){
  * - getThumbnailUrl(driveLink, size): Generates the Google Drive thumbnail URL.
  * - createDriveEmbedUrl(driveLink): Converts the Google Drive link to the embeddable preview URL.
  * - escapeHtml(str): For safe string rendering.
+ * - extractDriveId(driveLink): Extracts the Google Drive file ID.
  */
 function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
+    // Utility functions (assuming they are globally available or defined elsewhere)
+    // For completeness, I'll include the necessary ones mentioned in the context/prompt:
+    // NOTE: escapeHtml, getThumbnailUrl, fetchBusinessProfileData, extractDriveId must be defined externally.
+
+    // Helper to manage saved businesses in localStorage
+    const getSavedBusinesses = () => {
+        try {
+            const saved = localStorage.getItem('savedBusinesses');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            console.error("Error reading from localStorage:", e);
+            return [];
+        }
+    };
+
+    const saveBusinesses = (businesses) => {
+        try {
+            localStorage.setItem('savedBusinesses', JSON.stringify(businesses));
+        } catch (e) {
+            console.error("Error writing to localStorage:", e);
+        }
+    };
+
+    const trimmedBusinessName = businessName.trim();
+    let savedBusinesses = getSavedBusinesses();
+    let isSaved = savedBusinesses.includes(trimmedBusinessName);
+
     const businessCard = document.createElement("div");
     businessCard.className = "business-card-header";
 
@@ -159,9 +187,14 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
 
     // Function for smooth navigation (reused for the bottom button)
     const navigateToBusinessPage = (e) => {
+        // Prevent navigation if the event originated from the heart button
+        if (e.target.closest('.save-business-btn')) {
+            return;
+        }
+
         e.preventDefault();
         document.body.style.animation = 'slideOutToLeft 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards';
-        const encodedName = encodeURIComponent(businessName.trim());
+        const encodedName = encodeURIComponent(trimmedBusinessName);
         setTimeout(() => {
             window.location.href = `business.html?name=${encodedName}`;
         }, 100);
@@ -170,10 +203,22 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
     // NEW: Placeholder for the subscriber count
     const subscriberPlaceholderId = `sub-count-${uniqueIdForContainer}`;
 
+    // NEW: Save Button HTML
+    const saveButtonHtml = `
+        <button 
+            class="save-business-btn ${isSaved ? 'saved' : ''}" 
+            title="${isSaved ? 'Remove from Saved' : 'Save Business'}"
+            data-business-name="${escapeHtml(trimmedBusinessName)}">
+            ${isSaved ? '♥' : '♡'}
+        </button>
+    `;
+
     businessCard.innerHTML = `
         <div id="videoContainer_${uniqueIdForContainer}">
         </div>
         
+        ${saveButtonHtml}
+
         <div class="latest-product-image-wrapper">
             <div class="latest-product-image-container">
                 ${latestThumbUrl 
@@ -258,8 +303,45 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
         subscriberEl.textContent = "Patron Unavailable (Error)";
     });
 
-    // Attach navigation to the bottom button
-    businessCard.querySelector(".open-business-card-btn").addEventListener('click', navigateToBusinessPage);
+
+    // --- EVENT LISTENERS ---
+
+    // 1. Navigation Event (triggered by clicking anywhere on the card/button except the save button)
+    businessCard.addEventListener('click', navigateToBusinessPage);
+
+    // 2. NEW: Save Button Logic
+    const saveButton = businessCard.querySelector(".save-business-btn");
+
+    saveButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Crucial: Stop click from propagating to the main card/navigation
+        
+        // Toggle saved state
+        isSaved = !isSaved;
+        
+        // Update localStorage
+        let businesses = getSavedBusinesses();
+        if (isSaved) {
+            // Add business
+            if (!businesses.includes(trimmedBusinessName)) {
+                businesses.push(trimmedBusinessName);
+            }
+        } else {
+            // Remove business
+            businesses = businesses.filter(name => name !== trimmedBusinessName);
+        }
+        saveBusinesses(businesses);
+
+        // Update button appearance
+        saveButton.innerHTML = isSaved ? '♥' : '♡';
+        saveButton.classList.toggle('saved', isSaved);
+        saveButton.title = isSaved ? 'Remove from Saved' : 'Save Business';
+
+        // Add pulse animation
+        saveButton.style.animation = 'pulse 0.5s ease-out';
+        setTimeout(() => {
+            saveButton.style.animation = '';
+        }, 500);
+    });
 
     return businessCard;
 }
