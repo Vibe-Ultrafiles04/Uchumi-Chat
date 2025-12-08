@@ -414,7 +414,7 @@ async function loadProfileData(ownerId) {
         if (profileJson.result === "success" && profileJson.data) {
             const desc = profileJson.data.businessDescription?.trim();
             businessDescriptionEl.textContent = desc || "This business hasn’t added a description yet.";
-            subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} Patrons${profileJson.data.subscribers !== 1 ? 's' : ''}`;
+            subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} Patron${profileJson.data.subscribers !== 1 ? 's' : ''}`;
 
             loadPromotionalVideo(profileJson.data);
             
@@ -530,7 +530,7 @@ async function loadProfileData(ownerId) {
                 isFollowing = !isFollowing;
                 // Re-fetch profile to get updated subscriber count
                 const p = await (await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`)).json();
-                if (p.data) subscriberCountEl.textContent = `${p.data.subscribers || 0} Patrons${p.data.subscribers !== 1 ? 's' : ''}`;
+                if (p.data) subscriberCountEl.textContent = `${p.data.subscribers || 0} Patron${p.data.subscribers !== 1 ? 's' : ''}`;
                 updateSubscribeButton();
             } else {
                 alert("Action failed: " + (result.message || "Try again"));

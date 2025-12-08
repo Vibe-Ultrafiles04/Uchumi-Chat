@@ -218,7 +218,7 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
         if (data) {
             // 1. UPDATE SUBSCRIBER COUNT
             const count = data.subscribers || 0;
-            subscriberEl.textContent = `${count} Patrons${count !== 1 ? 's' : ''}`;
+            subscriberEl.textContent = `${count} Patron${count !== 1 ? 's' : ''}`;
 
             // 2. RENDER PROMOTIONAL VIDEO (using the videoLink from the fetched data)
             const driveLink = data.videoLink;
@@ -249,13 +249,13 @@ function createBusinessCardHeader(businessName, categoryNames, latestProduct) {
             }
         } else {
             // Handle case where profile data fetch failed
-            subscriberEl.textContent = "Patrons Unavailable";
+            subscriberEl.textContent = "Patron Unavailable";
             videoContainer.innerHTML = `<div class="placeholder-image-large">Failed to load video/profile.</div>`;
         }
     }).catch(e => {
         console.error("Profile data fetch failed:", e);
         videoContainer.innerHTML = `<div class="placeholder-image-large">Failed to load video.</div>`;
-        subscriberEl.textContent = "Patrons Unavailable (Error)";
+        subscriberEl.textContent = "Patron Unavailable (Error)";
     });
 
     // Attach navigation to the bottom button
