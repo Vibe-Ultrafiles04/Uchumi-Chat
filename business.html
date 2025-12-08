@@ -212,10 +212,10 @@
 
     <div id="productsContainer" style="display:none;"></div>
 
-    <script>
-        window.IS_ADMIN_VIEW = false;
-    </script>
-    <script src="index.js"></script>
+   <script>
+    window.IS_ADMIN_VIEW = false;
+</script>
+<script src="index.js"></script>
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzqTcEcbaTAEIlPmUWzQfy5SuZgRH0z4m4XVm27lgEKo8r8NnPyFYm2mxhrLMPouNtl/exec";
 
@@ -240,7 +240,8 @@
     const videoWrapper = document.getElementById('videoWrapper');
     const promoVideo = document.getElementById('promoVideo');
     const videoViewsEl = document.getElementById('videoViews');
-    const businessDescriptionEl = document.getElementById('businessDescription'); 
+    const businessDescriptionEl = document.getElementById('businessDescription');
+    const businessProductsContainer = document.getElementById('businessProductsContainer'); // Ensure this element is referenced
 
     function goBackSmooth() {
         document.body.classList.add('page-exit');
@@ -252,9 +253,11 @@
 
     if (!targetBusiness) {
         document.getElementById('businessName').textContent = 'Invalid Link';
-        document.getElementById('businessProductsContainer').innerHTML = '<div class="hint">No business specified</div>';
+        businessProductsContainer.innerHTML = '<div class="hint">No business specified</div>';
     } else {
         document.getElementById('businessName').textContent = targetBusiness;
+        // Initial loading state for products
+        businessProductsContainer.innerHTML = '<div class="loading-spinner">Loading products...</div>'; 
     }
 
     // Extract Google Drive file ID from share link
@@ -271,71 +274,76 @@
     }
 
     // Load video (no view increment here)
-async function loadPromotionalVideo(profileData) {
-  
+    async function loadPromotionalVideo(profileData) {
+        if (!profileData?.videoLink) {
+            videoSection.style.display = 'none';
+            activeVideoDriveId = null; // Clear the active ID if no video is present
+            return;
+        }
 
-    if (!profileData?.videoLink) {
-        videoSection.style.display = 'none';
-        activeVideoDriveId = null; // Clear the active ID if no video is present
-        return;
+        const driveId = extractDriveId(profileData.videoLink);
+        if (!driveId) {
+            videoSection.style.display = 'none';
+            activeVideoDriveId = null; // Clear the active ID if extraction fails
+            return;
+        }
+        
+        // ⭐ Store the unique Drive ID globally
+        activeVideoDriveId = driveId;
+
+        promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
+        currentVideoViews = profileData.videoViews || 0;
+        videoViewsEl.textContent = formatViews(currentVideoViews);
+        videoSection.style.display = 'block';
     }
 
-    const driveId = extractDriveId(profileData.videoLink);
-    if (!driveId) {
-        videoSection.style.display = 'none';
-        activeVideoDriveId = null; // Clear the active ID if extraction fails
-        return;
+    // Increment view only on first click per device
+    async function countVideoView() {
+        if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
+
+        // Check if video section is visible before trying to count the view.
+        if (videoSection.style.display === 'none') return;
+        
+        const videoId = activeVideoDriveId; // Use the globally set variable
+        if (!videoId) return; // Exit if no video ID is active
+
+        // ⭐ Use videoId instead of businessOwnerId for the local storage key
+        const viewedKey = `videoViewed_${videoId}`;
+        if (localStorage.getItem(viewedKey)) return;
+
+        // Mark as viewed immediately to prevent double-counting on the same device/session
+        localStorage.setItem(viewedKey, 'true');
+
+        try {
+            // Added timeout logic for robustness in 'no-cors' context
+            const controller = new AbortController();
+            const signal = controller.signal;
+            const timeout = setTimeout(() => controller.abort(), 5000);
+
+            await fetch(SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors", 
+                headers: { "Content-Type": "text/plain" }, 
+                body: JSON.stringify({
+                    action: "incrementVideoView",
+                    businessOwnerId: businessOwnerId,
+                    viewerDeviceId: MY_DEVICE_ID 
+                }),
+                signal: signal
+            });
+            clearTimeout(timeout);
+
+            currentVideoViews += 1;
+            videoViewsEl.textContent = formatViews(currentVideoViews);
+
+        } catch (err) {
+             if (err.name !== 'AbortError') console.warn("Video count failed silently:", err);
+            // Fallback for network error
+            currentVideoViews += 1;
+            videoViewsEl.textContent = formatViews(currentVideoViews);
+        }
     }
     
-    // ⭐ FIX 1: Store the unique Drive ID globally
-    activeVideoDriveId = driveId;
-
-    promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
-    currentVideoViews = profileData.videoViews || 0;
-    videoViewsEl.textContent = formatViews(currentVideoViews);
-    videoSection.style.display = 'block';
-}
-
-// Increment view only on first click per device
-async function countVideoView() {
-   
-
-    if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
-
-    // Check if video section is visible before trying to count the view.
-    if (videoSection.style.display === 'none') return;
-    
-    const videoId = activeVideoDriveId; // Use the globally set variable
-    if (!videoId) return; // Exit if no video ID is active
-
-    // ⭐ FIX 2: Use videoId instead of businessOwnerId for the local storage key
-    const viewedKey = `videoViewed_${videoId}`;
-    if (localStorage.getItem(viewedKey)) return;
-
-    // Mark as viewed immediately to prevent double-counting on the same device/session
-    localStorage.setItem(viewedKey, 'true');
-
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors", 
-            headers: { "Content-Type": "text/plain" }, 
-            body: JSON.stringify({
-                action: "incrementVideoView",
-                businessOwnerId: businessOwnerId,
-                viewerDeviceId: MY_DEVICE_ID 
-            })
-        });
-
-        currentVideoViews += 1;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
-
-    } catch (err) {
-        // Fallback for network error
-        currentVideoViews += 1;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
-    }
-}
     // NEW HELPER FUNCTION
     async function findOwnerIdByBusinessName(businessName) {
         try {
@@ -353,8 +361,6 @@ async function countVideoView() {
 
     /**
      * A. Refactored determineOwnerId:
-     * NOW ONLY RESPONSIBLE FOR FINDING THE businessOwnerId.
-     * REMOVED: All product fetching logic.
      */
     async function determineOwnerId() {
         let ownerId = null;
@@ -386,86 +392,79 @@ async function countVideoView() {
         return ownerId; // Will be null if all steps fail
     }
 
-   // NEW FUNCTION TO LOAD PROFILE (Description, Video, Subscribers)
-async function loadProfileData(ownerId) {
-    if (!ownerId) {
-        businessDescriptionEl.textContent = "No owner ID found for this business.";
-        subscribeBtn.disabled = true;
-        subscribeBtn.textContent = "Unavailable";
-        return;
-    }
-
-    businessOwnerId = ownerId; // Set the global ID
-
-    if (MY_DEVICE_ID === businessOwnerId) {
-        subscribeBtn.textContent = "This is your business";
-        subscribeBtn.disabled = true;
-        subscribeBtn.className = "";
-        window.IS_ADMIN_VIEW = true; // NEW: Set admin view flag
-    } else {
-        window.IS_ADMIN_VIEW = false;
-    }
-
-    // 1. Load Business Profile
-    try {
-        const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`);
-        const profileJson = await profileResp.json();
-
-        if (profileJson.result === "success" && profileJson.data) {
-            const desc = profileJson.data.businessDescription?.trim();
-            businessDescriptionEl.textContent = desc || "This business hasn’t added a description yet.";
-            subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} Patron${profileJson.data.subscribers !== 1 ? 's' : ''}`;
-
-            loadPromotionalVideo(profileJson.data);
-            
-            // ⭐ FIX: REMOVED redundant local storage clearing block.
-            // The logic below is no longer needed because the local storage key is now based on the unique
-            // video ID (`videoViewed_${videoId}`), ensuring a fresh view count when the video link changes.
-            /* if (profileJson.data.videoLink && profileJson.data.videoViews === 0) {
-                const viewedKey = `videoViewed_${businessOwnerId}`;
-                localStorage.removeItem(viewedKey);
-            }
-            */
-            
-            // Automatically count video view on successful load
-            if (profileJson.data.videoLink) {
-                countVideoView();
-            }
-
-        } else {
-            businessDescriptionEl.textContent = "Business profile not found or data error.";
+    // NEW FUNCTION TO LOAD PROFILE (Description, Video, Subscribers)
+    async function loadProfileData(ownerId) {
+        if (!ownerId) {
+            businessDescriptionEl.textContent = "No owner ID found for this business.";
             subscribeBtn.disabled = true;
             subscribeBtn.textContent = "Unavailable";
+            return;
         }
 
-    } catch (e) {
-        console.error("Error loading profile:", e);
-        businessDescriptionEl.textContent = "Failed to load business profile info.";
-        subscribeBtn.disabled = true;
-        subscribeBtn.textContent = "Unavailable";
-        return;
-    }
+        businessOwnerId = ownerId; // Set the global ID
 
-    // 2. Load Subscription Status
-    try {
-        const myResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${MY_DEVICE_ID}`);
-        const myJson = await myResp.json();
-        isFollowing = myJson.result === "success" && myJson.data?.subscribedTo?.includes(businessOwnerId);
-        updateSubscribeButton();
-    } catch (e) {
-        console.error("Error loading subscription status:", e);
-        updateSubscribeButton(); // Still update button, just keep disabled if no ownerId
+        if (MY_DEVICE_ID === businessOwnerId) {
+            subscribeBtn.textContent = "This is your business";
+            subscribeBtn.disabled = true;
+            subscribeBtn.className = "";
+            window.IS_ADMIN_VIEW = true; // Set admin view flag
+        } else {
+            window.IS_ADMIN_VIEW = false;
+        }
+
+        // 1. Load Business Profile
+        try {
+            const profileResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${businessOwnerId}`);
+            const profileJson = await profileResp.json();
+
+            if (profileJson.result === "success" && profileJson.data) {
+                const desc = profileJson.data.businessDescription?.trim();
+                businessDescriptionEl.textContent = desc || "This business hasn’t added a description yet.";
+                subscriberCountEl.textContent = `${profileJson.data.subscribers || 0} Patron${profileJson.data.subscribers !== 1 ? 's' : ''}`;
+
+                loadPromotionalVideo(profileJson.data);
+                
+                // Automatically count video view on successful load
+                if (profileJson.data.videoLink) {
+                    countVideoView();
+                }
+
+            } else {
+                businessDescriptionEl.textContent = "Business profile not found or data error.";
+                subscribeBtn.disabled = true;
+                subscribeBtn.textContent = "Unavailable";
+            }
+
+        } catch (e) {
+            console.error("Error loading profile:", e);
+            businessDescriptionEl.textContent = "Failed to load business profile info.";
+            subscribeBtn.disabled = true;
+            subscribeBtn.textContent = "Unavailable";
+            return;
+        }
+
+        // 2. Load Subscription Status
+        try {
+            const myResp = await fetch(`${SCRIPT_URL}?action=getBusinessProfile&deviceId=${MY_DEVICE_ID}`);
+            const myJson = await myResp.json();
+            isFollowing = myJson.result === "success" && myJson.data?.subscribedTo?.includes(businessOwnerId);
+            updateSubscribeButton();
+        } catch (e) {
+            console.error("Error loading subscription status:", e);
+            updateSubscribeButton(); 
+        }
     }
-}
 
     /**
-     * B. Refactored fetchAndRenderProducts:
-     * RENAMED: from fetchAndRenderProducts to loadAndDisplayProducts.
-     * ACCEPTS: ownerId as argument.
-     * USES: ownerId (deviceId) to fetch products.
+     * B. Load and Display Products: Fetches products using the ownerId.
      */
     async function loadAndDisplayProducts(ownerId) {
-        const container = document.getElementById('businessProductsContainer');
+        const container = businessProductsContainer;
+
+        // Clear loading spinner
+        if (container.innerHTML.includes('loading-spinner')) {
+             container.innerHTML = '';
+        }
 
         if (!ownerId) {
             container.innerHTML = '<div class="hint">Cannot load products: Business Owner ID is missing.</div>';
@@ -473,8 +472,6 @@ async function loadProfileData(ownerId) {
         }
 
         try {
-            // **Key Fix**: Fetch products using the stable ownerId (deviceId)
-            // Note: Assuming the Apps Script backend supports fetching by deviceId for action=list
             const resp = await fetch(`${SCRIPT_URL}?action=list&deviceId=${ownerId}&callback=dummy`);
             const text = await resp.text();
             
@@ -492,7 +489,6 @@ async function loadProfileData(ownerId) {
                     No products found for <strong>${targetBusiness}</strong>.
                 </div>`;
             } else {
-                // **Separation of Concerns**: Only pass data to the rendering function.
                 window.renderProductsToDOM(products);
             }
 
@@ -548,14 +544,17 @@ async function loadProfileData(ownerId) {
 
     // This function is kept separate to handle DOM manipulation (Separation of Concerns)
     window.renderProductsToDOM = function(products) {
-        const container = document.getElementById('businessProductsContainer');
-        container.innerHTML = '';
+        const container = businessProductsContainer;
+        container.innerHTML = ''; 
+        
+        // ⭐ CRITICAL FIX RE-APPLIED: Re-introducing the client-side filter as a safety net.
+        const filtered = products.filter(p => {
+            // Normalize both names for comparison (case-insensitive)
+            const productName = getBusinessName(p).toLowerCase();
+            const targetName = targetBusiness.toLowerCase();
+            return productName === targetName;
+        });
 
-        // NOTE: The name-based filtering below is removed because the fetch is now ID-based.
-        // The backend should return only the products for the given businessOwnerId.
-        
-        const filtered = products; // Already filtered by the backend via ownerId
-        
         if (filtered.length === 0) {
             container.innerHTML = `<div class="hint" style="padding:80px;text-align:center;font-size:1.2rem;">
                 No products found for <strong>${targetBusiness}</strong>.
@@ -592,7 +591,7 @@ async function loadProfileData(ownerId) {
         }
     };
 
-        // Sharing functions - NOW POINTS TO business.html
+    // Sharing functions - NOW POINTS TO business.html
     function generateShareableLink(businessName) {
         if (!businessName?.trim()) return '';
         const encodedName = encodeURIComponent(businessName.trim());
@@ -627,28 +626,24 @@ async function loadProfileData(ownerId) {
     
     /**
      * C. Updated initBusinessPage:
-     * Implements the strict, unified flow.
-     * REMOVED: Redundant calls.
      */
     async function initBusinessPage() {
         setupSharing();
         if (!targetBusiness) return;
 
-        // 1. Determine the correct ownerId first (NO PRODUCT FETCH HERE)
+        // 1. Determine the correct ownerId first
         const ownerId = await determineOwnerId();
         
-        // 2. Load the Profile/Description/Video using the determined ID (NO PRODUCT FETCH HERE)
+        // 2. Load the Profile/Description/Video using the determined ID
         await loadProfileData(ownerId);
 
-        // 3. Load and render products using the determined ID (Single source of product fetch)
+        // 3. Load and render products using the determined ID
         await loadAndDisplayProducts(ownerId); 
     }
 
     // Init
     initBusinessPage();
 
-    // D. Removed Redundancy:
-    // REMOVED: loadBusinessData() is completely removed as its responsibilities are split between loadProfileData and loadAndDisplayProducts.
 </script>
 </body>
 </html>
