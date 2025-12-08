@@ -15,6 +15,7 @@ const ASSETS_TO_CACHE = [
   "./style.css",
    "./studio.html",
   "./script.js",
+    "./saved.html",
   "./manifest.json",
   "./Kona100.png",
   "./Kona101.png",
