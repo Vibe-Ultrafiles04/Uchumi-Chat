@@ -165,6 +165,20 @@
             margin: 0 auto;
             max-width: 1400px;
         }
+
+        /* Add basic styling for the QR Code section */
+        #qrcode canvas, #qrcode img {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        #downloadQrBtn:disabled, #printQrBtn:disabled, #generateQrBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        #generateQrBtn:hover:not(:disabled) { background: #1e7e34; }
+        #downloadQrBtn:hover:not(:disabled) { background: #e0a800; }
+        #printQrBtn:hover:not(:disabled) { background: #138496; }
     </style>
 </head>
 <body>
@@ -195,7 +209,52 @@
             </div>
         </div>
     </div>
+<div class="share-wrapper" id="shareWrapper" style="margin-top: 30px; padding: 0 20px;">
+            <p id="shareLabel" style="font-size: 1rem; margin-bottom: 10px; opacity: 0.9;">
+                Share this business page:
+            </p>
+            
+            
+            <button id="toggleQrBtn" onclick="toggleQrCodeSection()"
+                    style="margin-top: 15px; padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                Show QR Generator
+            </button>
+        </div>
+    </div>
+    
+    <div class="qr-code-wrapper" id="qrCodeSectionWrapper" style="display: none; margin-top: 30px; padding: 0 20px;">
+        <p id="qrLabel" style="font-size: 1rem; margin-bottom: 10px; opacity: 0.9;">
+            Generate and Download QR Code:
+        </p>
+    
+        <div class="qr-inputs-container" style="max-width: 600px; margin: auto; display: flex; flex-direction: column; gap: 10px;">
+            <input type="text" id="qrNameInput" placeholder="Enter Business Name (e.g., Kona-Mart)"
+                        style="padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 0.95rem; background: #fff;">
+            <textarea id="qrDescriptionInput" placeholder="Enter Description (e.g., Fresh groceries daily)"
+                        rows="2" style="padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 0.95rem; background: #fff; resize: vertical;"></textarea>
+            
+            <button id="generateQrBtn" 
+                        style="padding: 12px 15px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                Generate QR Code
+            </button>
+        </div>
+    
+        <div id="qrcode" style="margin: 20px auto; width: 256px; height: 256px;">
+        </div>
+    
+        <div class="qr-actions" id="qrActions" style="max-width: 300px; margin: 10px auto 0; display: flex; gap: 10px; justify-content: center;">
+            <button id="downloadQrBtn" disabled
+                        style="padding: 10px 15px; background: #ffc107; color: #333; border: none; border-radius: 8px; cursor: pointer;">
+                Download
+            </button>
+            <button id="printQrBtn" disabled
+                        style="padding: 10px 15px; background: #17a2b8; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                Print
+            </button>
+        </div>
+    </div>
 
+    
     <!-- PROMOTIONAL VIDEO (appears only if set) -->
     <div class="video-section" id="videoSection" style="display:none;">
         <div class="video-wrapper" id="videoWrapper">
@@ -212,6 +271,7 @@
 
     <div id="productsContainer" style="display:none;"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
    <script>
     window.IS_ADMIN_VIEW = false;
 </script>
@@ -233,6 +293,8 @@
     let isFollowing = false;
     let currentVideoViews = 0;
     let activeVideoDriveId = null;
+    let qrCodeInstance = null;
+    let qrCanvasOrImage = null; // Stores the generated QR element
 
     const subscribeBtn = document.getElementById('subscribeBtn');
     const subscriberCountEl = document.getElementById('subscriberCount');
@@ -242,6 +304,13 @@
     const videoViewsEl = document.getElementById('videoViews');
     const businessDescriptionEl = document.getElementById('businessDescription');
     const businessProductsContainer = document.getElementById('businessProductsContainer'); // Ensure this element is referenced
+    // QR Code Generation Logic
+    const qrNameInput = document.getElementById('qrNameInput');
+    const qrDescriptionInput = document.getElementById('qrDescriptionInput');
+    const generateQrBtn = document.getElementById('generateQrBtn');
+    const qrcodeContainer = document.getElementById('qrcode');
+    const downloadQrBtn = document.getElementById('downloadQrBtn');
+    const printQrBtn = document.getElementById('printQrBtn');
 
     function goBackSmooth() {
         document.body.classList.add('page-exit');
@@ -260,6 +329,24 @@
         businessProductsContainer.innerHTML = '<div class="loading-spinner">Loading products...</div>'; 
     }
 
+    // ... existing variables and functions (like goBackSmooth, getMyDeviceId, etc.)
+
+// NEW TOGGLE FUNCTION
+function toggleQrCodeSection() {
+    const qrSection = document.getElementById('qrCodeSectionWrapper');
+    const toggleBtn = document.getElementById('toggleQrBtn');
+
+    if (qrSection.style.display === 'none' || !qrSection.style.display) {
+        qrSection.style.display = 'block';
+        toggleBtn.textContent = 'Hide QR Generator';
+        // Optional: Pre-populate inputs when showing the section
+        prepopulateQrInputs();
+    } else {
+        qrSection.style.display = 'none';
+        toggleBtn.textContent = 'Show QR Generator';
+    }
+}
+// ... rest of your existing functions (loadProfileData, initBusinessPage, etc.)
     // Extract Google Drive file ID from share link
     function extractDriveId(url) {
         const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -623,7 +710,129 @@
         const copyBtn = document.getElementById('copyShareLinkBtn');
         copyBtn.onclick = copyLinkToClipboard;
     }
-    
+    // Pre-populate inputs with current business info if available
+    function prepopulateQrInputs() {
+        const businessNameEl = document.getElementById('businessName');
+        const descEl = document.getElementById('businessDescription');
+        if (targetBusiness && businessNameEl.textContent !== 'Loading...') {
+            qrNameInput.value = targetBusiness;
+        }
+        // This is tricky since description loads async, but we can try
+        if (descEl.textContent !== 'Loading description...' && descEl.textContent !== 'Business profile not found or data error.') {
+             qrDescriptionInput.value = descEl.textContent.substring(0, 100) + '...'; // Limit description length
+        }
+    }
+
+   function generateQrCode() {
+        // Clear previous QR Code
+        qrcodeContainer.innerHTML = '';
+        qrCanvasOrImage = null;
+        downloadQrBtn.disabled = true;
+        printQrBtn.disabled = true;
+
+        // We still get the name/description from inputs to use for the file name, 
+        // but they are NO LONGER included in the QR code content.
+        const name = qrNameInput.value.trim();
+        const description = qrDescriptionInput.value.trim();
+        
+        // **CRITICAL CHANGE:** Get the direct share link.
+        // The generateShareableLink function already creates the correct business.html?name=X link.
+        const qrContent = generateShareableLink(name || targetBusiness);
+        
+        // This check is still useful if you want to ensure the link is generated correctly
+        if (!qrContent) {
+            alert("Could not generate a valid link for the QR Code.");
+            return;
+        }
+
+        try {
+            // Generate QR Code instance with only the link as the text
+            qrCodeInstance = new QRCode(qrcodeContainer, {
+                text: qrContent, // This is now only the URL
+                width: 256,
+                height: 256,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // Wait a moment for the QR code to render, then find the element
+            setTimeout(() => {
+                qrCanvasOrImage = qrcodeContainer.querySelector('canvas') || qrcodeContainer.querySelector('img');
+                if (qrCanvasOrImage) {
+                    downloadQrBtn.disabled = false;
+                    printQrBtn.disabled = false;
+                }
+            }, 500);
+
+        } catch (error) {
+            console.error("Error generating QR code:", error);
+            alert("Failed to generate QR Code. Check console for details.");
+        }
+    }
+    function downloadQrCode() {
+        if (!qrCanvasOrImage) return;
+
+        let dataURL;
+        if (qrCanvasOrImage.tagName.toLowerCase() === 'canvas') {
+            dataURL = qrCanvasOrImage.toDataURL("image/png");
+        } else if (qrCanvasOrImage.tagName.toLowerCase() === 'img') {
+            dataURL = qrCanvasOrImage.src; // Should be base64 if canvas failed
+        }
+
+        if (dataURL) {
+            const link = document.createElement('a');
+            link.href = dataURL;
+            link.download = `QR_${qrNameInput.value.replace(/\s/g, '_') || 'business'}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            alert("Could not retrieve QR code image data for download.");
+        }
+    }
+
+    function printQrCode() {
+        if (!qrCanvasOrImage) return;
+
+        // Create a new window for printing
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>Print QR Code</title>');
+        printWindow.document.write('<style>@media print { body { text-align: center; } img { max-width: 100%; height: auto; border: 1px solid #ccc; padding: 10px; } }</style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(`<h2>${qrNameInput.value || 'Business'} QR Code</h2>`);
+
+        let imageHTML = '';
+        if (qrCanvasOrImage.tagName.toLowerCase() === 'canvas') {
+            imageHTML = `<img src="${qrCanvasOrImage.toDataURL('image/png')}" alt="QR Code">`;
+        } else if (qrCanvasOrImage.tagName.toLowerCase() === 'img') {
+            imageHTML = `<img src="${qrCanvasOrImage.src}" alt="QR Code">`;
+        }
+
+        printWindow.document.write(imageHTML);
+        printWindow.document.write('<p>Scan this code to view the business page.</p>');
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+
+        // Focus and print after content is loaded
+        printWindow.onload = function() {
+            printWindow.focus();
+            printWindow.print();
+        };
+    }
+
+
+    // Event Listeners
+    generateQrBtn.addEventListener('click', generateQrCode);
+    downloadQrBtn.addEventListener('click', downloadQrCode);
+    printQrBtn.addEventListener('click', printQrCode);
+
+    // Integrate prepopulation into the init process
+    const originalInitBusinessPage = initBusinessPage;
+    initBusinessPage = async () => {
+        await originalInitBusinessPage();
+        prepopulateQrInputs(); // Prepopulate after loading profile data
+    };
     /**
      * C. Updated initBusinessPage:
      */
