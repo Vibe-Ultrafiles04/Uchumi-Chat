@@ -326,7 +326,7 @@
     } else {
         document.getElementById('businessName').textContent = targetBusiness;
         // Initial loading state for products
-        businessProductsContainer.innerHTML = '<div class="loading-spinner">Loading products...</div>'; 
+        businessProductsContainer.innerHTML = '<div class="loading-spinner">Loading products...</div>';
     }
 
     // ... existing variables and functions (like goBackSmooth, getMyDeviceId, etc.)
@@ -394,12 +394,14 @@ function toggleQrCodeSection() {
         const videoId = activeVideoDriveId; // Use the globally set variable
         if (!videoId) return; // Exit if no video ID is active
 
-        // ⭐ Use videoId instead of businessOwnerId for the local storage key
-        const viewedKey = `videoViewed_${videoId}`;
+        // ⭐ FIX: Changed key logic to use businessOwnerId instead of videoId.
+        // This ensures a device only counts one view *per business* regardless of
+        // how many times the business changes the video link.
+        const viewedKey = `videoViewed_by_${businessOwnerId}`; // ⭐ FIX: Changed key logic
         if (localStorage.getItem(viewedKey)) return;
 
         // Mark as viewed immediately to prevent double-counting on the same device/session
-        localStorage.setItem(viewedKey, 'true');
+        localStorage.setItem(viewedKey, 'true'); // ⭐ FIX: Changed key logic
 
         try {
             // Added timeout logic for robustness in 'no-cors' context
@@ -424,7 +426,7 @@ function toggleQrCodeSection() {
             videoViewsEl.textContent = formatViews(currentVideoViews);
 
         } catch (err) {
-             if (err.name !== 'AbortError') console.warn("Video count failed silently:", err);
+            if (err.name !== 'AbortError') console.warn("Video count failed silently:", err);
             // Fallback for network error
             currentVideoViews += 1;
             videoViewsEl.textContent = formatViews(currentVideoViews);
