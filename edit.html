@@ -24,7 +24,7 @@
         .loading {
             text-align: center;
             padding: 50px;
-            font-size: 1.Range2em;
+            font-size: 1.2em;
         }
 
         /* --- NEW/MODIFIED STYLES FOR SCROLLING AND INPUT SIZING --- */
@@ -66,6 +66,10 @@
         #productTable td textarea[data-field="details"] {
             min-width: 200px; /* Ensure description/details are wide enough */
         }
+        /* Style for the new row */
+        .new-product-row {
+            background-color: #e6f7ff !important; /* Light blue for new rows */
+        }
         /* END NEW/MODIFIED STYLES */
 
         /* Existing Image Preview Style */
@@ -89,6 +93,15 @@
         .action-button:hover {
             background-color: #218838;
         }
+        /* Style for the new Add Product Button */
+        #addProductBtn {
+            background-color: #ffc107;
+            color: #333;
+            margin-right: 10px;
+        }
+        #addProductBtn:hover {
+            background-color: #e0a800;
+        }
         .back-link {
             text-decoration: none;
             color: #007bff;
@@ -108,9 +121,12 @@
 <body>
 
     <div class="header-container">
-        <a href="studio.html" class="back-link">Back to Studio (Add Products)</a>
+        <a href="studio.html" class="back-link">Back to Studio (Stock Control)</a>
         <h1 id="pageTitle">Product Editor: Loading...</h1>
-        <button id="saveChangesBtn" class="action-button" disabled>Save All Changes (0)</button>
+        <div>
+            <button id="addProductBtn" class="action-button">➕ Add New Product</button>
+            <button id="saveChangesBtn" class="action-button" disabled>Save All Changes (0)</button>
+        </div>
     </div>
 
     <p id="statusMessage" class="loading">Loading products...</p>
@@ -122,8 +138,8 @@
                     <th>Category</th>
                     <th>Product Name</th>
                     <th>Quantity</th>
-                    <th>Cost Price (Ksh)</th>
-                    <th>Sell Price (Ksh)</th>
+                    <th>Cost Price (KES)</th>
+                    <th>Sell Price (KES)</th>
                     <th>Description</th>
                     <th>Details</th>
                     <th>Image Link (URL)</th>
@@ -139,20 +155,19 @@
         <button id="saveChangesBtnBottom" class="action-button" disabled>Save All Changes (0)</button>
     </p>
 
-   <script>
+  <script>
     // ==========================================================
     // CONFIGURATION (MUST MATCH YOUR MAIN FILE)
     // ==========================================================
-    // IMPORTANT: Replace this with your actual Web App URL
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzqTcEcbaTAEIlPmUWzQfy5SuZgRH0z4m4XVm27lgEKo8r8NnPyFYm2mxhrLMPouNtl/exec'; 
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwYo5u1D6082Jhw06ZyPm9OymOX-nLZaS-98_ciPyRp2Fgv4gIBG66PoxJBbOa43dDY/exec'; 
     const CURRENCY_SYMBOL = "KES"; 
     const OWNER_BUSINESS_KEY = 'ownerBusinessName';
-    const GALLERY_STORAGE_KEY = 'productLinkGallery'; // Key for localStorage
-
+    const DEVICE_ID_KEY = 'uniqueDeviceId'; // Assuming a DEVICE_ID exists for ownership
+    
     // --- Global State ---
     let businessName = null;
-    let productsData = []; // Array of product objects from the server
-    let changedProducts = new Set(); // Stores the productId of products with unsaved changes
+    let productsData = []; 
+    let changedProducts = new Set(); 
     // ---------------------------------------------------------
 
     // ==========================================================
@@ -163,16 +178,10 @@
     const productTableBody = document.getElementById("productTableBody");
     const saveChangesBtnTop = document.getElementById("saveChangesBtn");
     const saveChangesBtnBottom = document.getElementById("saveChangesBtnBottom");
-
-    // === Gallery/Add Product Form References (Assumed from user's snippet) ===
-    // NOTE: These are needed to define the utility functions but may not exist on this editor page. 
-    // We define the core link logic regardless.
-    const driveLinkInput = document.getElementById("driveLinkInput"); // Assuming this exists in the *other* file
-    const productNameInput = document.getElementById("productNameInput"); // Assuming this exists in the *other* file
-    // ==========================================================
+    const addProductBtn = document.getElementById("addProductBtn"); // New button reference
 
     // ==========================================================
-    // UTILITY FUNCTIONS (Added/Modified for Drive/Image Logic)
+    // UTILITY FUNCTIONS 
     // ==========================================================
 
     /**
@@ -184,6 +193,239 @@
         return name ? decodeURIComponent(name) : null;
     }
 
+    // ==========================================================
+    // START: NUMBER FORMATTING LOGIC
+    // This section implements the core requirement for live formatting.
+    // ==========================================================
+
+    /**
+     * Helper to remove all formatting (commas, non-numeric chars except the first decimal).
+     * This function has been updated to correctly handle leading zeros and decimal inputs.
+     * @param {string} value
+     * @returns {string} Clean numeric string.
+     */
+    function cleanNumericValue(value) {
+        if (typeof value !== 'string') return '';
+        
+        // 1. Remove commas and all non-digits/non-decimal points
+        let cleaned = value.replace(/,/g, '');
+        cleaned = cleaned.replace(/[^\d.]/g, '');
+
+        // 2. Handle multiple decimal points (keep only the first one)
+        const parts = cleaned.split('.');
+        let integerPart = parts[0];
+        let decimalPart = parts.length > 1 ? parts.slice(1).join('') : '';
+
+        // Remove leading zeros from the integer part, UNLESS the whole part is just '0'
+        if (integerPart.length > 1 && integerPart.startsWith('0')) {
+            integerPart = integerPart.replace(/^0+/, '');
+            if (integerPart === '') integerPart = '0'; // If it was all zeros, keep one '0'
+        }
+        
+        // Handle case where user starts with '.' or deletes integer part to get '.'
+        if (integerPart === '' && (cleaned.startsWith('.') || parts.length > 1)) {
+            integerPart = '0';
+        }
+        
+        // 3. Reconstruct the result string
+        let result = integerPart;
+        
+        // If a decimal part exists, append it
+        if (parts.length > 1) {
+            result += '.' + decimalPart;
+        } 
+        
+        // Edge case: User typed '123.' - preserve the trailing decimal point
+        else if (value.endsWith('.') && integerPart !== '') {
+            result += '.';
+        }
+
+        // Final check: If the input was empty or only non-numerics, return empty string
+        if (result === '0' && parts.length <= 1 && value.replace(/[^\d.]/g, '') === '') return '';
+        
+        return result;
+    }
+    
+    /**
+     * Formats a clean numeric string with standard US-style thousands commas.
+     * DOES NOT use Intl.NumberFormat to avoid mobile keyboard/cursor issues.
+     * @param {string} numericString - A clean string like '1234567.89'
+     * @returns {string} Formatted string like '1,234,567.89'
+     */
+    function formatNumberWithCommas(numericString) {
+        if (!numericString) return '';
+        
+        // Handle trailing decimal point (e.g. '123.')
+        const hasTrailingDot = numericString.endsWith('.');
+        if (hasTrailingDot) {
+            numericString = numericString.slice(0, -1);
+        }
+
+        const parts = numericString.split('.');
+        let integerPart = parts[0];
+        const decimalPart = parts.length > 1 ? parts[1] : '';
+
+        // Add thousands commas to the integer part
+        let formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        
+        let result = formattedInteger;
+        if (hasTrailingDot) {
+            result += '.';
+        } else if (decimalPart) {
+            result += '.' + decimalPart;
+        }
+
+        return result;
+    }
+
+    /**
+     * The core handler for live formatting and cursor preservation.
+     * @param {HTMLInputElement} input
+     */
+    function handleNumericInputFormat(input) {
+        const rawValue = input.value;
+        const cursorPosition = input.selectionStart;
+
+        // 1. Clean the old value up to the cursor position
+        const cleanOldValueBeforeCursor = cleanNumericValue(rawValue.substring(0, cursorPosition));
+        const cleanOldCursorOffset = cleanOldValueBeforeCursor.length;
+
+        // 2. Format the entire value
+        const cleanNewValue = cleanNumericValue(rawValue); 
+        const formattedValue = formatNumberWithCommas(cleanNewValue);
+
+        // 3. Update the input value
+        input.value = formattedValue;
+        
+        // 4. Calculate the new cursor position
+        let newCursorPosition = 0;
+        let cleanCharCount = 0;
+        
+        for (let i = 0; i < formattedValue.length; i++) {
+            const char = formattedValue[i];
+            
+            // Increment count only for non-comma characters
+            if (char !== ',') {
+                cleanCharCount++;
+            }
+            
+            // The cursor should be positioned after the 'clean' characters
+            if (cleanCharCount >= cleanOldCursorOffset) { 
+                // We've found the position. The cursor goes *after* the character at index i.
+                newCursorPosition = i + (cleanCharCount > cleanOldCursorOffset ? 0 : 1);
+                
+                // Adjustment for when the formatting adds a comma right before the cursor position
+                // We use i as the position, but the loop ends before it gets to the next char, 
+                // so we break here and use i+1 as the cursor position.
+                newCursorPosition = i + 1;
+                break;
+            } 
+        }
+        
+        // If cleanOldCursorOffset was greater than the length of cleanNewValue (e.g., deleted everything), 
+        // or if the loop finished, set the cursor to the end.
+        if (cleanOldCursorOffset >= cleanNewValue.length) {
+            newCursorPosition = formattedValue.length;
+        }
+        
+        // Special case for initial entry or when all characters are deleted
+        if (cleanOldCursorOffset === 0) {
+            newCursorPosition = 0;
+        }
+
+        // 5. Restore the cursor position
+        input.setSelectionRange(newCursorPosition, newCursorPosition);
+    }
+    
+    /**
+     * Final cleanup and re-format on blur, using a reliable number method.
+     * @param {HTMLInputElement} input
+     */
+    function handleNumericBlurFormat(input) {
+        // 1. Get the current value, clean it, and convert to a number
+        let cleanValue = cleanNumericValue(input.value);
+        let numValue = parseFloat(cleanValue);
+
+        if (isNaN(numValue) || cleanValue.trim() === '') {
+            input.value = ''; // Clear if it's not a valid number
+            return;
+        }
+        
+        // 2. Use Intl.NumberFormat for the final, clean, locale-aware format.
+        // Determine decimal places from the typed input, up to max 2.
+        const decimalPart = cleanValue.split('.')[1] || '';
+        const minDecimals = decimalPart.length > 0 ? 1 : 0; // Keep at least 1 decimal if one was typed
+        
+        const finalFormat = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: minDecimals, 
+            maximumFractionDigits: 2 
+        });
+
+        // The input value is updated with the final, clean, non-live-editing format
+        // This ensures values like '1234.' are stored/displayed as '1,234' on blur.
+        input.value = finalFormat.format(numValue); 
+        
+        // Trigger the change handler in the app logic
+        // This is important because the blur format might change the value and must update the 'changedProducts' set.
+        const changeEvent = new Event('input', { bubbles: true });
+        input.dispatchEvent(changeEvent);
+    }
+
+    /**
+     * Attaches the formatting handlers to all relevant inputs.
+     */
+    function setupNumericInputs() {
+        document.querySelectorAll('input[data-numeric="true"]').forEach(input => {
+            // Check if handlers are already attached (useful for table re-rendering)
+            if (input.dataset.numericHandlerAttached) {
+                return; 
+            }
+
+            // 1. Initial format of the value (for pre-filled values like '0' or a price)
+            let initialCleanValue = cleanNumericValue(input.value);
+            if (initialCleanValue) {
+                // Use the final blur format to ensure pre-filled data is formatted on load
+                // Must ensure we treat 0.00 as just 0 if no decimals were originally in the data
+                let initialNumValue = parseFloat(initialCleanValue);
+                if (!isNaN(initialNumValue)) {
+                    // Use Intl.NumberFormat on load for clean display (0 or 1,234.50)
+                    const finalFormat = new Intl.NumberFormat('en-US', {
+                        minimumFractionDigits: 0, 
+                        maximumFractionDigits: 2 
+                    });
+                    input.value = finalFormat.format(initialNumValue);
+                } else {
+                    input.value = '';
+                }
+            }
+
+            // 2. Live input formatting
+            input.addEventListener('input', (e) => {
+                // We use setTimeout 0 to ensure the browser's default input processing 
+                // (like text selection/deletion) is complete before we reformat.
+                setTimeout(() => handleNumericInputFormat(e.target), 0);
+            });
+
+            // 3. Final format on blur
+            input.addEventListener('blur', (e) => {
+                handleNumericBlurFormat(e.target);
+            });
+            
+            // 4. Clean the value on focus to simplify editing
+            input.addEventListener('focus', (e) => {
+                e.target.value = cleanNumericValue(e.target.value);
+                e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+            });
+
+            input.dataset.numericHandlerAttached = 'true';
+        });
+    }
+    
+    // ==========================================================
+    // END: NUMBER FORMATTING LOGIC
+    // ==========================================================
+
+
     /**
      * Helper to remove number formatting (commas).
      */
@@ -192,6 +434,18 @@
         return value.replace(/,/g, ''); 
     }
 
+    // ==========================================================
+    // EXISTING UTILITY FUNCTIONS (CONTINUED)
+    // ==========================================================
+
+    /**
+     * Generates a simple unique ID (Client-side use only, prefix with 'new-').
+     * The server should eventually replace this with a permanent ID.
+     */
+    function generateUniqueId() {
+        return 'new-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    }
+    
     /**
      * Updates the Save buttons with the count of changes.
      */
@@ -210,17 +464,11 @@
     function extractDriveId(url) {
         if (!url) return null;
         url = url.trim();
-        // Match shared link: .../d/FILE_ID/view
         const matchId = url.match(/\/d\/(.*?)\/view/);
         if (matchId && matchId[1]) return matchId[1];
-        
-        // Match file manager link: ...&id=FILE_ID...
         const matchQuery = url.match(/[?&]id=([^&]+)/);
         if (matchQuery && matchQuery[1]) return matchQuery[1];
-
-        // Return the whole thing if it looks like just an ID
         if (url.length > 20 && !url.includes('http')) return url;
-
         return null;
     }
 
@@ -234,7 +482,6 @@
     
     /**
      * Generates a thumbnail URL, either from Google Drive or a direct link.
-     * This is the KEY function from your gallery example.
      */
     function getThumbnailUrl(link, size = 150) {
         const url = link ? link.trim() : '';
@@ -242,25 +489,22 @@
         // 1. Handle Google Drive Links
         const driveId = extractDriveId(url);
         if (driveId) {
-            // Google Drive thumbnail API
             return `https://drive.google.com/thumbnail?id=${driveId}&sz=w${size}-h${size}`;
         }
 
         // 2. Handle Direct Image Links
         if (isDirectImageUrl(url)) {
-            return url; // Use the URL directly
+            return url; 
         }
 
-        return null; // Invalid link
+        return null; 
     }
-
 
     /**
      * Creates and returns the image preview element (img tag).
-     * * ***MODIFIED: Uses getThumbnailUrl to ensure a correct source is used.***
      */
     function createPreviewElement(link, productName) {
-        const thumbLink = getThumbnailUrl(link, 50); // Get a small thumbnail URL
+        const thumbLink = getThumbnailUrl(link, 50); 
         
         if (!thumbLink) {
             const span = document.createElement('span');
@@ -275,16 +519,14 @@
         img.alt = `Image for ${productName || 'product'}`;
         img.className = 'image-preview-thumb';
         
-        // Handle broken image links: hide the img tag and show a simple text error.
         img.onerror = function() {
             const cell = this.parentElement;
-            cell.textContent = '❌ Broken Link'; // Simple text replacement
+            cell.textContent = '❌ Broken Link'; 
             cell.style.fontSize = '0.7em'; 
             cell.style.color = 'red';
-            this.remove(); // Remove the broken image element
+            this.remove(); 
         };
 
-        // Allow clicking to view full image (using the original link) in a new tab
         img.addEventListener('click', () => {
             if (link.trim()) {
                 window.open(link.trim(), '_blank');
@@ -302,18 +544,17 @@
      * Fetches product data for the specific business.
      */
     async function fetchProductsForBusiness(business, isReload = false) {
+        // ... (Status message logic remains the same) ...
         if (!isReload) {
             statusMessage.textContent = `Fetching products for: ${business}...`;
             statusMessage.className = 'loading';
             statusMessage.style.display = 'block';
         } else {
-             // Show subtle message during post-save reload
-             statusMessage.textContent = `Refreshing data...`;
-             statusMessage.className = 'loading';
-             statusMessage.style.display = 'block';
+            statusMessage.textContent = `Refreshing data...`;
+            statusMessage.className = 'loading';
+            statusMessage.style.display = 'block';
         }
-        productTableBody.innerHTML = ''; // Clear table while loading
-
+        productTableBody.innerHTML = ''; 
 
         try {
             const payload = {
@@ -330,10 +571,8 @@
             const json = await res.json();
             
             if (json && Array.isArray(json.rows)) {
-                // Store products globally
-              productsData = json.rows.reverse(); // NEWEST FIRST
-renderEditableTable(productsData);
-
+                productsData = json.rows.reverse(); // NEWEST FIRST
+                renderEditableTable(productsData);
 
                 
                 if (productsData.length === 0) {
@@ -341,12 +580,11 @@ renderEditableTable(productsData);
                     statusMessage.className = '';
                 } else {
                     if (isReload) {
-                         // Show success status temporarily after a save & refresh
                         statusMessage.textContent = '✅ Save complete. Data refreshed.';
                         statusMessage.className = 'success';
-                        setTimeout(() => statusMessage.style.display = 'none', 3000); // Hide after 3 seconds
+                        setTimeout(() => statusMessage.style.display = 'none', 3000); 
                     } else {
-                        statusMessage.style.display = 'none'; // Hide if first load is successful
+                        statusMessage.style.display = 'none'; 
                     }
                 }
             } else {
@@ -364,65 +602,149 @@ renderEditableTable(productsData);
 
     /**
      * Renders the products in an editable table, including the image preview.
+     * ***MODIFIED: This now calls the createRow function for each product.***
      */
     function renderEditableTable(products) {
         productTableBody.innerHTML = '';
-        
-        // Colspan needs to be 9 now (8 original columns + 1 Image Preview column)
         const totalColumns = 9; 
+        
         if (products.length === 0) {
-            productTableBody.innerHTML = `<tr><td colspan="${totalColumns}" style="text-align:center;">No products found for this business.</td></tr>`;
+            productTableBody.innerHTML = `<tr><td colspan="${totalColumns}" style="text-align:center;">No products found for this business. Use the 'Add New Product' button above.</td></tr>`;
             return;
         }
 
         products.forEach(product => {
-            const row = productTableBody.insertRow();
-            row.dataset.id = product.id; // CRITICAL: Store the unique ID for reference
+            const row = createEditableRow(product);
+            productTableBody.appendChild(row);
+        });
+        
+        // IMPORTANT: Re-run setup after new rows are added
+        setupNumericInputs(); 
+    }
 
-            const fields = [
-                { key: 'category', type: 'text', value: product.category },
-                { key: 'name', type: 'text', value: product.name },
-                { key: 'quantity', type: 'number', value: product.quantity, min: 0 },
-                { key: 'buy', type: 'number', value: product.buy, step: 0.01, min: 0 },
-                { key: 'sell', type: 'number', value: product.sell, step: 0.01, min: 0 },
-                { key: 'description', type: 'text', value: product.description },
-                { key: 'details', type: 'textarea', value: product.details }, // Use textarea for multi-line
-                { key: 'driveLink', type: 'url', value: product.driveLink }
-            ];
+    /**
+     * Creates a blank, editable row for a new product and prepends it to the table.
+     */
+    function addRowForNewProduct() {
+        // Create a temporary product object for the new row
+        const newProduct = {
+            id: generateUniqueId(), // CRITICAL: Use client-side ID for tracking
+            category: localStorage.getItem('lastCategory') || '', // Optional: Pre-fill last used category
+            name: '',
+            quantity: 0,
+            buy: 0.00,
+            sell: 0.00,
+            description: '',
+            details: '',
+            driveLink: ''
+        };
 
-            fields.forEach(field => {
-                const cell = row.insertCell();
-                let inputElement;
+        const row = createEditableRow(newProduct, true); // True indicates it's a new row
+        productTableBody.prepend(row);
+        
+        // IMPORTANT: Run setup for the *new* row's inputs
+        setupNumericInputs(); 
+    }
+    
+    /**
+     * Creates a single editable table row.
+     * @param {Object} product - The product data object.
+     * @param {boolean} isNew - True if this is a newly added client-side row.
+     */
+    function createEditableRow(product, isNew = false) {
+        const row = document.createElement('tr');
+        row.dataset.id = product.id; // CRITICAL: Store the unique ID for reference
+        row.dataset.isNew = isNew ? 'true' : 'false';
 
-                if (field.type === 'textarea') {
-                    inputElement = document.createElement('textarea');
-                    inputElement.rows = 2;
-                    inputElement.textContent = field.value || '';
-                } else {
-                    inputElement = document.createElement('input');
-                    inputElement.type = field.type;
-                    inputElement.value = field.value || '';
-                    if (field.min !== undefined) inputElement.min = field.min;
-                    if (field.step !== undefined) inputElement.step = field.step;
+        if (isNew) {
+            row.classList.add('new-product-row');
+        }
+
+        const fields = [
+            { key: 'category', type: 'text', value: product.category },
+            { key: 'name', type: 'text', value: product.name },
+            { key: 'quantity', type: 'number', value: product.quantity, min: 0, isNumeric: true },
+            { key: 'buy', type: 'number', value: product.buy, step: 0.01, min: 0, isNumeric: true },
+            { key: 'sell', type: 'number', value: product.sell, step: 0.01, min: 0, isNumeric: true },
+            { key: 'description', type: 'text', value: product.description },
+            { key: 'details', type: 'textarea', value: product.details }, 
+            { key: 'driveLink', type: 'url', value: product.driveLink }
+        ];
+
+        fields.forEach(field => {
+            const cell = row.insertCell();
+            let inputElement;
+
+            if (field.type === 'textarea') {
+                inputElement = document.createElement('textarea');
+                inputElement.rows = 2;
+                inputElement.textContent = field.value || '';
+            } else {
+                inputElement = document.createElement('input');
+                // All fields are technically type="text" for the live formatting to work seamlessly.
+                // We use data-numeric="true" for identification.
+                inputElement.type = 'text'; 
+                
+                // For new rows, show empty for strings, 0 for numbers
+                let valueToDisplay = field.value;
+                if (isNew && field.isNumeric) {
+                    valueToDisplay = field.value || 0; // Ensures 0 is displayed for new products
+                } else if (field.isNumeric) {
+                    // Pre-format the fetched number data
+                    // NOTE: setupNumericInputs() will apply the final clean format on load.
+                    valueToDisplay = formatNumberWithCommas(String(valueToDisplay)); 
                 }
 
-                inputElement.dataset.field = field.key;
-                // Use toString().trim() for consistent comparison later
-                inputElement.dataset.original = (field.value || '').toString().trim(); 
-                inputElement.addEventListener('input', handleInputChange);
-                
-                cell.appendChild(inputElement);
-            });
-            
-            // Image Preview Cell (9th column)
-            const previewCell = row.insertCell();
-            if (product.driveLink && product.driveLink.trim()) {
-                // ***MODIFIED HERE: Use the link creation function***
-                previewCell.appendChild(createPreviewElement(product.driveLink, product.name));
-            } else {
-                previewCell.textContent = 'No image';
+                inputElement.value = valueToDisplay;
+
+                if (field.min !== undefined) inputElement.min = field.min;
+                if (field.step !== undefined) inputElement.step = field.step;
             }
+
+            inputElement.dataset.field = field.key;
+            if (field.isNumeric) {
+                inputElement.dataset.numeric = 'true';
+            }
+            // Store original value as a CLEAN string for accurate comparison later.
+            // For numeric fields, this is the unformatted number.
+            inputElement.dataset.original = (unformatNumber(field.value) || '').toString().trim(); 
+            
+            // NOTE: The 'input' and 'blur' listeners are now attached by setupNumericInputs()
+            // to all elements with data-numeric="true" after the table renders.
+            inputElement.addEventListener('input', handleInputChange);
+            
+            cell.appendChild(inputElement);
         });
+        
+        // Image Preview Cell (9th column)
+        const previewCell = row.insertCell();
+        if (product.driveLink && product.driveLink.trim()) {
+            previewCell.appendChild(createPreviewElement(product.driveLink, product.name));
+        } else if (isNew) {
+            previewCell.textContent = 'Image optional';
+        } else {
+            previewCell.textContent = 'No image';
+        }
+
+        // Add a "Delete" button only for new, unsaved rows (optional but useful)
+        if (isNew) {
+            const deleteCell = row.insertCell();
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = '❌ Remove';
+            deleteBtn.style.backgroundColor = 'red';
+            deleteBtn.style.color = 'white';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.padding = '5px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.addEventListener('click', () => {
+                row.remove();
+                changedProducts.delete(product.id);
+                updateSaveButtonCount();
+            });
+            deleteCell.appendChild(deleteBtn);
+        }
+
+        return row;
     }
 
     /**
@@ -431,35 +753,44 @@ renderEditableTable(productsData);
     function handleInputChange(event) {
         const input = event.target;
         const row = input.closest('tr');
+        if (!row) return; // Guard clause
+        
         const productId = row.dataset.id;
         const fieldName = input.dataset.field;
+        const isNewRow = row.dataset.isNew === 'true';
         
         // Normalize values for comparison
-        const originalValue = input.dataset.original;
+        const originalValue = input.dataset.original; // This is the clean, unformatted string
         const currentValue = input.value.trim();
         
         // Normalize numbers for comparison (e.g., '10.0' vs 10)
-        const isNumberField = ['quantity', 'buy', 'sell'].includes(fieldName);
+        const isNumberField = input.dataset.numeric === 'true';
 
+        // NOTE: currentValue must be unformatted for accurate comparison against data-original
         const normalizedOriginal = isNumberField ? parseFloat(originalValue) : originalValue;
         const normalizedCurrent = isNumberField ? parseFloat(unformatNumber(currentValue)) : currentValue;
 
-        let isChanged = String(normalizedCurrent) !== String(normalizedOriginal);
+        // A new row is *always* considered "changed" once any input is provided
+        let isChanged = isNewRow;
+
+        if (!isNewRow) {
+            // Comparing the *clean* unformatted number strings
+            // Use String() to prevent floating point issues for simple comparison
+            isChanged = String(normalizedCurrent) !== String(normalizedOriginal);
+        }
 
         // Dynamic Image Preview Update
         if (fieldName === 'driveLink') {
-            const previewCell = row.cells[8]; // Image Preview is the 9th cell (index 8)
+            const previewCell = row.cells[8]; 
             previewCell.innerHTML = ''; 
             if (currentValue) {
-                // ***MODIFIED HERE: Use the link creation function for dynamic update***
                 previewCell.appendChild(createPreviewElement(currentValue, 'product'));
             } else {
-                previewCell.textContent = 'No image';
+                previewCell.textContent = isNewRow ? 'Image optional' : 'No image';
             }
         }
 
-        if (isChanged) {
-            // Mark row as changed
+        if (isChanged || isNewRow) {
             row.style.backgroundColor = '#fff3cd'; // Light yellow to indicate unsaved changes
             changedProducts.add(productId);
         } else {
@@ -467,13 +798,12 @@ renderEditableTable(productsData);
             let reverted = true;
             row.querySelectorAll('input, textarea').forEach(el => {
                 const elField = el.dataset.field;
+                const elIsNumeric = el.dataset.numeric === 'true';
                 const elOriginal = (el.dataset.original || '').toString().trim();
                 const elCurrent = el.value.trim();
                 
-                const elIsNumberField = ['quantity', 'buy', 'sell'].includes(elField);
-
-                const elNormalizedOriginal = elIsNumberField ? parseFloat(elOriginal) : elOriginal;
-                const elNormalizedCurrent = elIsNumberField ? parseFloat(unformatNumber(elCurrent)) : elCurrent;
+                const elNormalizedOriginal = elIsNumeric ? parseFloat(elOriginal) : elOriginal;
+                const elNormalizedCurrent = elIsNumeric ? parseFloat(unformatNumber(elCurrent)) : elCurrent;
 
                 if (String(elNormalizedCurrent) !== String(elNormalizedOriginal)) {
                     reverted = false;
@@ -481,7 +811,7 @@ renderEditableTable(productsData);
             });
 
             if (reverted) {
-                row.style.backgroundColor = '';
+                row.style.backgroundColor = isNewRow ? '#e6f7ff' : ''; // Keep new row color if reverted to its empty/zero state
                 changedProducts.delete(productId);
             }
         }
@@ -493,11 +823,11 @@ renderEditableTable(productsData);
     // ==========================================================
 
     /**
-     * Gathers all changed products and submits a bulk update request.
+     * Gathers all changed products and submits a bulk update/add request.
+     * ***MODIFIED: Now handles both 'update' and 'add' actions.***
      */
     async function saveAllChanges() {
         if (changedProducts.size === 0) {
-            // Status message for no changes (not an error, so no alert needed)
             statusMessage.textContent = "No changes detected.";
             statusMessage.className = '';
             statusMessage.style.display = 'block';
@@ -512,45 +842,65 @@ renderEditableTable(productsData);
         statusMessage.textContent = `Saving ${changedProducts.size} changes... Please wait.`;
 
         const updates = [];
+        const adds = [];
         
         changedProducts.forEach(productId => {
             const row = productTableBody.querySelector(`[data-id="${productId}"]`);
             if (row) {
-                const updatedProduct = {
-                    id: productId, // CRITICAL: Unique ID
-                    businessName: businessName // Passed for security/scoping on backend
+                const isNew = row.dataset.isNew === 'true';
+                
+                const productPayload = {
+                    id: productId, 
+                    businessName: businessName, 
+                    // Add deviceId for new products to track ownership
+                    deviceId: isNew ? localStorage.getItem(DEVICE_ID_KEY) : undefined, 
+                    timestamp: isNew ? new Date().toISOString() : undefined
                 };
 
                 // Loop through all inputs/textareas to find the current values
+                let isValid = true; // Simple validation check
                 row.querySelectorAll('input, textarea').forEach(input => {
                     const field = input.dataset.field;
                     let value = input.value; 
 
-                    // Handle numerical fields (convert to number/float if needed)
-                    if (['quantity', 'buy', 'sell'].includes(field)) {
-                        value = unformatNumber(value);
-                        // Use default 0 if parsing fails (to avoid null/NaN issues on backend)
-                        updatedProduct[field] = (field === 'quantity') ? parseInt(value) || 0 : parseFloat(value) || 0.0;
+                    if (isNew && (field === 'category' || field === 'name') && !value.trim()) {
+                        isValid = false; // Requires category and name for new products
+                    }
+
+                    if (input.dataset.numeric === 'true') {
+                        value = unformatNumber(value); // CRITICAL: Unformat before sending to server
+                        productPayload[field] = (field === 'quantity') ? parseInt(value) || 0 : parseFloat(value) || 0.0;
                     } else {
-                        updatedProduct[field] = value.trim();
+                        productPayload[field] = value.trim();
                     }
                 });
 
-                updates.push(updatedProduct);
+                if (!isValid) {
+                    alert(`Product with ID ${productId} requires a Category and Name before saving.`);
+                    // Stop processing this one, but continue to the next
+                    return; 
+                }
+
+                if (isNew) {
+                    adds.push(productPayload);
+                } else {
+                    updates.push(productPayload);
+                }
             }
         });
 
-        const payload = {
-            action: "bulkUpdateProducts",
-            updates: updates 
-        };
+        const bulkPayload = {
+        action: "bulkUpdateProducts", // <--- Change the action name to match Code.gs
+        updates: updates, 
+        adds: adds
+    };
 
         try {
             const res = await fetch(WEB_APP_URL, {
                 method: "POST",
                 mode: "cors",
                 headers: {"Content-Type": "text/plain"}, 
-                body: JSON.stringify(payload)
+                body: JSON.stringify(bulkPayload)
             });
             const json = await res.json();
             
@@ -559,7 +909,14 @@ renderEditableTable(productsData);
                 // Clear change tracking and re-fetch data 
                 changedProducts.clear();
                 updateSaveButtonCount();
-                await fetchProductsForBusiness(businessName, true); // True indicates a post-save reload
+                
+                // Save the last used category for the next 'Add Product'
+                const lastUsedCategory = (adds.length > 0) ? adds[adds.length - 1].category : updates[updates.length - 1]?.category;
+                if (lastUsedCategory) {
+                    localStorage.setItem('lastCategory', lastUsedCategory);
+                }
+
+                await fetchProductsForBusiness(businessName, true); 
                 
             } else {
                 statusMessage.textContent = `❌ Failed to save updates: ${json && json.message ? json.message : 'Unknown server error.'}`;
@@ -584,11 +941,10 @@ renderEditableTable(productsData);
     // ==========================================================
 
     function initEditPage() {
-        // 1. Get business name from URL
         businessName = getBusinessNameFromUrl();
         const localOwner = localStorage.getItem(OWNER_BUSINESS_KEY);
         
-        // 2. Access Control and Setup
+        // 2. Access Control and Setup (unchanged)
         if (!businessName || businessName !== localOwner) {
             pageTitle.textContent = "Access Denied 🔒";
             statusMessage.className = 'error';
@@ -605,15 +961,16 @@ renderEditableTable(productsData);
         pageTitle.textContent = `Product Editor: ${businessName}`;
         
         // 3. Fetch Data
+        // NOTE: setupNumericInputs() is called inside renderEditableTable
         fetchProductsForBusiness(businessName);
         
-        // 4. Attach save event listeners
+        // 4. Attach event listeners
         saveChangesBtnTop.addEventListener('click', saveAllChanges);
         saveChangesBtnBottom.addEventListener('click', saveAllChanges);
-        updateSaveButtonCount(); // Initialize button state
+        addProductBtn.addEventListener('click', addRowForNewProduct); // The button listener was incomplete in the original prompt.
     }
 
-    // Run initialization when the page loads
+    // Initial setup on page load
     document.addEventListener('DOMContentLoaded', initEditPage);
 </script>
 </body>
