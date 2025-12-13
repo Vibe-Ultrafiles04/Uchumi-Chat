@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#dc3545" /> 
+    <link rel="apple-touch-icon" href="inventory192.png" />
+   <style>
+    /* * GLOBAL STYLES 
+     */
+    body {
+        background: #f0f2f5;
+        margin: 0;
+        padding: 10px; /* Mobile-first padding */
+        font-family: Arial, sans-serif;
+    }
+    
+    .dashboard-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px; /* Mobile-first padding */
+        border-radius: 12px;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    }
+    
+    h2 { 
+        color: #3b6dc6; 
+        margin-bottom: 20px; /* Reduced margin */
+        border-bottom: 2px solid #f0f0f0; 
+        padding-bottom: 10px;
+        font-size: 1.5em; /* Better scaling */
+    }
+    
+    .section-title {
+        color: #dc3545;
+        margin-top: 25px;
+        margin-bottom: 15px;
+        font-size: 1.1em; /* Slightly smaller for mobile */
+        font-weight: bold;
+    }
+    
+    .profile-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    /* * PROFILE ITEM LAYOUT (Mobile-First Default: Stacked)
+     */
+    .profile-item {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column; /* Start stacked vertically */
+        gap: 10px;
+    }
+    
+    .profile-info {
+        flex-grow: 1;
+        width: 100%; /* Take full width */
+    }
+    
+    .profile-name {
+        font-weight: bold;
+        color: #3b6dc6;
+        font-size: 1.1em;
+        /* Highlight name for stacked view */
+        border-bottom: 1px solid #eee; 
+        padding-bottom: 5px;
+        margin-bottom: 5px;
+    }
+    
+    .profile-desc {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .profile-actions {
+        display: flex;
+        flex-direction: column; /* Start buttons stacked vertically */
+        gap: 8px;
+        width: 100%; /* Take full width */
+    }
+    
+    .profile-actions button {
+        /* Full width and large touch target for mobile */
+        padding: 12px 15px; 
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em; /* Larger font */
+        transition: background 0.2s;
+        width: 100%; /* Ensure full stretch */
+    }
+
+    /* * ACTION BUTTON COLORS 
+     */
+    .action-approve {
+        background: #28a745;
+        color: white;
+    }
+    .action-approve:hover { background: #1e7e34; }
+    
+    .action-reject, .action-delete {
+        background: #dc3545;
+        color: white;
+    }
+    .action-reject:hover, .action-delete:hover { background: #c82333; }
+    
+    .action-message {
+        background: #ffc107;
+        color: #212529;
+    }
+    .action-message:hover { background: #e0a800; }
+
+    /* * GLOBAL MESSAGE SECTION 
+     */
+    .message-all-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        margin-top: 30px;
+    }
+    .message-all-section textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+    .message-all-section button {
+        background: #3b6dc6;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%; /* Make global button full width on mobile */
+    }
+    .message-all-section button:hover { background: #325a9e; }
+    
+    /* * MESSAGES & PLACEHOLDERS 
+     */
+    #loadingMsg, #errorMsg {
+        color: #3b6dc6;
+        text-align: center;
+        margin-top: 20px;
+    }
+    #errorMsg {
+        color: #dc3545;
+    }
+    .no-profiles {
+        text-align: center;
+        color: #6c757d;
+        padding: 30px;
+        border: 1px dashed #ced4da;
+        border-radius: 8px;
+    }
+
+    /* * MEDIA QUERY: DESKTOP/TABLET (601px and up) 
+     * Switch to horizontal layout
+     */
+    @media (min-width: 601px) {
+        body {
+            padding: 20px; /* Restore original padding */
+        }
+        .dashboard-container {
+            padding: 30px; /* Restore original padding */
+        }
+
+        .profile-item {
+            flex-direction: row; /* Switch back to horizontal layout */
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: nowrap; /* Prevent unnecessary wrapping */
+        }
+        
+        .profile-info {
+            /* Allow info block to take up the necessary space */
+            max-width: 60%; 
+            min-width: 250px; /* Ensure wide enough reading area */
+        }
+
+        .profile-name {
+            border-bottom: none; /* Remove mobile separator */
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
+        .profile-actions {
+            flex-direction: row; /* Switch buttons back to horizontal */
+            gap: 10px;
+            margin-top: 0; /* Remove vertical margin */
+            width: auto; /* Allow content to dictate width */
+        }
+
+        .profile-actions button {
+            width: auto; /* Shrink buttons back to content width */
+            padding: 8px 15px; /* Restore desktop padding */
+        }
+
+        .message-all-section button {
+            width: auto; /* Shrink global button */
+        }
+    }
+</style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h2>👑 Admin Profile Management Dashboard</h2>
+
+        <p id="loadingMsg">Loading profiles...</p>
+        <p id="errorMsg" style="display:none;"></p>
+
+        <div id="pendingRequestsSection">
+            <div class="section-title">Pending Business Profile Requests</div>
+            <ul id="pendingProfilesList" class="profile-list">
+                </ul>
+        </div>
+        
+        <div id="approvedProfilesSection">
+            <div class="section-title">Approved Business Profiles</div>
+            <ul id="approvedProfilesList" class="profile-list">
+                </ul>
+        </div>
+        
+        <div class="message-all-section">
+            <div class="section-title">Global Actions</div>
+            <label for="adminMessage">Send Direct Message to ALL Approved Profiles</label>
+            <textarea id="adminMessage" rows="4" placeholder="Type your broadcast message here..."></textarea>
+            <button id="sendGlobalMessageBtn">Send Global Message</button>
+        </div>
+    </div>
+
+    <script>
+        // Make sure to use the correct Web App URL
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzVpq2RTgbRuqu5NkuFvIJDPiyQ_y80ldCPHwshHBoeZbiy2ZZed3sm71fgFZiFuXI99Q/exec";
+        
+        const loadingMsg = document.getElementById('loadingMsg');
+        const errorMsg = document.getElementById('errorMsg');
+        const pendingProfilesList = document.getElementById('pendingProfilesList');
+        const approvedProfilesList = document.getElementById('approvedProfilesList');
+        const sendGlobalMessageBtn = document.getElementById('sendGlobalMessageBtn');
+        const adminMessageInput = document.getElementById('adminMessage');
+
+        // --- Core Fetch Function ---
+        async function fetchAdminData(action, payload = {}) {
+            try {
+                const url = WEB_APP_URL + (action === 'getAdminDashboard' ? '?action=getAdminDashboard' : '');
+                
+                const response = await fetch(url, {
+                    method: action === 'getAdminDashboard' ? 'GET' : 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: action !== 'getAdminDashboard' ? JSON.stringify({ action, ...payload }) : undefined,
+                });
+
+                const json = await response.json();
+                
+                if (json.result === 'success') {
+                    return json.data;
+                } else {
+                    throw new Error(json.message || `Operation ${action} failed.`);
+                }
+            } catch (e) {
+                console.error("Admin API Error:", e);
+                showError(e.message);
+                return null;
+            }
+        }
+
+        // --- Display Functions ---
+        function showError(message) {
+            errorMsg.textContent = `Error: ${message}`;
+            errorMsg.style.display = 'block';
+            loadingMsg.style.display = 'none';
+        }
+
+        function renderProfiles(profiles) {
+            pendingProfilesList.innerHTML = '';
+            approvedProfilesList.innerHTML = '';
+            
+            if (!profiles || profiles.length === 0) {
+                pendingProfilesList.innerHTML = '<li class="no-profiles">No business profiles found.</li>';
+                approvedProfilesList.innerHTML = '<li class="no-profiles">No approved profiles found.</li>';
+                loadingMsg.style.display = 'none';
+                return;
+            }
+            
+            const pending = profiles.filter(p => p.status === 'Pending');
+            const approved = profiles.filter(p => p.status === 'Approved');
+
+            // Render Pending Profiles
+            if (pending.length > 0) {
+                pending.forEach(profile => {
+                    pendingProfilesList.appendChild(createProfileElement(profile, true));
+                });
+            } else {
+                pendingProfilesList.innerHTML = '<li class="no-profiles">🎉 No pending requests!</li>';
+            }
+
+            // Render Approved Profiles
+            if (approved.length > 0) {
+                approved.forEach(profile => {
+                    approvedProfilesList.appendChild(createProfileElement(profile, false));
+                });
+            } else {
+                approvedProfilesList.innerHTML = '<li class="no-profiles">No approved profiles yet.</li>';
+            }
+
+            loadingMsg.style.display = 'none';
+        }
+
+        function createProfileElement(profile, isPending) {
+            const li = document.createElement('li');
+            li.className = 'profile-item';
+            li.setAttribute('data-name', profile.businessName);
+
+            li.innerHTML = `
+                <div class="profile-info">
+                    <div class="profile-name">${profile.businessName} ${isPending ? '(Pending)' : ''}</div>
+                    <div class="profile-desc">${profile.businessDescription}</div>
+                    <div class="profile-desc">Subscribers: ${profile.subscribersCount} | Link: ${profile.videoLink || 'N/A'}</div>
+                </div>
+                <div class="profile-actions">
+                    ${isPending ? 
+                        `<button class="action-approve" data-action="authorize">Approve</button>
+                         <button class="action-reject" data-action="reject">Reject</button>`
+                        : 
+                        `<button class="action-message" data-action="directMessage">Message</button>
+                         <button class="action-delete" data-action="delete">Delete Profile</button>`
+                    }
+                </div>
+            `;
+            
+            // Attach event listeners dynamically
+            const buttons = li.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.addEventListener('click', () => handleProfileAction(profile.businessName, button.dataset.action));
+            });
+
+            return li;
+        }
+
+        // --- Action Handlers ---
+        async function handleProfileAction(businessName, action) {
+            if (!confirm(`Are you sure you want to perform '${action}' on ${businessName}?`)) {
+                return;
+            }
+            
+            let apiAction = '';
+            let message = '';
+
+            switch (action) {
+                case 'authorize':
+                    apiAction = 'authorizeProfile';
+                    message = `Authorizing ${businessName}...`;
+                    break;
+                case 'reject':
+                    apiAction = 'rejectProfile';
+                    message = `Rejecting ${businessName}...`;
+                    break;
+                case 'delete':
+                    apiAction = 'deleteProfile';
+                    message = `Deleting ${businessName}...`;
+                    break;
+                case 'directMessage':
+                    const msg = prompt(`Enter message for ${businessName}:`);
+                    if (!msg) return;
+                    apiAction = 'sendDirectMessage';
+                    message = `Sending message to ${businessName}...`;
+                    break;
+                default:
+                    return;
+            }
+            
+            // Temporary UI feedback
+            loadingMsg.textContent = message;
+            loadingMsg.style.display = 'block';
+            errorMsg.style.display = 'none';
+
+            const payload = { businessName };
+            if (apiAction === 'sendDirectMessage') {
+                payload.message = msg;
+            }
+
+            const result = await fetchAdminData(apiAction, payload);
+            
+            if (result) {
+                alert(`${businessName} has been ${action}ed.`);
+                // Refresh the list after a successful action
+                loadAdminDashboard();
+            } else {
+                loadingMsg.style.display = 'none';
+            }
+        }
+        
+        // --- Global Message Handler ---
+        sendGlobalMessageBtn.addEventListener('click', async () => {
+            const message = adminMessageInput.value.trim();
+            if (!message) {
+                alert("Please enter a message to send.");
+                return;
+            }
+            
+            if (!confirm("Are you sure you want to send this message to ALL approved profiles?")) {
+                return;
+            }
+
+            sendGlobalMessageBtn.disabled = true;
+            sendGlobalMessageBtn.textContent = 'Sending...';
+
+            const result = await fetchAdminData('sendMessageToAllProfiles', { message });
+            
+            if (result) {
+                alert("Global message sent successfully!");
+                adminMessageInput.value = '';
+            } 
+            
+            sendGlobalMessageBtn.disabled = false;
+            sendGlobalMessageBtn.textContent = 'Send Global Message';
+        });
+
+
+        // --- Initial Load ---
+        async function loadAdminDashboard() {
+            loadingMsg.textContent = 'Loading profiles...';
+            loadingMsg.style.display = 'block';
+            errorMsg.style.display = 'none';
+            
+            const profiles = await fetchAdminData('getAdminDashboard');
+            if (profiles) {
+                renderProfiles(profiles);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAdminDashboard);
+    </script>
+</body>
+</html>
