@@ -384,53 +384,52 @@ function toggleQrCodeSection() {
         videoSection.style.display = 'block';
     }
 
-    // Increment view only on first click per device
-    async function countVideoView() {
-        if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
+    // Increment view only on first click per device for the CURRENT video
+async function countVideoView() {
+    if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
 
-        // Check if video section is visible before trying to count the view.
-        if (videoSection.style.display === 'none') return;
-        
-        const videoId = activeVideoDriveId; // Use the globally set variable
-        if (!videoId) return; // Exit if no video ID is active
+    // If no video is currently loaded, don't count
+    if (videoSection.style.display === 'none') return;
 
-        // ⭐ Use videoId instead of businessOwnerId for the local storage key
-        const viewedKey = `videoViewed_${videoId}`;
-        if (localStorage.getItem(viewedKey)) return;
+    const videoId = activeVideoDriveId;
+    if (!videoId) return;
 
-        // Mark as viewed immediately to prevent double-counting on the same device/session
-        localStorage.setItem(viewedKey, 'true');
+    // ⭐ KEY FIX: Always use the CURRENT video's Drive ID
+    const viewedKey = `videoViewed_${videoId}`;
 
-        try {
-            // Added timeout logic for robustness in 'no-cors' context
-            const controller = new AbortController();
-            const signal = controller.signal;
-            const timeout = setTimeout(() => controller.abort(), 5000);
+    // If already viewed THIS specific video, do nothing
+    if (localStorage.getItem(viewedKey)) return;
 
-            await fetch(SCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors", 
-                headers: { "Content-Type": "text/plain" }, 
-                body: JSON.stringify({
-                    action: "incrementVideoView",
-                    businessOwnerId: businessOwnerId,
-                    viewerDeviceId: MY_DEVICE_ID 
-                }),
-                signal: signal
-            });
-            clearTimeout(timeout);
+    // Mark THIS video as viewed immediately (prevents double-counting)
+    localStorage.setItem(viewedKey, 'true');
 
-            currentVideoViews += 1;
-            videoViewsEl.textContent = formatViews(currentVideoViews);
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
 
-        } catch (err) {
-             if (err.name !== 'AbortError') console.warn("Video count failed silently:", err);
-            // Fallback for network error
-            currentVideoViews += 1;
-            videoViewsEl.textContent = formatViews(currentVideoViews);
-        }
+        await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                action: "incrementVideoView",
+                businessOwnerId: businessOwnerId,
+                viewerDeviceId: MY_DEVICE_ID
+            }),
+            signal: controller.signal
+        });
+        clearTimeout(timeout);
+
+        currentVideoViews += 1;
+        videoViewsEl.textContent = formatViews(currentVideoViews);
+
+    } catch (err) {
+        if (err.name !== 'AbortError') console.warn("Video view count failed:", err);
+        // Optional: still show +1 locally even if request failed
+        currentVideoViews += 1;
+        videoViewsEl.textContent = formatViews(currentVideoViews);
     }
-    
+}
     // NEW HELPER FUNCTION
     async function findOwnerIdByBusinessName(businessName) {
         try {
