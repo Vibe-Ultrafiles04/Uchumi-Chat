@@ -92,83 +92,45 @@
             box-sizing: border-box;
         }
 
-        /* My Studio Button */
-        #myStudioBtn {
-            display: none;
-            margin: 5px auto 0;
-            padding: 14px 32px;
-            background: #3b6dc6;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(59, 109, 198, 0.3);
-            transition: all 0.3s ease;
-        }
+/* --- New Flex Container for Buttons --- */
+#buttonContainer {
+    display: flex;
+    flex-direction: row; /* Horizontal arrangement */
+    justify-content: center; /* Center buttons horizontally */
+    align-items: center; /* Vertically align them */
+    gap: 8px; /* Space between the buttons/link */
+    padding: 10px;
+    margin: 10px auto;
+    max-width: 100%;
+}
 
-        #myStudioBtn:hover {
-            background: #325a9e;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(59, 109, 198, 0.4);
-        }
-
-        #shareAppBtn {
-    /* Use small button sizing */
-    background: #463dc5; /* Green */
+/* My Studio Button */
+#myStudioBtn {
+    display: none;
+    /* Removed margin: 5px auto 0; for Flexbox */
+    padding: 12px 28px; /* Adjusted to match notification button for uniformity */
+    background: #3b6dc6;
     color: white;
-    border: 1px solid #218838;
-    padding: 6px 12px;
-    font-size: 12px;
-    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 50px;
     cursor: pointer;
-    margin: 5px;
-    transition: background 0.2s;
+    box-shadow: 0 4px 15px rgba(59, 109, 198, 0.3);
+    transition: all 0.3s ease;
+    flex-shrink: 1;
 }
 
-#shareAppBtn:hover {
-    background: #218838;
-}
-.save-business-btn {
-  position: absolute;
-  /* CHANGED TO A LARGER VALUE to push the button far down */
-  top: 400px; 
-  /* --- */
-  right: 12px;
-  background: rgba(0,0,0,0.5);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  font-size: 24px;
-  cursor: pointer;
-  z-index: 10;
-  backdrop-filter: blur(4px);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0; /* Ensures the heart is centered */
-}
-.save-business-btn:hover { 
-  background: rgba(0,0,0,0.7); 
-  transform: scale(1.1); 
-}
-.save-business-btn.saved { 
-  background: #e91e63; /* Pink/Red for saved state */
-}
-/* Pulse animation for click feedback */
-@keyframes pulse { 
-  0%{transform:scale(1)} 
-  50%{transform:scale(1.3)} 
-  100%{transform:scale(1)} 
+#myStudioBtn:hover {
+    background: #325a9e;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 109, 198, 0.4);
 }
 
+/* Notifications Button */
 #notificationsBtn {
     display: none;
-    margin: 10px auto 20px;
+    /* Removed margin: 10px auto 20px; for Flexbox */
     padding: 12px 28px;
     background: #463dc5;
     color: white;
@@ -180,6 +142,7 @@
     box-shadow: 0 4px 15px rgba(70, 61, 197, 0.3);
     transition: all 0.3s ease;
     position: relative;
+    flex-shrink: 1;
 }
 
 #notificationsBtn:hover {
@@ -187,15 +150,50 @@
     transform: translateY(-2px);
 }
 
-#unreadBadge {
-    background: #ff5252;
+/* Favorite Businesses Link (New Styles for Flexbox) */
+#favoriteBusinessesLink {
+    background: #e91e63;
     color: white;
-    font-size: 12px;
-    font-weight: bold;
-    border-radius: 50%;
-    padding: 4px 8px;
-    min-width: 20px;
-    margin-left: 8px;
+    padding: 12px 28px; /* Matched button padding/size */
+    border-radius: 50px; /* Matched button border-radius */
+    font-size: 16px; /* Matched button font size */
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+    text-decoration: none; /* Removed underline */
+    transition: all 0.3s ease;
+    display: inline-block;
+    flex-shrink: 1; /* Essential for padding/sizing */
+}
+
+#favoriteBusinessesLink:hover {
+    background: #c2185b;
+    transform: translateY(-2px);
+}
+
+
+/* --- Responsive Design: Stack buttons on smallest screens --- */
+@media (max-width: 550px) {
+    #buttonContainer {
+        flex-direction: column; /* Stack vertically */
+        gap: 5px; 
+    }
+
+    /* Make buttons full width on small screens for easy tapping */
+   /* Decrease size of all buttons and link */
+    #myStudioBtn, 
+    #notificationsBtn, 
+    #favoriteBusinessesLink {
+        padding: 8px 16px; /* Decreased padding (smaller button size) */
+        font-size: 14px; /* Decreased font size */
+        max-width: none; /* Remove max-width restriction */
+        width: auto; /* Ensure width is content-based, allowing shrink */
+    }
+    
+    /* Decrease size of the notification badge */
+    #unreadBadge {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
 }
 
 #unreadBadge.zero {
@@ -217,11 +215,15 @@
 
     <!-- Main Content -->
     <main class="page">
-         <!-- My Studio Button (Only visible to owner) -->
-  <button id="myStudioBtn">My Studio</button>
-   <!-- Notifications Button (Only visible to owner) -->
-<button id="notificationsBtn">🔔 Notifications <span id="unreadBadge" class="badge">0</span></button>
-  <a href="saved.html" style="position:static; background:#e91e63; color:white; padding:5px; border-radius:10%; font-size:12px; box-shadow:0 2px 10px rgba(0,0,0,0.2); z-index:999;">♥ favorite  businesses</a>
+         <div id="buttonContainer">
+    <button id="myStudioBtn">My Studio</button>
+    
+    <button id="notificationsBtn">🔔 Notifications <span id="unreadBadge" class="badge">0</span></button>
+    
+    <a href="saved.html" id="favoriteBusinessesLink">
+        ♥ favorite businesses
+    </a>
+</div>
    
          
         <div class="filter-bar">
