@@ -288,7 +288,8 @@
         return id;
     }
     const MY_DEVICE_ID = getMyDeviceId();
-
+   
+    
     let businessOwnerId = null;
     let isFollowing = false;
     let currentVideoViews = 0;
@@ -319,6 +320,9 @@
 
     const params = new URLSearchParams(location.search);
     const targetBusiness = decodeURIComponent(params.get('name') || '').trim();
+     // A new, consistent key to store the *most recently loaded* video's ID
+    const LAST_VIDEO_ID_KEY = `lastVideoDriveIdForBusiness_${targetBusiness}`; 
+    const VIDEO_VIEWED_PREFIX = `videoViewed_`; // Prefix used in countVideoView
 
     if (!targetBusiness) {
         document.getElementById('businessName').textContent = 'Invalid Link';
@@ -361,29 +365,48 @@ function toggleQrCodeSection() {
     }
 
     // Load video (no view increment here)
-    async function loadPromotionalVideo(profileData) {
-        if (!profileData?.videoLink) {
-            videoSection.style.display = 'none';
-            activeVideoDriveId = null; // Clear the active ID if no video is present
-            return;
-        }
-
-        const driveId = extractDriveId(profileData.videoLink);
-        if (!driveId) {
-            videoSection.style.display = 'none';
-            activeVideoDriveId = null; // Clear the active ID if extraction fails
-            return;
-        }
-        
-        // ⭐ Store the unique Drive ID globally
-        activeVideoDriveId = driveId;
-
-        promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
-        currentVideoViews = profileData.videoViews || 0;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
-        videoSection.style.display = 'block';
+async function loadPromotionalVideo(profileData) {
+    if (!profileData?.videoLink) {
+        videoSection.style.display = 'none';
+        activeVideoDriveId = null; // Clear the active ID if no video is present
+        return;
     }
 
+    const driveId = extractDriveId(profileData.videoLink);
+    if (!driveId) {
+        videoSection.style.display = 'none';
+        activeVideoDriveId = null; // Clear the active ID if extraction fails
+        return;
+    }
+    
+    // --- START OF NEW LOGIC FOR HANDLING VIDEO CHANGE ---
+
+    // 1. Get the Drive ID of the last video viewed for this business on this device
+    const lastVideoId = localStorage.getItem(LAST_VIDEO_ID_KEY);
+    
+    // 2. Check if the video ID has changed compared to the current video
+    if (lastVideoId && lastVideoId !== driveId) {
+        const oldViewedKey = `${VIDEO_VIEWED_PREFIX}${lastVideoId}`;
+        
+        // ⭐ CRITICAL FIX: Delete the old video's view flag
+        localStorage.removeItem(oldViewedKey);
+        
+        console.log(`Video updated. Cleared old view flag: ${oldViewedKey}`);
+    }
+
+    // 3. Store the new (current) Drive ID for future comparison
+    localStorage.setItem(LAST_VIDEO_ID_KEY, driveId); 
+    
+    // --- END OF NEW LOGIC ---
+
+    // ⭐ Store the unique Drive ID globally
+    activeVideoDriveId = driveId;
+
+    promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
+    currentVideoViews = profileData.videoViews || 0;
+    videoViewsEl.textContent = formatViews(currentVideoViews);
+    videoSection.style.display = 'block';
+}
     // Increment view only on first click per device for the CURRENT video
 async function countVideoView() {
     if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
