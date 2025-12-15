@@ -165,6 +165,42 @@
   50%{transform:scale(1.3)} 
   100%{transform:scale(1)} 
 }
+
+#notificationsBtn {
+    display: none;
+    margin: 10px auto 20px;
+    padding: 12px 28px;
+    background: #463dc5;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(70, 61, 197, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+#notificationsBtn:hover {
+    background: #3a31a8;
+    transform: translateY(-2px);
+}
+
+#unreadBadge {
+    background: #ff5252;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 50%;
+    padding: 4px 8px;
+    min-width: 20px;
+    margin-left: 8px;
+}
+
+#unreadBadge.zero {
+    display: none;
+}
     </style>
 </head>
 <body>
@@ -183,7 +219,9 @@
     <main class="page">
          <!-- My Studio Button (Only visible to owner) -->
   <button id="myStudioBtn">My Studio</button>
-<a href="saved.html" style="position:static; background:#e91e63; color:white; padding:5px; border-radius:10%; font-size:12px; box-shadow:0 2px 10px rgba(0,0,0,0.2); z-index:999;">♥ favorite  businesses</a>
+   <!-- Notifications Button (Only visible to owner) -->
+<button id="notificationsBtn">🔔 Notifications <span id="unreadBadge" class="badge">0</span></button>
+  <a href="saved.html" style="position:static; background:#e91e63; color:white; padding:5px; border-radius:10%; font-size:12px; box-shadow:0 2px 10px rgba(0,0,0,0.2); z-index:999;">♥ favorite  businesses</a>
    
          
         <div class="filter-bar">
@@ -347,7 +385,56 @@
     });
 </script>
 
-
+<script>
+    // 🎯 FIX: Define the SCRIPT_URL variable here, using the URL from your working notify.html
+    // Replace the URL below with YOUR actual deployed Apps Script URL
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMS4TmOuXwBBmDxl8pbaWBTYzlifMABimp36T8YpW8YVzwy-7tvUFTUmTOaK314xCWbg/exec"; 
+    
+    // Show notifications button and fetch unread count for logged-in owners
+    document.addEventListener('DOMContentLoaded', () => {
+        const ownerBusinessName = localStorage.getItem('ownerBusinessName');
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        const unreadBadge = document.getElementById('unreadBadge');
+    
+        if (ownerBusinessName && notificationsBtn) {
+            notificationsBtn.style.display = "block";
+            notificationsBtn.onclick = () => location.href = 'notify.html';
+    
+            // Fetch unread count
+            const deviceId = localStorage.getItem('uniqueDeviceId');
+            if (deviceId) {
+                // The URL is now correctly formed using the defined SCRIPT_URL
+                fetch(`${SCRIPT_URL}?action=getUnreadMessageCount`, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "getUnreadMessageCount", deviceId }),
+                    headers: { 'Content-Type': 'text/plain' }
+                })
+                .then(r => {
+                    // Check if the response is valid JSON before parsing
+                    if (!r.ok) {
+                        throw new Error(`HTTP error! status: ${r.status}`);
+                    }
+                    return r.json();
+                })
+                .then(data => {
+                    // Ensure the data structure is correct (data.data.count)
+                    if (data.result === "success" && data.data && data.data.count > 0) {
+                        unreadBadge.textContent = data.data.count;
+                        unreadBadge.classList.remove('zero');
+                    } else {
+                        unreadBadge.classList.add('zero');
+                        unreadBadge.textContent = '0'; // Reset to 0 when hidden
+                    }
+                })
+                .catch(err => {
+                    console.error("Failed to load unread count. Check SCRIPT_URL and Apps Script deployment:", err);
+                    // Critical: if the fetch fails, hide the badge and log the error
+                    unreadBadge.classList.add('zero');
+                });
+            }
+        }
+    });
+</script>
     <script src="index.js" defer></script>
 </body>
 </html>
