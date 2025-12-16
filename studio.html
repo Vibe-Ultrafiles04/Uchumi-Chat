@@ -131,7 +131,19 @@
             </div>
         </dialog>
     </main>
-
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('✅ Kona Mart SW Registered: ', registration.scope);
+        })
+        .catch(error => {
+          console.error('❌ Kona Mart SW Registration failed: ', error);
+        });
+    });
+  }
+</script>
     <!-- SECURITY + OWNER AUTO-FILL SCRIPT (MUST BE FIRST) -->
    <script>
     // === STUDIO ACCESS CONTROL & BUSINESS NAME SETUP ===
@@ -170,6 +182,7 @@
         // Clean up session token (one-time use)
         sessionStorage.removeItem('ownerStudioAccess');
     });
+    
 </script>
 
     <!-- Number Formatting & Form Toggle -->

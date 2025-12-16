@@ -270,8 +270,21 @@
 
         <button type="button" id="goBackBtn" style="display:none; background:#6c757d; margin-top:20px;">Go Back to Home</button>
     </div>
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('✅ Kona Mart SW Registered: ', registration.scope);
+        })
+        .catch(error => {
+          console.error('❌ Kona Mart SW Registration failed: ', error);
+        });
+    });
+  }
+</script>
 <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzTONdwtbu4ISRJIoxJVCMMmcUnU8_zYMrBnbXpq2i7GgtGcgWQgFPB-eJA1FyYiFk5/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyMS4TmOuXwBBmDxl8pbaWBTYzlifMABimp36T8YpW8YVzwy-7tvUFTUmTOaK314xCWbg/exec";
     const DEVICE_ID_KEY = 'uniqueDeviceId';
     const OWNER_BUSINESS_KEY = 'ownerBusinessName';
     

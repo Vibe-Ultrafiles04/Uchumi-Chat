@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Saved Businesses • My Favorites</title>
+  <meta name="theme-color" content="#3b6dc6">
+<link rel="manifest" href="./manifest.json">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="inventory192.png">
 
   <link rel="stylesheet" href="style.css" />
 
@@ -216,6 +222,20 @@
 
   <!-- Reuse shared functions from index.js -->
   <script src="index.js"></script>
+
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('✅ Kona Mart SW Registered: ', registration.scope);
+        })
+        .catch(error => {
+          console.error('❌ Kona Mart SW Registration failed: ', error);
+        });
+    });
+  }
+</script>
 
   <script>
     // Ensure required helpers are available

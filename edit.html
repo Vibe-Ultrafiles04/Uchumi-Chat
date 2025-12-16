@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product Editor - Manage Details</title>
+    <meta name="theme-color" content="#3b6dc6">
+<link rel="manifest" href="./manifest.json">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="inventory192.png">
     <style>
         /* Minimal required styling for a functional table editor */
         body {
@@ -154,12 +160,24 @@
     <p style="margin-top: 20px;">
         <button id="saveChangesBtnBottom" class="action-button" disabled>Save All Changes (0)</button>
     </p>
-
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('✅ Kona Mart SW Registered: ', registration.scope);
+        })
+        .catch(error => {
+          console.error('❌ Kona Mart SW Registration failed: ', error);
+        });
+    });
+  }
+</script>
   <script>
     // ==========================================================
     // CONFIGURATION (MUST MATCH YOUR MAIN FILE)
     // ==========================================================
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzTONdwtbu4ISRJIoxJVCMMmcUnU8_zYMrBnbXpq2i7GgtGcgWQgFPB-eJA1FyYiFk5/exec'; 
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyMS4TmOuXwBBmDxl8pbaWBTYzlifMABimp36T8YpW8YVzwy-7tvUFTUmTOaK314xCWbg/exec'; 
     const CURRENCY_SYMBOL = "KES"; 
     const OWNER_BUSINESS_KEY = 'ownerBusinessName';
     const DEVICE_ID_KEY = 'uniqueDeviceId'; // Assuming a DEVICE_ID exists for ownership

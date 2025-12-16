@@ -10,7 +10,12 @@
 
 <link rel="stylesheet" href="style.css">
 
+<meta name="theme-color" content="#3b6dc6">
+<link rel="manifest" href="./manifest.json">
 
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="inventory192.png">
 
 <meta property="og:title" content="Kona Mart| Discover Local Business Products">
 
@@ -277,7 +282,20 @@
 </script>
 <script src="index.js"></script>
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTONdwtbu4ISRJIoxJVCMMmcUnU8_zYMrBnbXpq2i7GgtGcgWQgFPB-eJA1FyYiFk5/exec";
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('✅ Kona Mart SW Registered: ', registration.scope);
+        })
+        .catch(error => {
+          console.error('❌ Kona Mart SW Registration failed: ', error);
+        });
+    });
+  }
+</script>
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMS4TmOuXwBBmDxl8pbaWBTYzlifMABimp36T8YpW8YVzwy-7tvUFTUmTOaK314xCWbg/exec";
 
     function getMyDeviceId() {
         let id = localStorage.getItem('myDeviceId');
@@ -320,10 +338,7 @@
 
     const params = new URLSearchParams(location.search);
     const targetBusiness = decodeURIComponent(params.get('name') || '').trim();
-     // A new, consistent key to store the *most recently loaded* video's ID
-    const LAST_VIDEO_ID_KEY = `lastVideoDriveIdForBusiness_${targetBusiness}`; 
-    const VIDEO_VIEWED_PREFIX = `videoViewed_`; // Prefix used in countVideoView
-
+    
     if (!targetBusiness) {
         document.getElementById('businessName').textContent = 'Invalid Link';
         businessProductsContainer.innerHTML = '<div class="hint">No business specified</div>';
@@ -364,49 +379,51 @@ function toggleQrCodeSection() {
         return num + (num === 1 ? ' view' : ' views');
     }
 
-    // Load video (no view increment here)
-async function loadPromotionalVideo(profileData) {
-    if (!profileData?.videoLink) {
-        videoSection.style.display = 'none';
-        activeVideoDriveId = null; // Clear the active ID if no video is present
-        return;
+   // Load video (no view increment here)
+
+    async function loadPromotionalVideo(profileData) {
+
+        if (!profileData?.videoLink) {
+
+            videoSection.style.display = 'none';
+
+            activeVideoDriveId = null; // Clear the active ID if no video is present
+
+            return;
+
+        }
+
+
+
+        const driveId = extractDriveId(profileData.videoLink);
+
+        if (!driveId) {
+
+            videoSection.style.display = 'none';
+
+            activeVideoDriveId = null; // Clear the active ID if extraction fails
+
+            return;
+
+        }
+
+       
+
+        // ⭐ Store the unique Drive ID globally
+
+        activeVideoDriveId = driveId;
+
+
+
+        promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
+
+        currentVideoViews = profileData.videoViews || 0;
+
+        videoViewsEl.textContent = formatViews(currentVideoViews);
+
+        videoSection.style.display = 'block';
+
     }
-
-    const driveId = extractDriveId(profileData.videoLink);
-    if (!driveId) {
-        videoSection.style.display = 'none';
-        activeVideoDriveId = null; // Clear the active ID if extraction fails
-        return;
-    }
-    
-    // --- START OF NEW LOGIC FOR HANDLING VIDEO CHANGE ---
-
-    // 1. Get the Drive ID of the last video viewed for this business on this device
-    const lastVideoId = localStorage.getItem(LAST_VIDEO_ID_KEY);
-    
-    // 2. Check if the video ID has changed compared to the current video
-    if (lastVideoId && lastVideoId !== driveId) {
-        const oldViewedKey = `${VIDEO_VIEWED_PREFIX}${lastVideoId}`;
-        
-        // ⭐ CRITICAL FIX: Delete the old video's view flag
-        localStorage.removeItem(oldViewedKey);
-        
-        console.log(`Video updated. Cleared old view flag: ${oldViewedKey}`);
-    }
-
-    // 3. Store the new (current) Drive ID for future comparison
-    localStorage.setItem(LAST_VIDEO_ID_KEY, driveId); 
-    
-    // --- END OF NEW LOGIC ---
-
-    // ⭐ Store the unique Drive ID globally
-    activeVideoDriveId = driveId;
-
-    promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
-    currentVideoViews = profileData.videoViews || 0;
-    videoViewsEl.textContent = formatViews(currentVideoViews);
-    videoSection.style.display = 'block';
-}
     // Increment view only on first click per device for the CURRENT video
 async function countVideoView() {
     if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
