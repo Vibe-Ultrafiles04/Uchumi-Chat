@@ -184,6 +184,56 @@
         #generateQrBtn:hover:not(:disabled) { background: #1e7e34; }
         #downloadQrBtn:hover:not(:disabled) { background: #e0a800; }
         #printQrBtn:hover:not(:disabled) { background: #138496; }
+    /* ====== STICKY PAGE VIEWS CSS ====== */
+/* ====== STICKY PAGE VIEWS WITH SLIDING ANIMATION ====== */
+#videoSection {
+    position: relative;
+}
+
+#videoViews {
+    position: sticky;
+    top: 10px;
+    left: 10px;
+    z-index: 100;
+    display: inline-flex; /* Changed to inline-flex to fit background to text */
+    align-items: center;
+    background: rgba(0, 0, 0, 0.75);
+    color: #ffffff;
+    padding: 4px 12px; /* Tighter padding to prevent it from being too long */
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    margin-left: 15px;
+    pointer-events: none;
+    overflow: hidden; 
+    width: auto; /* Ensures background only covers the content */
+}
+
+/* The actual sliding number container */
+.view-count-number {
+    display: inline-block;
+    margin-left: 5px;
+}
+
+/* Animation trigger class - Slowed down to 0.8s */
+.digit-slide-up {
+    animation: slideUpDigit 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes slideUpDigit {
+    0% { transform: translateY(100%); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+.video-info {
+    text-align: left;
+    margin-top: -42px; /* Adjusted slightly for the tighter padding */
+    position: relative;
+    z-index: 101;
+}
     </style>
 </head>
 <body>
@@ -197,7 +247,7 @@
 
         <div class="subscribe-wrapper">
             <button id="subscribeBtn" class="follow" disabled>Loading...</button>
-            <div id="subscriberCount">— ss</div>
+            <div id="subscriberCount">— </div>
         </div>
 
         <div class="share-wrapper" id="shareWrapper" style="margin-top: 30px; padding: 0 20px;">
@@ -265,10 +315,12 @@
         <div class="video-wrapper" id="videoWrapper">
             <iframe id="promoVideo" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
         </div>
-        <div class="video-info">
-            <span id="videoViews">0 views</span>
-        </div>
+      <div class="video-info">
+    <div id="videoViews">
+        <span>Page Views:</span>
+        <span id="viewNumber" class="view-count-number">0</span>
     </div>
+</div>
 
     <div id="businessProductsContainer">
         <div class="hint">Loading products...</div>
@@ -374,102 +426,101 @@ function toggleQrCodeSection() {
 
     // Format view count nicely
     function formatViews(num) {
-        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M views';
-        if (num >= 1000) return (num / 1000).toFixed(1) + 'K views';
-        return num + (num === 1 ? ' view' : ' views');
-    }
+    let formatted = num;
+    if (num >= 1000000) formatted = (num / 1000000).toFixed(1) + 'M';
+    else if (num >= 1000) formatted = (num / 1000).toFixed(1) + 'K';
+    return formatted;
+}
 
    // Load video (no view increment here)
 
-    async function loadPromotionalVideo(profileData) {
-
-        if (!profileData?.videoLink) {
-
-            videoSection.style.display = 'none';
-
-            activeVideoDriveId = null; // Clear the active ID if no video is present
-
-            return;
-
-        }
-
-
-
-        const driveId = extractDriveId(profileData.videoLink);
-
-        if (!driveId) {
-
-            videoSection.style.display = 'none';
-
-            activeVideoDriveId = null; // Clear the active ID if extraction fails
-
-            return;
-
-        }
-
-       
-
-        // ⭐ Store the unique Drive ID globally
-
-        activeVideoDriveId = driveId;
-
-
-
-        promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
-
-        currentVideoViews = profileData.videoViews || 0;
-
-        videoViewsEl.textContent = formatViews(currentVideoViews);
-
-        videoSection.style.display = 'block';
-
+  async function loadPromotionalVideo(profileData) {
+    if (!profileData?.videoLink) {
+        videoSection.style.display = 'none';
+        activeVideoDriveId = null; // Clear the active ID if no video is present
+        return;
     }
+
+    const driveId = extractDriveId(profileData.videoLink);
+    if (!driveId) {
+        videoSection.style.display = 'none';
+        activeVideoDriveId = null; // Clear the active ID if extraction fails
+        return;
+    }
+
+    // ⭐ Store the unique Drive ID globally
+    activeVideoDriveId = driveId;
+
+    promoVideo.src = `https://drive.google.com/file/d/${driveId}/preview`;
+    
+    // --- UPDATED FOR SLIDE ANIMATION ---
+    currentVideoViews = profileData.videoViews || 0;
+    const viewNumberEl = document.getElementById('viewNumber');
+    
+    if (viewNumberEl) {
+        viewNumberEl.textContent = formatViews(currentVideoViews);
+        // Reset and trigger slide-up on initial load
+        viewNumberEl.classList.remove('digit-slide-up');
+        void viewNumberEl.offsetWidth; 
+        viewNumberEl.classList.add('digit-slide-up');
+    }
+
+    videoSection.style.display = 'block';
+}
     // Increment view only on first click per device for the CURRENT video
 async function countVideoView() {
     if (!businessOwnerId || MY_DEVICE_ID === businessOwnerId) return;
 
-    // If no video is currently loaded, don't count
     if (videoSection.style.display === 'none') return;
 
     const videoId = activeVideoDriveId;
     if (!videoId) return;
 
-    // ⭐ KEY FIX: Always use the CURRENT video's Drive ID
     const viewedKey = `videoViewed_${videoId}`;
-
-    // If already viewed THIS specific video, do nothing
     if (localStorage.getItem(viewedKey)) return;
 
-    // Mark THIS video as viewed immediately (prevents double-counting)
     localStorage.setItem(viewedKey, 'true');
 
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
 
-       await fetch(SCRIPT_URL, {
-       method: "POST",
-       mode: "no-cors",
-       headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-    action: "incrementVideoView",
-    businessOwnerId: businessOwnerId,
-    viewerDeviceId: MY_DEVICE_ID
-}),
-
-  signal: controller.signal
-});
+        await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                action: "incrementVideoView",
+                businessOwnerId: businessOwnerId,
+                viewerDeviceId: MY_DEVICE_ID
+            }),
+            signal: controller.signal
+        });
 
         clearTimeout(timeout);
 
+        // --- SLIDE UP ANIMATION UPDATE ---
         currentVideoViews += 1;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
+        const viewNumberEl = document.getElementById('viewNumber');
+        if (viewNumberEl) {
+            viewNumberEl.classList.remove('digit-slide-up'); // Reset animation
+            void viewNumberEl.offsetWidth;                  // Force reflow
+            viewNumberEl.textContent = formatViews(currentVideoViews); // Set new digit
+            viewNumberEl.classList.add('digit-slide-up');    // Trigger slide up
+        }
 
     } catch (err) {
         if (err.name !== 'AbortError') console.warn("Video view count failed:", err);
-        // Optional: still show +1 locally even if request failed
+        
+        // Fallback: still show animation locally even if network fails
         currentVideoViews += 1;
-        videoViewsEl.textContent = formatViews(currentVideoViews);
+        const viewNumberEl = document.getElementById('viewNumber');
+        if (viewNumberEl) {
+            viewNumberEl.classList.remove('digit-slide-up');
+            void viewNumberEl.offsetWidth;
+            viewNumberEl.textContent = formatViews(currentVideoViews);
+            viewNumberEl.classList.add('digit-slide-up');
+        }
     }
 }
     // NEW HELPER FUNCTION
