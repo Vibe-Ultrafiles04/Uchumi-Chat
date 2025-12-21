@@ -247,7 +247,6 @@
 
         <div class="subscribe-wrapper">
             <button id="subscribeBtn" class="follow" disabled>Loading...</button>
-            <button id="callBtn" class="follow" style="margin-top:10px; background:#28a745;">📞 Call Business</button>
             <div id="subscriberCount">— </div>
         </div>
 
@@ -329,16 +328,6 @@
 
     <div id="productsContainer" style="display:none;"></div>
 
-    <div id="videoCallOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
-    <video id="remoteVideo" autoplay style="width:100%; height:80vh; object-fit:cover;"></video>
-    <video id="localVideo" autoplay muted style="position:absolute; top:20px; right:20px; width:120px; border:2px solid white; border-radius:10px;"></video>
-    
-    <div style="margin-top:20px;">
-        <button onclick="endCall()" style="padding:15px 30px; background:red; color:white; border:none; border-radius:50px; font-weight:bold;">End Call</button>
-    </div>
-</div>
-
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
    <script>
     window.IS_ADMIN_VIEW = false;
@@ -955,60 +944,6 @@ async function countVideoView() {
 
     // Init
     initBusinessPage();
-
-    let peer;
-let localStream;
-let currentCall;
-
-// Initialize Peer using your existing Device ID
-function initVideoEngine() {
-    // We use your MY_DEVICE_ID so people can call you specifically
-    peer = new Peer(MY_DEVICE_ID); 
-
-    peer.on('call', (call) => {
-        if (confirm("Incoming video call! Accept?")) {
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
-                localStream = stream;
-                document.getElementById('localVideo').srcObject = stream;
-                document.getElementById('videoCallOverlay').style.display = 'flex';
-                
-                call.answer(stream);
-                call.on('stream', (remoteStream) => {
-                    document.getElementById('remoteVideo').srcObject = remoteStream;
-                });
-                currentCall = call;
-            });
-        }
-    });
-}
-
-// Function to call the business owner
-async function startCall() {
-    if (!businessOwnerId) return alert("Owner is offline");
-
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    localStream = stream;
-    document.getElementById('localVideo').srcObject = stream;
-    document.getElementById('videoCallOverlay').style.display = 'flex';
-
-    const call = peer.call(businessOwnerId, stream);
-    call.on('stream', (remoteStream) => {
-        document.getElementById('remoteVideo').srcObject = remoteStream;
-    });
-    currentCall = call;
-}
-
-function endCall() {
-    if (currentCall) currentCall.close();
-    if (localStream) localStream.getTracks().forEach(track => track.stop());
-    document.getElementById('videoCallOverlay').style.display = 'none';
-}
-
-// Attach to your existing button
-document.getElementById('callBtn').addEventListener('click', startCall);
-
-// Call this function when the page loads
-initVideoEngine();
 
 </script>
 </body>
