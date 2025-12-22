@@ -1,7 +1,7 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyMS4TmOuXwBBmDxl8pbaWBTYzlifMABimp36T8YpW8YVzwy-7tvUFTUmTOaK314xCWbg/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxuY8aTcLrfjailzE5r2WTbopTxgsef_bYt1Y2Iv25aSXJeFXdGAhb9CUREusOx0ogLJg/exec"; 
 
-/// New Gallery DOM refs
+/// DOM References
 const CURRENCY_SYMBOL = "KES";
 const linkGalleryDialog = document.getElementById("linkGalleryDialog");
 const openGalleryBtn = document.getElementById("openGalleryBtn");
@@ -13,256 +13,349 @@ const previewBtn = document.getElementById("previewBtn");
 const newThumb = document.getElementById("newThumb");
 const addProductBtn = document.getElementById("addProductBtn");
 const productsContainer = document.getElementById("productsContainer");
-const productDescriptionInput = document.getElementById("productDescription"); // NEW
-const productDetailsInput = document.getElementById("productDetails"); // NEW
-// *** NEW DOM REFERENCES for Business and Category ***
+const productDescriptionInput = document.getElementById("productDescription");
+const productDetailsInput = document.getElementById("productDetails");
+
 const businessNameInput = document.getElementById("businessName");
 const businessCategoryInput = document.getElementById("businessCategory");
-// ***************************************************
-
-const businessFilterInput = document.getElementById("businessFilterInput");
 const productNameInput = document.getElementById("productName");
 const productQuantityInput = document.getElementById("productQuantity");
 const productBuyInput = document.getElementById("productBuy");
 const productSellInput = document.getElementById("productSell");
+const imageFileInput = document.getElementById("imageFileInput");
 
 const DEVICE_ID_KEY = 'uniqueDeviceId';
 const OWNER_BUSINESS_KEY = 'ownerBusinessName';
 const STORAGE_KEY = 'savedProductLinks';
 
-// ----------------------------------------------------------------------
-// ** NEW DOM REFERENCES FOR UPDATE DIALOG **
-const updateDialog = document.getElementById("updateDialog"); // Assumes this modal element exists
-const closeUpdateDialogBtn = document.getElementById("closeUpdateDialogBtn"); // Assumes a close button exists
+// UPDATE DIALOG DOM
+const updateDialog = document.getElementById("updateDialog");
+const closeUpdateDialogBtn = document.getElementById("closeUpdateDialogBtn");
 const updateProductName = document.getElementById("updateProductName");
 const sellQuantityInput = document.getElementById("sellQuantity");
 const restockQuantityInput = document.getElementById("restockQuantity");
+const updateCategoryInput = document.getElementById("updateCategory"); 
 const executeUpdateButton = document.getElementById("executeUpdateButton");
-// NEW DOM REFERENCE for the Edit Page Link Button
 const goToEditPageButton = document.getElementById("goToEditPageButton");
 
 let DEVICE_ID = getOrCreateDeviceId();
 let OWNER_BUSINESS_NAME = localStorage.getItem(OWNER_BUSINESS_KEY);
-let currentProductData = {}; // Stores data of the product currently being updated
-// ----------------------------------------------------------------------
+let currentProductData = {}; 
+let selectedImageBase64 = null;
+let selectedImageMimeType = null;
 
+// --- INITIALIZATION ---
+window.onload = () => {
+    initializeBusinessNameInput();
+    fetchAndRenderProducts();
+    renderGallery();
+};
 
 function getOrCreateDeviceId() {
     let id = localStorage.getItem(DEVICE_ID_KEY);
     if (!id) {
-        // Generate a new unique ID (similar to your generateUniqueId)
         id = 'dev-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
         localStorage.setItem(DEVICE_ID_KEY, id);
     }
-    console.log("Device ID:", id);
     return id;
 }
 
-// Function to set the business name (called upon successful creation)
-function setOwnerBusinessName(name) {
-    OWNER_BUSINESS_NAME = name;
-    localStorage.setItem(OWNER_BUSINESS_KEY, name);
-    // Also, disable the businessNameInput after creation
-    businessNameInput.disabled = true; 
-    businessNameInput.title = "A business name is already registered to this device.";
-}
-
-// Function to check and disable the input on page load
 function initializeBusinessNameInput() {
-    if (OWNER_BUSINESS_NAME) {
-        businessNameInput.value = OWNER_BUSINESS_NAME;
+    const currentName = window.BUSINESS_NAME || OWNER_BUSINESS_NAME;
+    if (currentName) {
+        businessNameInput.value = currentName;
         businessNameInput.disabled = true;
-        businessNameInput.title = "A business name is already registered to this device. Clear storage to register a new one.";
-    } else {
-        businessNameInput.disabled = false;
-        businessNameInput.title = "";
     }
 }
 
-// *** NEW FUNCTION: Unique ID Generator (Stays the same) ***
-function generateUniqueId() {
-    // Generates a simple, client-side unique ID using timestamp and a random component
-    return 'prod-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
+// --- IMAGE SELECTION LOGIC ---
+if (imageFileInput) {
+    imageFileInput.addEventListener("change", function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const base64String = event.target.result;
+                selectedImageBase64 = base64String.split(',')[1]; 
+                selectedImageMimeType = file.type;
+                newThumb.innerHTML = `<img src="${base64String}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;" />`;
+                if (driveLinkInput) driveLinkInput.value = ""; 
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 }
 
-// *** MISSING HELPER FUNCTION (REQUIRED FOR NUMBER INPUTS) ***
-function unformatNumber(value) {
-    if (typeof value !== 'string') return value;
-    // Remove all commas from the string
-    return value.replace(/,/g, ''); 
+if (driveLinkInput) {
+    driveLinkInput.addEventListener("input", () => {
+        if (driveLinkInput.value.trim() !== "") {
+            imageFileInput.value = "";
+            selectedImageBase64 = null;
+            selectedImageMimeType = null;
+        }
+    });
 }
 
-// NEW FUNCTION: Handles the API call and UI removal for product deletion
-async function deleteProduct(productId, productName, cardElement) {
-    // 1. Confirmation Dialog
-    if (!confirm(`⚠️ WARNING: Are you sure you want to PERMANENTLY delete the product "${productName}" (ID: ${productId})?\n\nThis action cannot be undone and will remove the item from the Google Sheet.`)) {
-        return; // Stop if the user cancels
+// --- HELPERS ---
+function generateUniqueId() { return 'prod-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5); }
+function unformatNumber(v) { return typeof v === 'string' ? v.replace(/,/g, '') : v; }
+
+function getThumbnailUrl(link, size = 800) {
+    if (!link) return null;
+    let driveId = extractDriveId(link);
+    if (driveId) return `https://drive.google.com/thumbnail?id=${driveId}&sz=w${size}`;
+    if (/\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i.test(link.toLowerCase())) return link;
+    return null;
+}
+
+function extractDriveId(link) {
+    if (!link) return null;
+    // Handle standard drive links, sharing links, and direct IDs
+    let m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+    if (m && m[1]) return m[1];
+    m = link.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+    if (m && m[1]) return m[1];
+    // If string looks like a standalone ID (no slashes), return it
+    if (!link.includes('/') && link.length > 15) return link;
+    return null;
+}
+
+// --- CORE CRUD ACTIONS ---
+
+/**
+ * FETCH AND RENDER
+ */
+async function fetchAndRenderProducts() {
+    if (!productsContainer) return;
+    productsContainer.innerHTML = "<div class='loading-state'>Syncing with database...</div>";
+    
+    try {
+        const res = await fetch(`${WEB_APP_URL}?action=getAllProducts`);
+        const data = await res.json();
+        productsContainer.innerHTML = "";
+        
+        const myBiz = window.BUSINESS_NAME || OWNER_BUSINESS_NAME;
+        const rows = data.rows || [];
+        const filtered = rows.filter(r => r.businessName === myBiz).reverse();
+        
+        if (filtered.length === 0) {
+            productsContainer.innerHTML = "<div class='hint'>No products found. Start by adding one above.</div>";
+            return;
+        }
+
+        filtered.forEach(r => {
+            const card = document.createElement("div");
+            card.className = "modern-product-card";
+            const thumb = getThumbnailUrl(r.driveLink, 400);
+            
+            card.innerHTML = `
+                <div class="card-thumb-wrapper">
+                    ${thumb ? `<img src="${thumb}" class="product-image">` : `<div class="placeholder">🖼️</div>`}
+                </div>
+                <div class="card-info">
+                    <h4>${r.name}</h4>
+                    <p class="category-text">${r.category || 'Uncategorized'}</p>
+                    <p>Stock: <span class="stock-qty">${r.quantity}</span></p>
+                    <div class="card-actions">
+                        <button class="update-stock-btn btn-black small">Update</button>
+                        <button class="delete-prod-btn btn-red small">🗑️</button>
+                    </div>
+                </div>
+            `;
+            
+           
+            
+            productsContainer.appendChild(card);
+        });
+    } catch (err) {
+        console.error("Fetch error:", err);
+        productsContainer.innerHTML = "<div class='error'>Failed to load products. Check connection.</div>";
     }
+}
 
-    // 2. Prepare Payload for API
+/**
+ * ADD PRODUCT
+ */
+addProductBtn.onclick = async () => {
+    const name = productNameInput.value.trim();
+    if (!name) return alert("Product Name is required");
+
+    // Fix: If a link is provided, extract the clean ID to prevent duplicate logic issues
+    const rawLink = driveLinkInput.value.trim();
+    const driveId = extractDriveId(rawLink);
+    const finalLink = driveId ? driveId : rawLink;
+
     const payload = {
-        action: "deleteProduct",
-        productId: productId // Use the unique product ID for the backend to find the row
+        action: "addProduct",
+        id: generateUniqueId(),
+        businessName: businessNameInput.value.trim(),
+        category: businessCategoryInput.value.trim(),
+        name: name,
+        quantity: parseInt(unformatNumber(productQuantityInput.value)) || 0,
+        buy: parseFloat(unformatNumber(productBuyInput.value)) || 0,
+        sell: parseFloat(unformatNumber(productSellInput.value)) || 0,
+        description: productDescriptionInput.value,
+        details: productDetailsInput.value,
+        driveLink: finalLink,
+        imageData: selectedImageBase64,
+        imageMimeType: selectedImageMimeType,
+        deviceId: DEVICE_ID
     };
 
+    addProductBtn.disabled = true;
+    addProductBtn.textContent = "Uploading...";
+
     try {
-        // 3. Send Delete request to Web App
         const res = await fetch(WEB_APP_URL, {
             method: "POST",
             mode: "cors",
-            headers: {"Content-Type":"text/plain"}, 
+            headers: {"Content-Type":"text/plain"},
             body: JSON.stringify(payload)
         });
         const json = await res.json();
-        
-        // 4. Handle Response
-        if (json && json.result === "success") {
-            // Remove the card from the UI immediately
-            cardElement.remove();
-            alert(`✅ Product "${productName}" successfully deleted.`);
-            
+        if (json.result === "success") {
+            alert("✅ Product Added Successfully!");
+            location.reload();
         } else {
-            alert("❌ Failed to delete product: " + (json && json.message ? json.message : res.status));
+            alert("Upload Error: " + json.message);
         }
+    } catch (e) {
+        alert("Server connection failed. Verify WEB_APP_URL.");
+    } finally {
+        addProductBtn.disabled = false;
+        addProductBtn.textContent = "Add Product";
+    }
+};
 
-    } catch (err) {
-        console.error("Error sending delete request to server:", err);
-        alert("An error occurred while trying to delete the product.");
+/**
+ * DELETE PRODUCT
+ */
+async function deleteProduct(productId, productName, cardElement) {
+    if (!confirm(`⚠️ Permanently delete "${productName}"?\nThis action cannot be undone.`)) return;
+
+    // Visual feedback
+    const delBtn = cardElement.querySelector(".delete-prod-btn");
+    const originalText = delBtn.textContent;
+    delBtn.disabled = true;
+    delBtn.textContent = "...";
+
+    try {
+        const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: {"Content-Type":"text/plain"},
+            body: JSON.stringify({ 
+                action: "deleteProduct", 
+                productId: productId 
+            })
+        });
+        const json = await res.json();
+        if (json.result === "success") {
+            cardElement.remove();
+        } else {
+            alert("Could not delete: " + (json.message || "Unknown error"));
+            delBtn.disabled = false;
+            delBtn.textContent = originalText;
+        }
+    } catch (e) {
+        alert("Network error during deletion.");
+        delBtn.disabled = false;
+        delBtn.textContent = originalText;
     }
 }
 
-
-// ==========================================================
-// *** NEW UI AND BACKEND ACTION HANDLERS ***
-// ==========================================================
-
 /**
- * Handler for editing the category name.
+ * UPDATE STOCK & CATEGORY
  */
-async function openEditCategoryDialog(businessName, oldCategoryName, productData) {
-    const newCategory = prompt(`Enter the new name for the category "${oldCategoryName}" in business "${businessName}":`);
+if (executeUpdateButton) {
+    executeUpdateButton.onclick = async () => {
+        const sold = parseInt(unformatNumber(sellQuantityInput.value)) || 0;
+        const add = parseInt(unformatNumber(restockQuantityInput.value)) || 0;
+        const newCategory = updateCategoryInput ? updateCategoryInput.value.trim() : currentProductData.category;
+        
+        // Calculate the net change in quantity
+        const change = add - sold;
 
-    if (newCategory && newCategory.trim() !== "" && newCategory.trim() !== oldCategoryName) {
-        const trimmedNewCategory = newCategory.trim();
-
-        const payload = {
-            action: "editCategoryName",
-            businessName: businessName, 
-            oldCategoryName: oldCategoryName,
-            newCategoryName: trimmedNewCategory
-        };
+        executeUpdateButton.disabled = true;
+        executeUpdateButton.textContent = "Updating DB...";
 
         try {
             const res = await fetch(WEB_APP_URL, {
                 method: "POST",
                 mode: "cors",
-                headers: {"Content-Type":"text/plain"}, 
-                body: JSON.stringify(payload)
+                headers: {"Content-Type":"text/plain"},
+                body: JSON.stringify({ 
+                    action: "updateStock", 
+                    productId: currentProductData.id, 
+                    quantityChange: change,
+                    category: newCategory // This updates the sheet column for Category
+                })
             });
             const json = await res.json();
-            
-            if (json && json.result === "success") {
-                alert(`✅ Category "${oldCategoryName}" successfully renamed to "${trimmedNewCategory}". Refreshing data...`);
-                fetchAndRenderProducts(); 
+            if (json.result === "success") {
+                updateDialog.close();
+                fetchAndRenderProducts(); // Refresh UI
+                alert("Updated successfully!");
             } else {
-                alert("❌ Failed to rename category: " + (json && json.message ? json.message : res.status));
+                alert("Error: " + json.message);
             }
-        } catch (err) {
-            console.error("Error sending category edit request to server:", err);
-            alert("An error occurred while trying to rename the category.");
+        } catch (e) {
+            alert("Update failed. Check Apps Script permissions.");
+        } finally {
+            executeUpdateButton.disabled = false;
+            executeUpdateButton.textContent = "Execute Update";
         }
-    } else if (newCategory !== null) {
-        alert("Category name unchanged or cancelled.");
-    }
-}
-
-/**
- * Handler for deleting the entire Business group.
- */
-async function deleteBusiness(businessName, categoryName) {
-    if (!confirm(`🔥 WARNING: Are you sure you want to PERMANENTLY delete ALL products associated with the business "${businessName}"?\n\nThis action cannot be undone and will remove many items from the Google Sheet.`)) {
-        return;
-    }
-
-    const payload = {
-        action: "deleteBusinessGroup",
-        businessName: businessName
     };
-
-    try {
-        const res = await fetch(WEB_APP_URL, {
-            method: "POST",
-            mode: "cors",
-            headers: {"Content-Type":"text/plain"}, 
-            body: JSON.stringify(payload)
-        });
-        const json = await res.json();
-        
-        if (json && json.result === "success") {
-            fetchAndRenderProducts(); 
-            alert(`✅ All products for business "${businessName}" successfully deleted.`);
-        } else {
-            alert("❌ Failed to delete business group: " + (json && json.message ? json.message : res.status));
-        }
-
-    } catch (err) {
-        console.error("Error sending delete business request to server:", err);
-        alert("An error occurred while trying to delete the business.");
-    }
 }
-// Load links from local storage (Stays the same)
+
+// --- GALLERY HELPERS ---
 function loadSavedLinks() {
-    const json = localStorage.getItem(STORAGE_KEY);
-    return json ? JSON.parse(json) : [];
+    const json = localStorage.getItem(STORAGE_KEY);
+    return json ? JSON.parse(json) : [];
 }
 
-// Save links to local storage (Stays the same)
 function saveLinks(links) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
 }
 
-// helper: check if a link is a direct image url (Stays the same)
-function isDirectImageUrl(link) {
-    if (!link) return false;
-    // Check if the link ends with common image extensions
-    return /\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i.test(link.toLowerCase());
+function renderGallery() {
+    if (!galleryContainer) return;
+    const links = loadSavedLinks();
+    galleryContainer.innerHTML = "";
+    links.forEach((link, idx) => {
+        const thumb = getThumbnailUrl(link, 150);
+        const div = document.createElement("div");
+        div.className = "gallery-item";
+        div.style = "border:1px solid #ddd; padding:5px; position:relative; cursor:pointer; background:#fff; border-radius:8px; display:flex; align-items:center; justify-content:center; min-height:80px;";
+        div.innerHTML = `
+            <div style="height:60px; width:60px; background:#f9f9f9; overflow:hidden; border-radius:4px; display:flex; align-items:center; justify-content:center;">
+                ${thumb ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:cover;">` : '🔗'}
+            </div>
+            <button class="del-link-btn" style="position:absolute;top:-8px;right:-8px;background:#ff4444;color:white;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,0.2);">×</button>
+        `;
+        div.onclick = (e) => {
+            if (e.target.className === "del-link-btn") {
+                links.splice(idx, 1);
+                saveLinks(links);
+                renderGallery();
+                return;
+            }
+            driveLinkInput.value = link;
+            if (previewBtn) previewBtn.click();
+            linkGalleryDialog.close();
+        };
+        galleryContainer.appendChild(div);
+    });
 }
 
-// helper: extracts the appropriate thumbnail URL (Stays the same)
-function getThumbnailUrl(link, size = 800) {
-    if (!link) return null;
-
-    const fileId = extractDriveId(link);
-
-    if (fileId) {
-        // 1. Google Drive Link
-        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`;
-    }
-
-    if (isDirectImageUrl(link)) {
-        // 2. Direct Image URL (use the link itself)
-        return link;
-    }
-
-    return null; // Not a recognized link type for thumbnail
-}
-
-// helper: extract drive id from multiple link formats (Stays the same)
-function extractDriveId(link) {
-    if (!link) return null;
-    // patterns:
-    // https://drive.google.com/file/d/FILEID/view?usp=sharing
-    // https://drive.google.com/open?id=FILEID
-    // https://drive.google.com/thumbnail?id=FILEID&sz=w1000
-    let m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
-    if (m && m[1]) return m[1];
-    m = link.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
-    if (m && m[1]) return m[1];
-    // fallback: maybe the whole thing is an id
-    if (/^[a-zA-Z0-9_-]{10,}$/.test(link)) return link;
-    return null;
-}
-
+// Event Listeners for UI
+if (openGalleryBtn) openGalleryBtn.onclick = () => { renderGallery(); linkGalleryDialog.showModal(); };
+if (closeGalleryBtn) closeGalleryBtn.onclick = () => linkGalleryDialog.close();
+if (closeUpdateDialogBtn) closeUpdateDialogBtn.onclick = () => updateDialog.close();
+if (goToEditPageButton) goToEditPageButton.onclick = () => {
+    const biz = window.BUSINESS_NAME || OWNER_BUSINESS_NAME;
+    window.location.href = `./edit_products.html?business=${encodeURIComponent(biz)}`;
+};
 // Render the gallery in the dialog (Stays the same)
 function renderGallery() {
     galleryContainer.innerHTML = '';

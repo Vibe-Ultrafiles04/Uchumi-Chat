@@ -7,20 +7,51 @@
     <title>My Studio - Smart Inventory</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#3b6dc6" />
     <link rel="apple-touch-icon" href="inventory192.png" />
+    <style>
+        /* Smooth transitions for form toggle */
+        #inputContainer {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.6s ease, opacity 0.4s ease;
+            display: block;
+        }
+        .or-divider {
+            text-align: center; 
+            font-size: 11px; 
+            color: #888; 
+            margin: 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .thumb-preview {
+            cursor: pointer;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+        }
+        .thumb-preview:hover {
+            border-color: #3b6dc6;
+            background: #f0f4ff;
+        }
+    </style>
 </head>
 <body>
 
     <main class="page">
         <header class="admin-header">
             <h1 id="studioTitle">My Studio</h1>
-            <button onclick="window.location.href='index.html'" class="btn-black">
-                Home (Public View)
-            </button>
-            <button id="goToEditPageButton" class="btn-primary" style="margin: 20px 0; padding: 10px 20px; font-size: 16px;">
-     Pro Editor
-</button>
+            <div class="header-btns">
+                <button onclick="window.location.href='./index.html'" class="btn-black">
+                    Home (Public View)
+                </button>
+                <button id="goToEditPageButton" class="btn-primary">
+                    Pro Editor
+                </button>
+            </div>
         </header>
 
         <!-- Toggle Form Button -->
@@ -34,12 +65,8 @@
             <input type="text" id="businessFilterInput" placeholder="Your Business Name" class="text-input">
         </div>
 
-        <section id="productsContainer" class="products-area">
-            <div class="hint">Your products will appear here...</div>
-        </section>
-
-        <!-- Add Product Form (Hidden by default) -->
-        <div id="inputContainer" style="display: none;">
+        <!-- Add Product Form (Hidden by default via inline JS below) -->
+        <div id="inputContainer">
             <section class="product-panel add-panel">
                 
                 <div class="form-row">
@@ -83,11 +110,25 @@
                 <textarea id="productDetails" placeholder="Detailed specs, features, or ingredients..."></textarea>
 
                 <div class="thumb-and-link">
-                    <div id="newThumb" class="thumb-preview small">Thumbnail appears</div>
+                    <!-- Thumbnail preview also triggers file upload -->
+                    <div id="newThumb" class="thumb-preview small" onclick="document.getElementById('imageFileInput').click()">
+                        Tap to Upload Image
+                    </div>
+                    
                     <div class="link-column">
+                        <!-- Direct Upload Button -->
+                        <button type="button" class="btn-black small" onclick="document.getElementById('imageFileInput').click()">
+                            📸 Upload from device
+                        </button>
+                        <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
+                        
+                        <div class="or-divider">— OR —</div>
+                        
                         <input id="driveLink" class="text-input" type="text" placeholder="Paste Google Drive Link" />
-                        <button id="previewBtn" class="btn-black small">Preview</button>
-                        <button id="saveLinkBtn" class="btn-black small">Save Link</button>
+                        <div style="display: flex; gap: 5px;">
+                            <button id="previewBtn" class="btn-black small" style="flex:1">Preview</button>
+                            <button id="saveLinkBtn" class="btn-black small" style="flex:1">Save Link</button>
+                        </div>
                     </div>
                 </div>
 
@@ -97,6 +138,10 @@
                 </div>
             </section>
         </div>
+
+        <section id="productsContainer" class="products-area">
+            <div class="hint">Your products will appear here...</div>
+        </section>
 
         <!-- Link Gallery Dialog -->
         <dialog id="linkGalleryDialog">
@@ -114,127 +159,119 @@
                 <p class="product-title">Product: <strong id="updateProductName"></strong></p>
                 
                 <div class="input-group">
-                    <label for="sellQuantity">Units Sold (Decrease Stock):</label>
-                    <input type="text" id="sellQuantity" value="0" placeholder="Enter quantity sold"
-                           class="input-field" data-numeric="true">
+                    <label for="sellQuantity">Units Sold (Decrease):</label>
+                    <input type="text" id="sellQuantity" value="0" class="input-field" data-numeric="true">
                 </div>
                 
                 <div class="input-group">
-                    <label for="restockQuantity">Units Restocked (Increase Stock):</label>
-                    <input type="text" id="restockQuantity" value="0" placeholder="Enter quantity restocked"
-                           class="input-field" data-numeric="true">
+                    <label for="restockQuantity">Units Restocked (Increase):</label>
+                    <input type="text" id="restockQuantity" value="0" class="input-field" data-numeric="true">
                 </div>
                 
-                <button id="executeUpdateButton" class="btn btn-primary">
+                <button id="executeUpdateButton" class="btn-primary">
                     Execute Stock Update
                 </button>
             </div>
         </dialog>
     </main>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(registration => {
-          console.log('✅ Kona Mart SW Registered: ', registration.scope);
-        })
-        .catch(error => {
-          console.error('❌ Kona Mart SW Registration failed: ', error);
+
+    <script>
+      // Service Worker Registration - Fixed for Blob/Preview environment
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.warn("ServiceWorker registration skipped or failed:", err.message);
+          });
         });
-    });
-  }
-</script>
-    <!-- SECURITY + OWNER AUTO-FILL SCRIPT (MUST BE FIRST) -->
-   <script>
-    // === STUDIO ACCESS CONTROL & BUSINESS NAME SETUP ===
-    // Try to get business name from sessionStorage first (set when entering from index.html)
-    let ownerBusinessName = sessionStorage.getItem('ownerStudioAccess');
+      }
+    </script>
 
-    // Fallback: if user refreshed the page, try localStorage (set below as backup)
-    if (!ownerBusinessName) {
-        ownerBusinessName = localStorage.getItem('ownerBusinessName');
-    }
-
-    // If still no business name → block access
-    if (!ownerBusinessName) {
-        alert("Access denied. Please enter Studio from the main gallery.");
-        window.location.href = "index.html";
-        // Note: the rest of the script won't run
-    }
-
-    // === EXPOSE BUSINESS NAME TO script.js (critical!) ===
-    window.BUSINESS_NAME = ownerBusinessName.trim();
-
-    // === ALSO SAVE TO localStorage SO IT SURVIVES REFRESH ===
-    localStorage.setItem('ownerBusinessName', ownerBusinessName.trim());
-
-    // === DOM READY: Update title and form ===
-    document.addEventListener('DOMContentLoaded', () => {
-        document.title = `${ownerBusinessName}'s Studio`;
-        document.getElementById('studioTitle').textContent = `${ownerBusinessName}'s Studio`;
-
-        const businessInput = document.getElementById('businessName');
-        if (businessInput) {
-            businessInput.value = ownerBusinessName;
-            businessInput.placeholder = ownerBusinessName;
+    <!-- SECURITY + OWNER AUTO-FILL SCRIPT -->
+    <script>
+        let ownerBusinessName = sessionStorage.getItem('ownerStudioAccess');
+        if (!ownerBusinessName) {
+            ownerBusinessName = localStorage.getItem('ownerBusinessName');
         }
 
-        // Clean up session token (one-time use)
-        sessionStorage.removeItem('ownerStudioAccess');
-    });
-    
-</script>
+        if (!ownerBusinessName) {
+            alert("Access denied. Please enter Studio from the main gallery.");
+            window.location.href = "./index.html";
+        } else {
+            window.BUSINESS_NAME = ownerBusinessName.trim();
+            localStorage.setItem('ownerBusinessName', ownerBusinessName.trim());
 
-    <!-- Number Formatting & Form Toggle -->
+            document.addEventListener('DOMContentLoaded', () => {
+                document.title = `${ownerBusinessName}'s Studio`;
+                const studioTitle = document.getElementById('studioTitle');
+                if (studioTitle) studioTitle.textContent = `${ownerBusinessName}'s Studio`;
+
+                const businessInput = document.getElementById('businessName');
+                if (businessInput) {
+                    businessInput.value = ownerBusinessName;
+                }
+                sessionStorage.removeItem('ownerStudioAccess');
+            });
+        }
+    </script>
+
+    <!-- UI Interaction Script (Number Formatting & Form Toggle) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Numeric formatting
             const numericInputs = document.querySelectorAll('input[data-numeric="true"]');
-
-            const unformatNumber = (value) => value.replace(/,/g, '');
-            const formatNumber = (value) => {
-                const raw = unformatNumber(value);
-                let [integerPart, decimalPart] = raw.split('.');
-                integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                return decimalPart !== undefined ? `${integerPart}.${decimalPart}` : integerPart;
+            const unformat = (v) => v.replace(/,/g, '');
+            const format = (v) => {
+                const raw = unformat(v);
+                let [int, dec] = raw.split('.');
+                int = int.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                return dec !== undefined ? `${int}.${dec}` : int;
             };
 
             numericInputs.forEach(input => {
                 input.addEventListener('input', (e) => {
                     const cursor = e.target.selectionStart;
                     const oldLen = e.target.value.length;
-                    const formatted = formatNumber(e.target.value);
+                    const formatted = format(e.target.value);
                     e.target.value = formatted;
                     const newLen = formatted.length;
                     e.target.setSelectionRange(cursor + (newLen - oldLen), cursor + (newLen - oldLen));
                 });
-                input.addEventListener('blur', (e) => {
-                    e.target.value = formatNumber(e.target.value);
-                });
             });
-        });
 
-        document.addEventListener('DOMContentLoaded', () => {
+            // Form Toggle Logic
             const toggleBtn = document.getElementById('toggleFormBtn');
             const inputContainer = document.getElementById('inputContainer');
-            const content = inputContainer.querySelector('.product-panel.add-panel');
+            const content = inputContainer ? inputContainer.querySelector('.product-panel.add-panel') : null;
 
-            inputContainer.style.maxHeight = '0';
-            inputContainer.style.opacity = '0';
-            inputContainer.style.overflow = 'hidden';
-            inputContainer.style.transition = 'max-height 0.6s ease, opacity 0.4s ease';
-            inputContainer.style.display = 'block';
+            if (toggleBtn && inputContainer && content) {
+                toggleBtn.addEventListener('click', () => {
+                    if (inputContainer.style.maxHeight === '0px' || !inputContainer.style.maxHeight || inputContainer.style.maxHeight === '0') {
+                        inputContainer.style.maxHeight = (content.scrollHeight + 100) + 'px';
+                        inputContainer.style.opacity = '1';
+                        toggleBtn.textContent = 'Toggle Input Form (Hide)';
+                    } else {
+                        inputContainer.style.maxHeight = '0';
+                        inputContainer.style.opacity = '0';
+                        toggleBtn.textContent = 'Toggle Input Form (Show)';
+                    }
+                });
+            }
 
-            toggleBtn.addEventListener('click', () => {
-                if (inputContainer.style.maxHeight === '0px' || !inputContainer.style.maxHeight) {
-                    inputContainer.style.maxHeight = (content.scrollHeight + 60) + 'px';
-                    inputContainer.style.opacity = '1';
-                    toggleBtn.textContent = 'Toggle Input Form (Hide)';
-                } else {
-                    inputContainer.style.maxHeight = '0';
-                    inputContainer.style.opacity = '0';
-                    toggleBtn.textContent = 'Toggle Input Form (Show)';
-                }
-            });
+            // Handle Image Upload File Change (UI Only)
+            const fileInput = document.getElementById('imageFileInput');
+            const thumbPreview = document.getElementById('newThumb');
+            if (fileInput && thumbPreview) {
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            thumbPreview.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
         });
     </script>
 
