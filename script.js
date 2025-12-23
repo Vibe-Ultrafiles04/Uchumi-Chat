@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxuY8aTcLrfjailzE5r2WTbopTxgsef_bYt1Y2Iv25aSXJeFXdGAhb9CUREusOx0ogLJg/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwjCb8LCPPNif21SUT63g3f2hppLRohBghMiajdxvp1RMjyy852lQqpm7dfVGtqTt2c/exec"; 
 
 /// DOM References
 const CURRENCY_SYMBOL = "KES";
@@ -43,6 +43,7 @@ let OWNER_BUSINESS_NAME = localStorage.getItem(OWNER_BUSINESS_KEY);
 let currentProductData = {}; 
 let selectedImageBase64 = null;
 let selectedImageMimeType = null;
+let currentUpdateProductId = null;
 
 // --- INITIALIZATION ---
 window.onload = () => {
@@ -110,21 +111,16 @@ function getThumbnailUrl(link, size = 800) {
 
 function extractDriveId(link) {
     if (!link) return null;
-    // Handle standard drive links, sharing links, and direct IDs
     let m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
     if (m && m[1]) return m[1];
     m = link.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
     if (m && m[1]) return m[1];
-    // If string looks like a standalone ID (no slashes), return it
     if (!link.includes('/') && link.length > 15) return link;
     return null;
 }
 
 // --- CORE CRUD ACTIONS ---
 
-/**
- * FETCH AND RENDER
- */
 async function fetchAndRenderProducts() {
     if (!productsContainer) return;
     productsContainer.innerHTML = "<div class='loading-state'>Syncing with database...</div>";
@@ -155,23 +151,83 @@ async function fetchAndRenderProducts() {
                 <div class="card-info">
                     <h4>${r.name}</h4>
                     <p class="category-text">${r.category || 'Uncategorized'}</p>
-                    <p>Stock: <span class="stock-qty">${r.quantity}</span></p>
+                    <p>Stock: <span class="stock-qty" style="font-weight:bold;">${r.quantity}</span></p>
                     <div class="card-actions">
                         <button class="update-stock-btn btn-black small">Update</button>
                         <button class="delete-prod-btn btn-red small">🗑️</button>
                     </div>
                 </div>
             `;
-            
-           
+
+            // Attach Stock Update Trigger
+            card.querySelector(".update-stock-btn").onclick = () => {
+                currentUpdateProductId = r.id;
+                updateProductName.textContent = r.name;
+                sellQuantityInput.value = "0";
+                restockQuantityInput.value = "0";
+                updateDialog.showModal();
+            };
+
+            // Attach Delete Trigger
+            card.querySelector(".delete-prod-btn").onclick = async () => {
+                if(!confirm("Delete this product?")) return;
+                try {
+                    const delRes = await fetch(WEB_APP_URL, {
+                        method: "POST",
+                        mode: "cors",
+                        headers: {"Content-Type": "text/plain"},
+                        body: JSON.stringify({ action: "deleteProduct", id: r.id, deviceId: DEVICE_ID })
+                    });
+                    const delJson = await delRes.json();
+                    if(delJson.result === "success") fetchAndRenderProducts();
+                } catch(e) { alert("Delete failed."); }
+            };
             
             productsContainer.appendChild(card);
         });
     } catch (err) {
-        console.error("Fetch error:", err);
         productsContainer.innerHTML = "<div class='error'>Failed to load products. Check connection.</div>";
     }
 }
+
+// --- UPDATE DIALOG EXECUTION ---
+if (closeUpdateDialogBtn) closeUpdateDialogBtn.onclick = () => updateDialog.close();
+
+executeUpdateButton.onclick = async () => {
+    const sold = parseInt(sellQuantityInput.value) || 0;
+    const restock = parseInt(restockQuantityInput.value) || 0;
+    const adjustment = restock - sold;
+
+    if (adjustment === 0) return alert("Enter units sold or restocked.");
+
+    executeUpdateButton.disabled = true;
+    executeUpdateButton.textContent = "Updating...";
+
+    try {
+        const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                action: "updateStock",
+                id: currentUpdateProductId,
+                adjustment: adjustment,
+                deviceId: DEVICE_ID
+            })
+        });
+        const json = await res.json();
+        if (json.result === "success") {
+            updateDialog.close();
+            fetchAndRenderProducts();
+        } else {
+            alert("Error: " + json.message);
+        }
+    } catch (e) { alert("Update failed."); }
+    finally {
+        executeUpdateButton.disabled = false;
+        executeUpdateButton.textContent = "Execute Stock Update";
+    }
+};
 
 /**
  * ADD PRODUCT
@@ -180,10 +236,7 @@ addProductBtn.onclick = async () => {
     const name = productNameInput.value.trim();
     if (!name) return alert("Product Name is required");
 
-    // Fix: If a link is provided, extract the clean ID to prevent duplicate logic issues
     const rawLink = driveLinkInput.value.trim();
-    const driveId = extractDriveId(rawLink);
-    const finalLink = driveId ? driveId : rawLink;
 
     const payload = {
         action: "addProduct",
@@ -194,9 +247,9 @@ addProductBtn.onclick = async () => {
         quantity: parseInt(unformatNumber(productQuantityInput.value)) || 0,
         buy: parseFloat(unformatNumber(productBuyInput.value)) || 0,
         sell: parseFloat(unformatNumber(productSellInput.value)) || 0,
-        description: productDescriptionInput.value,
-        details: productDetailsInput.value,
-        driveLink: finalLink,
+        description: productDescriptionInput.value.trim(),
+        details: productDetailsInput.value.trim(),
+        driveLink: rawLink,
         imageData: selectedImageBase64,
         imageMimeType: selectedImageMimeType,
         deviceId: DEVICE_ID
@@ -209,23 +262,102 @@ addProductBtn.onclick = async () => {
         const res = await fetch(WEB_APP_URL, {
             method: "POST",
             mode: "cors",
-            headers: {"Content-Type":"text/plain"},
+            headers: {"Content-Type": "text/plain"},
             body: JSON.stringify(payload)
         });
         const json = await res.json();
+
         if (json.result === "success") {
-            alert("✅ Product Added Successfully!");
             location.reload();
         } else {
-            alert("Upload Error: " + json.message);
+            alert("Upload Error: " + (json.message || "Unknown error"));
         }
-    } catch (e) {
-        alert("Server connection failed. Verify WEB_APP_URL.");
-    } finally {
+    } catch (e) { alert("Server connection failed."); }
+    finally {
         addProductBtn.disabled = false;
         addProductBtn.textContent = "Add Product";
     }
 };
+
+// --- GALLERY LOGIC (PRESERVED AS IS) ---
+
+function loadSavedLinks() {
+    const json = localStorage.getItem(STORAGE_KEY);
+    return json ? JSON.parse(json) : [];
+}
+
+function saveLinks(links) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+}
+
+function renderGallery() {
+    if (!galleryContainer) return;
+    const links = loadSavedLinks();
+    galleryContainer.innerHTML = "";
+
+    if (links.length === 0) {
+        galleryContainer.innerHTML = "<p style='text-align:center; color:#888; padding:20px;'>No saved links yet.</p>";
+        return;
+    }
+
+    links.forEach((link, index) => {
+        const item = document.createElement("div");
+        item.className = "gallery-item";
+        item.style.cssText = "position:relative; border:1px solid #ddd; border-radius:8px; overflow:hidden; background:#f9f9f9;";
+
+        const thumb = getThumbnailUrl(link, 200);
+        const img = document.createElement("img");
+        img.src = thumb || "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==";
+        img.style.cssText = "width:100%; height:100px; object-fit:cover; cursor:pointer;";
+        img.onclick = () => {
+            driveLinkInput.value = link;
+            if (previewBtn) previewBtn.click();
+            linkGalleryDialog.close();
+        };
+
+        const removeBtn = document.createElement("button");
+        removeBtn.textContent = "✕";
+        removeBtn.style.cssText = "position:absolute; top:4px; right:4px; background:red; color:white; border:none; border-radius:50%; width:24px; height:24px; font-size:12px;";
+        removeBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm("Remove this link?")) {
+                links.splice(index, 1);
+                saveLinks(links);
+                renderGallery();
+            }
+        };
+
+        item.appendChild(img);
+        item.appendChild(removeBtn);
+        galleryContainer.appendChild(item);
+    });
+}
+
+if (openGalleryBtn) openGalleryBtn.onclick = () => { renderGallery(); linkGalleryDialog.showModal(); };
+if (closeGalleryBtn) closeGalleryBtn.onclick = () => linkGalleryDialog.close();
+
+if (saveLinkBtn) {
+    saveLinkBtn.onclick = () => {
+        const link = driveLinkInput.value.trim();
+        if (!link) return alert("Enter a link first");
+        const links = loadSavedLinks();
+        if (links.includes(link)) return alert("Already saved");
+        links.push(link);
+        saveLinks(links);
+        renderGallery();
+        alert("✅ Link saved to gallery!");
+    };
+}
+
+if (previewBtn) {
+    previewBtn.onclick = () => {
+        const link = driveLinkInput.value.trim();
+        const thumb = getThumbnailUrl(link, 400);
+        newThumb.innerHTML = thumb 
+            ? `<img src="${thumb}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;">`
+            : "<p style='color:red;'>Invalid link</p>";
+    };
+}
 
 /**
  * DELETE PRODUCT
@@ -757,109 +889,7 @@ if (executeUpdateButton) {
     });
 }
 
-addProductBtn.addEventListener("click", async () => {
-    // 1. COLLECT ALL DATA FROM INPUTS FIRST
-    const businessName = businessNameInput.value.trim();
-    const category = businessCategoryInput.value.trim();
-    const name = productNameInput.value.trim();
-    // NEW: Collect Description and Details
-    const description = productDescriptionInput.value.trim();
-    const details = productDetailsInput.value.trim();
-    
-    const quantity = parseInt(unformatNumber(productQuantityInput.value) || "0", 10);
-    const buy = parseFloat(unformatNumber(productBuyInput.value) || "0");
-    const sell = parseFloat(unformatNumber(productSellInput.value) || "0");
-    const link = driveLinkInput.value.trim();
-    const fileId = extractDriveId(link);
 
-    // --- VALIDATION/ENFORCEMENT START ---
-
-    // ⛔️ ENFORCEMENT CHECK: One business name per phone
-    if (OWNER_BUSINESS_NAME && businessName !== OWNER_BUSINESS_NAME) {
-        alert(`❌ Error: This device is already registered to the business "${OWNER_BUSINESS_NAME}". You cannot create products for a different business.`);
-        return;
-    }
-    
-    if (!businessName) { alert("Enter business name"); return; }
-    if (!category) { alert("Enter product category"); return; }
-    if (!name) { alert("Enter product name"); return; }
-    
-    // Check for a link that can be used for an image (either Drive or a direct URL)
-    if (!fileId && !isDirectImageUrl(link) && link.length > 0) {
-        alert("Link must be a Google Drive link or a direct image URL (try a link ending in .jpg, .png, etc.)");
-        return;
-    }
-
-    // --- VALIDATION/ENFORCEMENT END ---
-
-    // *** NEW: Generate Unique Product ID ***
-    const uniqueId = generateUniqueId();
-
-    // 2. CREATE THE PAYLOAD OBJECT
-    const payload = {
-        action: "addProduct",
-        id: uniqueId, 
-        timestamp: new Date().toISOString(),
-        businessName: businessName, 
-        category: category,        
-        description: description,    
-        details: details,            
-        name, quantity, buy, sell,
-        driveLink: link,
-        driveFileId: fileId || "",
-        // 🔑 CRITICAL NEW FIELD: Include the unique device ID for ownership tracking
-        deviceId: DEVICE_ID 
-    };
-
-    try {
-        const res = await fetch(WEB_APP_URL, {
-            method: "POST",
-            mode: "cors",
-            headers: {"Content-Type":"text/plain"}, 
-            body: JSON.stringify(payload)
-        });
-        const json = await res.json();
-        if (json && json.result === "success") {
-            
-            // 🔒 CRITICAL STEP: Register the business name to this device upon first successful creation
-            if (!OWNER_BUSINESS_NAME) {
-                setOwnerBusinessName(businessName); // This updates the global variable and Local Storage
-                // 🛑 REMOVED: alert(`✅ Success! Business "${businessName}" is now registered to this device (${DEVICE_ID}).`);
-                
-            } else {
-                // 🛑 REMOVED: alert(`✅ Product "${name}" successfully added to "${businessName}".`);
-            }
-
-            // --- ADDED: Save Business and Category to Local Storage (for input persistence) ---
-            // This is the logic you requested previously, placed here where the data is confirmed to be used.
-            localStorage.setItem('lastBusinessName', businessName);
-            localStorage.setItem('lastCategory', category);
-            // -----------------------------------------------------------------------------------
-
-            // Re-fetch products to ensure the new product has a valid rowId for future updates
-            fetchAndRenderProducts(); 
-
-            // 4. CLEAR INPUTS LAST
-            // Do NOT clear businessNameInput/businessCategoryInput if the user is likely to add another item in the same group.
-            productNameInput.value = ""; 
-            productQuantityInput.value = "";
-            productBuyInput.value = "";
-            productSellInput.value = "";
-            // NEW: Clear Description and Details inputs
-            productDescriptionInput.value = "";
-            productDetailsInput.value = "";
-            
-            driveLinkInput.value = "";
-            newThumb.innerHTML = "Thumbnail appears";
-
-        } else {
-            alert("Failed to add product: " + (json && json.message ? json.message : res.status));
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Error sending to server: " + err.message);
-    }
-});
 // ** 1. Global Callback Function (MODIFIED for Grouping) **
 function handleInventoryData(json) {
     productsContainer.innerHTML = ""; // Clear "Loading..." hint
