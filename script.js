@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw-xU7NWShIF92NTVfSG_ff3nXTVJn6iDablTZHplFgZH2EJ9RS9maTNqbmK7UEjWit/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwbGNCI0wBlrLppXSkBVeTfpDPlJaQtT5yHMSu6YdP74YrQGQZQduozTVYXD94SZNXRLw/exec"; 
 
 /// DOM References
 const CURRENCY_SYMBOL = "KES";
@@ -102,11 +102,30 @@ function generateUniqueId() { return 'prod-' + Date.now().toString(36) + Math.ra
 function unformatNumber(v) { return typeof v === 'string' ? v.replace(/,/g, '') : v; }
 
 function getThumbnailUrl(link, size = 800) {
-    if (!link) return null;
-    let driveId = extractDriveId(link);
-    if (driveId) return `https://drive.google.com/thumbnail?id=${driveId}&sz=w${size}`;
-    if (/\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i.test(link.toLowerCase())) return link;
-    return null;
+    if (!link || typeof link !== 'string') return null;
+
+    link = link.trim();
+
+    // Case 1: Google Drive file (image or video) — extract file ID
+    const driveId = extractDriveId(link);
+    if (driveId) {
+        // For Drive files, use thumbnail endpoint (works for images and some videos)
+        // Add &sz=w${size} for larger preview if needed
+        return `https://drive.google.com/thumbnail?id=${driveId}&sz=w${size}`;
+    }
+
+    // Case 2: Direct image URL (jpg, png, etc.)
+    if (/\.(jpe?g|png|gif|webp|svg|bmp)(\?.*)?$/i.test(link)) {
+        return link; // Direct image — use as-is
+    }
+
+    // Case 3: Direct video URL (mp4, webm, etc.) — show a playable <video> preview
+    if (/\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(link)) {
+        // Return a data URL with embedded <video> tag for preview
+        return `data:text/html,<video src="${encodeURIComponent(link)}" controls style="width:100%;height:100%;object-fit:cover;border-radius:8px;background:black;"></video>`;
+    }
+
+    return null; // Invalid or unsupported
 }
 
 function extractDriveId(link) {
@@ -599,9 +618,18 @@ function createProductCard(r) {
     // 1. Thumbnail Area (remains the same)
     const thumbWrapper = document.createElement("div");
     thumbWrapper.className = "card-thumb-wrapper";
-    const thumbContent = thumbUrl
-        ? `<img src="${thumbUrl}" alt="Product Image" class="product-image"/>`
-        : `<div class="placeholder-image">🖼️ No Image</div>`;
+   let thumbContent;
+if (thumbUrl) {
+    if (thumbUrl.startsWith('data:text/html,')) {
+        // It's an embedded video preview
+        thumbContent = `<iframe src="${thumbUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%;border-radius:8px;"></iframe>`;
+    } else {
+        // Regular image or Drive thumbnail
+        thumbContent = `<img src="${thumbUrl}" alt="Product Media" class="product-image"/>`;
+    }
+} else {
+    thumbContent = `<div class="placeholder-image">No Media</div>`;
+}
     thumbWrapper.innerHTML = thumbContent;
 
     const quantityBadge = document.createElement("div");
