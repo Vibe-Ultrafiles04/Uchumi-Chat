@@ -51,7 +51,7 @@
             transition: background 0.2s;
         }
         button:hover { background: #325a9e; }
-        button:disabled { background: #999; cursor: not-allowed; } /* Added disabled style */
+        button:disabled { background: #999; cursor: not-allowed; } 
         button.danger { background: #dc3545; }
         button.danger:hover { background: #c82333; }
         .hint { color: #888; font-size: 14px; margin-top: 5px; text-align: left; }
@@ -86,7 +86,7 @@
             cursor: pointer;
         }
 
-        /* Video Preview Styles */
+        /* Video Preview & Upload Styles */
         .video-preview-container {
             margin: 15px 0;
             border-radius: 10px;
@@ -96,7 +96,7 @@
             max-width: 100%;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        .video-preview-container img {
+        .video-preview-container img, .video-preview-container video {
             width: 100%;
             display: block;
         }
@@ -125,6 +125,27 @@
             margin-left: 6px;
         }
 
+        .upload-btn-dashed {
+            background: #fff;
+            color: #3b6dc6;
+            border: 2px dashed #3b6dc6;
+            margin-top: 10px;
+        }
+        .upload-btn-dashed:hover {
+            background: #f0f4ff;
+        }
+        .file-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #444;
+        }
+
         /* Name Suggestions Styles */
         .name-option {
             display: inline-block;
@@ -138,67 +159,20 @@
             background-color: #f0f4ff;
             transition: all 0.2s;
             text-align: center;
-            user-select: none; /* Crucial for suggestion selection UX */
+            user-select: none;
         }
-
         .name-option:hover {
             background-color: #3b6dc6;
             color: white;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-
-        #nameSuggestionsContainer {
-            margin: 15px 0 10px;
-            text-align: left;
-        }
-        
-        /* Validation Feedback Styles */
-        .validation-feedback { 
-            margin-top: 5px; 
-            text-align: left; 
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .feedback-available {
-            color: #28a745;
-        }
-
-        .feedback-taken {
-            color: #dc3545;
-        }
-
-        .input-available {
-            border-color: #28a745 !important;
-        }
-
-        .input-taken {
-            border-color: #dc3545 !important;
-        }
-        
-        /* New Wrapper for Position: relative and click handling */
-        .name-input-wrapper {
-            position: relative;
-        }
-        /* New container for positioning suggestions below input */
-        #suggestionsDropdown {
-            position: absolute;
-            top: 100%; /* Position right below the input wrapper */
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #ccc;
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            z-index: 10;
-            padding: 10px;
-            display: none; /* Start hidden */
-            text-align: left;
-        }
-        #suggestionsDropdown.visible {
-            display: block;
-        }
+        #nameSuggestionsContainer { margin: 15px 0 10px; text-align: left; }
+        .validation-feedback { margin-top: 5px; text-align: left; font-size: 14px; font-weight: bold; }
+        .feedback-available { color: #28a745; }
+        .feedback-taken { color: #dc3545; }
+        .input-available { border-color: #28a745 !important; }
+        .input-taken { border-color: #dc3545 !important; }
+        .name-input-wrapper { position: relative; }
     </style>
 </head>
 <body>
@@ -209,32 +183,41 @@
         <div id="mainSetup">
             <form id="profileForm">
                 <label for="businessNameInput">Business Name*</label>
-                
                 <div id="businessNameGroup">
                     <input type="text" id="businessNameInput" placeholder="e.g., Jane's Trinkets" required />
                     <div id="nameValidationFeedback" class="hint">Name should be at least 3 characters.</div>
-                    
                     <div id="nameSuggestionsContainer"></div>
                 </div>
                 
                 <label for="businessDescriptionInput">Business Description*</label>
                 <textarea id="businessDescriptionInput" placeholder="A brief description of your business." rows="3" required></textarea>
 
-                <label for="videoLinkInput">Promotional Video (Google Drive link) <small style="font-weight:normal;color:#666;">– optional</small></label>
-                <input type="url" 
-                       id="videoLinkInput" 
-                       placeholder="https://drive.google.com/file/d/.../view?usp=sharing" 
-                       style="margin-bottom:5px;" />
-                <div class="hint">
-                    Make sure the video is set to “Anyone with the link can view”.<br>
-                    A nice preview will appear below once pasted.
-                </div>
+                <label>Promotional Video <small style="font-weight:normal;color:#666;">– optional</small></label>
+                <div class="hint" style="margin-bottom: 10px;">Choose one of the options below:</div>
+                
+                <input type="url" id="videoLinkInput" placeholder="Paste Google Drive link here..." style="margin-bottom:5px;" />
+                <div class="hint">Make sure Drive video is set to “Anyone with the link can view”.</div>
 
                 <div id="videoPreview" class="video-preview-container hidden">
                     <img id="videoThumbnail" src="" alt="Video preview">
                     <div class="play-button-overlay"></div>
                 </div>
 
+                <div style="margin: 15px 0; font-weight: bold; font-size: 12px; color: #999;">OR upload a video directly</div>
+                
+                <input type="file" id="videoUploadInput" accept="video/*" class="hidden" />
+                <button type="button" id="triggerUploadBtn" class="upload-btn-dashed">Click to Select Video File</button>
+                <div class="hint">Max size: 50MB. High-quality MP4 recommended.</div>
+
+                <div id="directVideoPreviewContainer" class="hidden">
+                    <div class="video-preview-container">
+                        <video id="directVideoPreview" controls></video>
+                    </div>
+                    <div class="file-info">
+                        <span id="fileNameDisplay">video.mp4</span>
+                        <button type="button" id="removeVideoBtn" class="danger" style="width: auto; padding: 5px 10px; font-size: 12px; margin-top: 0;">Remove</button>
+                    </div>
+                </div>
                 <div id="countContainer">
                     <label for="subscribersCount">Initial Subscribers Count</label>
                     <input type="number" id="subscribersCount" placeholder="0" value="0" min="0"/>
@@ -270,28 +253,21 @@
 
         <button type="button" id="goBackBtn" style="display:none; background:#6c757d; margin-top:20px;">Go Back to Home</button>
     </div>
-    <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(registration => {
-          console.log('✅ Kona Mart SW Registered: ', registration.scope);
-        })
-        .catch(error => {
-          console.error('❌ Kona Mart SW Registration failed: ', error);
-        });
-    });
-  }
-</script>
+
 <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwjCb8LCPPNif21SUT63g3f2hppLRohBghMiajdxvp1RMjyy852lQqpm7dfVGtqTt2c/exec";
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(console.error);
+        });
+    }
+
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw-xU7NWShIF92NTVfSG_ff3nXTVJn6iDablTZHplFgZH2EJ9RS9maTNqbmK7UEjWit/exec";
     const DEVICE_ID_KEY = 'uniqueDeviceId';
     const OWNER_BUSINESS_KEY = 'ownerBusinessName';
     
-    // Global state variable for real-time validation
-    let nameValidationState = null; // 'available', 'taken', 'checking', 'error', null 
-    // New global variable to store the original name in edit mode
+    let nameValidationState = null; 
     let originalBusinessName = ''; 
+    let selectedVideoFile = null; // Global tracker for uploaded file
 
     const mainSetup = document.getElementById('mainSetup');
     const ownerKeySection = document.getElementById('ownerKeySection');
@@ -305,22 +281,24 @@
     const businessNameInput = document.getElementById('businessNameInput');
     const nameSuggestionsContainer = document.getElementById('nameSuggestionsContainer');
     const nameValidationFeedback = document.getElementById('nameValidationFeedback');
-    // New Element to reference for click-outside logic
     const businessNameGroup = document.getElementById('businessNameGroup');
 
-    // Video preview elements
+    // Video Elements
     const videoLinkInput = document.getElementById('videoLinkInput');
     const videoPreview = document.getElementById('videoPreview');
     const videoThumbnail = document.getElementById('videoThumbnail');
+    const videoUploadInput = document.getElementById('videoUploadInput');
+    const triggerUploadBtn = document.getElementById('triggerUploadBtn');
+    const directVideoPreviewContainer = document.getElementById('directVideoPreviewContainer');
+    const directVideoPreview = document.getElementById('directVideoPreview');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const removeVideoBtn = document.getElementById('removeVideoBtn');
 
-    // Helper function for debouncing input events
     const debounce = (func, delay) => {
         let timeoutId;
         return (...args) => {
             clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(null, args);
-            }, delay);
+            timeoutId = setTimeout(() => func.apply(null, args), delay);
         };
     };
 
@@ -346,31 +324,58 @@
             const res = await fetch(`${WEB_APP_URL}?action=getBusinessProfile&deviceId=${deviceId}`);
             const json = await res.json();
             return json.result === 'success' && json.data ? json.data : null;
-        } catch (e) {
-            console.error(e);
-            return null;
-        }
+        } catch (e) { return null; }
     }
     
     async function checkBusinessNameAvailability(businessName, deviceId) {
-        const url = `${WEB_APP_URL}?action=checkName&name=${encodeURIComponent(businessName)}&deviceId=${deviceId}`;
         try {
-            const res = await fetch(url);
-            const json = await res.json();
-            return json;
-        } catch (e) {
-            console.error("Error checking name availability:", e);
-            return { result: "error", message: "Failed to connect to validation service." };
-        }
+            const res = await fetch(`${WEB_APP_URL}?action=checkName&name=${encodeURIComponent(businessName)}&deviceId=${deviceId}`);
+            return await res.json();
+        } catch (e) { return { result: "error" }; }
     }
 
-    // Extract Google Drive file ID and show thumbnail
+    // Direct Upload Handlers
+    triggerUploadBtn.onclick = () => videoUploadInput.click();
+
+    videoUploadInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 50 * 1024 * 1024) {
+            alert("File is too large. Maximum size is 50MB.");
+            videoUploadInput.value = "";
+            return;
+        }
+
+        // Clear Drive Link option
+        videoLinkInput.value = "";
+        videoPreview.classList.add('hidden');
+
+        selectedVideoFile = file;
+        fileNameDisplay.textContent = file.name;
+        directVideoPreview.src = URL.createObjectURL(file);
+        directVideoPreviewContainer.classList.remove('hidden');
+    };
+
+    removeVideoBtn.onclick = () => {
+        selectedVideoFile = null;
+        videoUploadInput.value = "";
+        directVideoPreview.src = "";
+        directVideoPreviewContainer.classList.add('hidden');
+    };
+
     function updateVideoPreview() {
         const url = videoLinkInput.value.trim();
+        if (url) {
+            // Clear direct upload if link is used
+            selectedVideoFile = null;
+            videoUploadInput.value = "";
+            directVideoPreviewContainer.classList.add('hidden');
+        }
+
         const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
         if (match && match[1]) {
-            const fileId = match[1];
-            videoThumbnail.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+            videoThumbnail.src = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
             videoPreview.classList.remove('hidden');
         } else {
             videoPreview.classList.add('hidden');
@@ -378,21 +383,12 @@
     }
 
     videoLinkInput.addEventListener('input', updateVideoPreview);
-    videoLinkInput.addEventListener('paste', () => setTimeout(updateVideoPreview, 100));
     
-    // Function to hide suggestions
-    function hideSuggestions() {
-        nameSuggestionsContainer.innerHTML = '';
-        // Note: We do NOT modify input, validation status, or submit button state here.
-    }
-
-    // --- REFACTORED FUNCTION: Real-time Name Validation ---
     async function validateBusinessName() {
         const businessName = businessNameInput.value.trim();
         const params = new URLSearchParams(location.search);
         const isEditMode = params.get('mode') === 'edit';
 
-        // Reset state for short names or empty fields
         if (businessName.length < 3) {
             nameValidationState = null;
             businessNameInput.classList.remove('input-available', 'input-taken');
@@ -402,130 +398,60 @@
             return;
         }
         
-        // If in edit mode AND the name hasn't changed, assume availability.
         if (isEditMode && businessName === originalBusinessName) {
             nameValidationState = 'available';
             nameValidationFeedback.textContent = 'Current name confirmed.';
             nameValidationFeedback.className = 'validation-feedback feedback-available';
             businessNameInput.classList.add('input-available');
-            businessNameInput.classList.remove('input-taken');
-            setupButton.disabled = false; // Enable submit
-            nameSuggestionsContainer.innerHTML = ''; // Clear suggestions if they were showing
+            setupButton.disabled = false;
             return;
         }
 
-        // Set checking state
         nameValidationState = 'checking';
         setupButton.disabled = true;
         nameValidationFeedback.textContent = 'Checking availability...';
-        nameValidationFeedback.className = 'validation-feedback'; // Clear all feedback styles
-        businessNameInput.classList.remove('input-available', 'input-taken');
-        nameSuggestionsContainer.innerHTML = '';
         
-        try {
-            const deviceId = getOrCreateDeviceId();
-            const nameCheck = await checkBusinessNameAvailability(businessName, deviceId);
+        const deviceId = getOrCreateDeviceId();
+        const nameCheck = await checkBusinessNameAvailability(businessName, deviceId);
 
-            if (nameCheck.result === "available") {
-                nameValidationState = 'available';
-                nameValidationFeedback.textContent = '✅ Name is available!';
-                nameValidationFeedback.className = 'validation-feedback feedback-available';
-                businessNameInput.classList.add('input-available');
-                businessNameInput.classList.remove('input-taken');
-                setupButton.disabled = false; // Enable submit
-                hideSuggestions(); // Ensure suggestions are hidden if they were showing from a prior failed attempt
-            } else if (nameCheck.result === "taken") {
-                nameValidationState = 'taken';
-                // REFACTOR: Do NOT clear the input field (Requirement 2)
-                
-                nameValidationFeedback.innerHTML = `⚠️ Name **${businessName}** is taken. Please select a suggestion or try again:`;
-                nameValidationFeedback.className = 'validation-feedback feedback-taken';
-                businessNameInput.classList.add('input-taken');
-                businessNameInput.classList.remove('input-available');
-                setupButton.disabled = true; // Disable submit
-
-                // Display and handle suggestions
-                handleNameSuggestions(nameCheck.suggestions);
-
-            } else {
-                throw new Error(nameCheck.message || "Failed to validate name.");
-            }
-        } catch (e) {
-            nameValidationState = 'error';
-            nameValidationFeedback.textContent = 'Error: Could not check name availability.';
+        if (nameCheck.result === "available") {
+            nameValidationState = 'available';
+            nameValidationFeedback.textContent = '✅ Name is available!';
+            nameValidationFeedback.className = 'validation-feedback feedback-available';
+            businessNameInput.classList.add('input-available');
+            businessNameInput.classList.remove('input-taken');
+            setupButton.disabled = false;
+        } else if (nameCheck.result === "taken") {
+            nameValidationState = 'taken';
+            nameValidationFeedback.innerHTML = `⚠️ Name **${businessName}** is taken.`;
             nameValidationFeedback.className = 'validation-feedback feedback-taken';
-            setupButton.disabled = !(isEditMode && businessName === originalBusinessName); 
-            console.error("Validation error:", e);
+            businessNameInput.classList.add('input-taken');
+            handleNameSuggestions(nameCheck.suggestions);
         }
     }
-    // --- END REFACTORED FUNCTION ---
 
-    // Attach debounced validation to the input event
     businessNameInput.addEventListener('input', debounce(validateBusinessName, 500));
-    // REFACTOR: Remove validation on blur (Requirement 3)
-    // businessNameInput.addEventListener('blur', validateBusinessName);
 
-    // --- REFACTORED FUNCTION: Handle and Display Suggestions ---
     function handleNameSuggestions(suggestions) {
-        nameSuggestionsContainer.innerHTML = ''; // Clear existing suggestions
-        
-        if (suggestions && suggestions.length > 0) {
+        nameSuggestionsContainer.innerHTML = '';
+        if (suggestions) {
             suggestions.forEach(name => {
-                const optionSpan = document.createElement('span');
-                optionSpan.textContent = name;
-                optionSpan.className = 'name-option';
-                
-                // REFACTOR: Use mousedown.preventDefault() to prevent blur/loss of focus (Requirement 4)
-                optionSpan.addEventListener('mousedown', (e) => {
-                    e.preventDefault(); // Prevents input field from blurring
-                });
-
-                // Click handler: applies to suggestion selection (Requirement 6)
-                optionSpan.addEventListener('click', () => {
-                    businessNameInput.value = name; // Fill the input
-                    nameSuggestionsContainer.innerHTML = ''; // Clear suggestions (Requirement 6)
-                    
-                    // Mark name as available (Requirement 6)
-                    nameValidationState = 'available';
-                    nameValidationFeedback.textContent = `✅ Name ${name} selected!`;
-                    nameValidationFeedback.className = 'validation-feedback feedback-available'; // Remove error state instantly
-                    
-                    // Enable submit and remove error state (Requirement 6)
-                    businessNameInput.classList.remove('input-taken');
-                    businessNameInput.classList.add('input-available');
-                    setupButton.disabled = false;
-                });
-
-                nameSuggestionsContainer.appendChild(optionSpan);
+                const span = document.createElement('span');
+                span.textContent = name;
+                span.className = 'name-option';
+                span.onclick = () => {
+                    businessNameInput.value = name;
+                    validateBusinessName();
+                };
+                nameSuggestionsContainer.appendChild(span);
             });
         }
     }
-    // --- END REFACTORED FUNCTION ---
-
-    // --- NEW LOGIC: Handle click outside input/suggestions to hide suggestions (Requirement 1 & 6) ---
-    document.addEventListener('click', (e) => {
-        // Check if the click occurred outside the entire business name group
-        // If the clicked element is NOT the input OR the container, AND is NOT a descendant of the container
-        const isClickInsideGroup = businessNameGroup.contains(e.target);
-
-        if (!isClickInsideGroup) {
-            // Clicking outside: Clear suggestions only, NOT modify input value, NOT re-trigger validation (Requirement 6)
-            hideSuggestions();
-        }
-    });
-    // --- END NEW LOGIC ---
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // ... (Existing DOMContentLoaded logic remains largely the same) ...
         const params = new URLSearchParams(location.search);
         const isEditMode = params.get('mode') === 'edit';
-        const localBusinessName = localStorage.getItem(OWNER_BUSINESS_KEY);
         const deviceId = getOrCreateDeviceId();
-
-        if (localBusinessName && !isEditMode) {
-            window.location.href = 'index.html';
-            return;
-        }
 
         if (isEditMode) {
             document.getElementById('formTitle').textContent = "Edit Your Business Profile";
@@ -533,32 +459,48 @@
             goBackBtn.style.display = 'block';
             document.getElementById('countContainer').style.display = 'none';
             recoverLink.style.display = 'none';
-            nameValidationFeedback.style.display = 'block'; 
             
             const profile = await fetchProfileData(deviceId);
-            if (profile) {
-                businessNameInput.value = profile.businessName || '';
-                originalBusinessName = profile.businessName || ''; 
-                nameValidationFeedback.textContent = 'You may change your business name.';
-                document.getElementById('businessDescriptionInput').value = profile.businessDescription || '';
-                if (profile.videoLink) {
-                    videoLinkInput.value = profile.videoLink;
-                    updateVideoPreview();
-                }
-                nameValidationState = 'available'; 
-                businessNameInput.classList.add('input-available');
-                setupButton.disabled = false;
-            } else {
-                errorMsg.textContent = "Could not load profile.";
-                errorMsg.style.display = 'block';
-                setupButton.disabled = true;
-            }
-        } else if (!localBusinessName) {
-            recoverLink.style.display = 'block';
-            setupButton.disabled = true;
-        }
+          if (profile) {
+    businessNameInput.value = profile.businessName || '';
+    originalBusinessName = profile.businessName || '';
+    document.getElementById('businessDescriptionInput').value = profile.businessDescription || '';
 
-        // ... (Recover mode handlers and other DOMContentLoaded handlers unchanged) ...
+    // Handle Google Drive link
+    if (profile.videoLink) {
+        videoLinkInput.value = profile.videoLink;
+        updateVideoPreview(); // This shows thumbnail from Drive
+        selectedVideoFile = null; // Ensure no conflict
+    }
+    // Handle directly uploaded video (NEW)
+    else if (profile.directVideoUrl) { // ← Change this field name if different!
+        // Clear any Drive link
+        videoLinkInput.value = '';
+        videoPreview.classList.add('hidden');
+
+        // Show direct video preview
+        directVideoPreview.src = profile.directVideoUrl;
+        fileNameDisplay.textContent = profile.videoFilename || 'video.mp4'; // optional: store filename too
+        directVideoPreviewContainer.classList.remove('hidden');
+
+        selectedVideoFile = null; // Important: no new file selected, just previewing existing
+    }
+    // No video at all
+    else {
+        videoLinkInput.value = '';
+        videoPreview.classList.add('hidden');
+        directVideoPreviewContainer.classList.add('hidden');
+    }
+
+    // Allow saving even if name unchanged
+    nameValidationState = 'available';
+    businessNameInput.classList.add('input-available');
+    nameValidationFeedback.textContent = 'Current name confirmed.';
+    nameValidationFeedback.className = 'validation-feedback feedback-available';
+    setupButton.disabled = false;
+}
+        }
+        
         recoverLink.onclick = () => {
             mainSetup.classList.add('hidden');
             recoverMode.classList.remove('hidden');
@@ -567,95 +509,75 @@
             recoverMode.classList.add('hidden');
             mainSetup.classList.remove('hidden');
         };
+        
         document.getElementById('linkDeviceBtn').onclick = async () => {
             const key = document.getElementById('recoverKeyInput').value.trim();
-            if (key.length !== 32) {
-                errorMsg.textContent = "Owner Key must be exactly 32 characters.";
-                errorMsg.style.display = 'block';
-                return;
-            }
-            errorMsg.style.display = 'none';
+            if (key.length !== 32) return alert("Owner Key must be 32 characters.");
             const payload = { action: "recoverWithOwnerKey", ownerKey: key, deviceId };
-            try {
-                const res = await fetch(WEB_APP_URL, { method: "POST", mode: "cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
-                const json = await res.json();
-                if (json.result === "success") {
-                    localStorage.setItem(OWNER_BUSINESS_KEY, json.businessName);
-                    alert("Ownership recovered successfully!");
-                    window.location.href = 'index.html';
-                } else {
-                    errorMsg.textContent = json.message || "Invalid Owner Key.";
-                    errorMsg.style.display = 'block';
-                }
-            } catch (e) {
-                errorMsg.textContent = "Network error.";
-                errorMsg.style.display = 'block';
-            }
+            const res = await fetch(WEB_APP_URL, { method: "POST", body: JSON.stringify(payload) });
+            const json = await res.json();
+            if (json.result === "success") {
+                localStorage.setItem(OWNER_BUSINESS_KEY, json.businessName);
+                window.location.href = 'index.html';
+            } else alert(json.message);
         };
-
         goBackBtn.onclick = () => window.location.href = 'index.html';
     });
 
-    // Copy Owner Key
-    document.getElementById('copyKeyBtn').onclick = () => {
-        navigator.clipboard.writeText(ownerKeyDisplay.textContent);
-        alert("Owner Key copied to clipboard!");
-    };
-
-    document.getElementById('continueBtn').onclick = () => {
-        window.location.href = 'index.html';
-    };
-    
-
-    // 🚀 UNCHANGED FORM SUBMIT HANDLER (Logic is sound if validation state is correct) 🚀
     profileForm.onsubmit = async (e) => {
         e.preventDefault();
         const params = new URLSearchParams(location.search);
         const isEditMode = params.get('mode') === 'edit';
         const businessName = businessNameInput.value.trim();
         const businessDescription = document.getElementById('businessDescriptionInput').value.trim();
-        const videoLink = videoLinkInput.value.trim() || null;
         const deviceId = getOrCreateDeviceId();
 
-        if (!businessName || !businessDescription) {
-            errorMsg.textContent = "Business Name and Description are required.";
-            errorMsg.style.display = 'block';
-            return;
-        }
+        if (nameValidationState !== 'available') return;
 
-        // Check the real-time validation state before submitting
-        if (nameValidationState !== 'available') {
-            // Re-run validation if the state is not 'available' to catch last-second changes
-            await validateBusinessName(); 
-            
-            if (nameValidationState !== 'available') {
-                errorMsg.textContent = "Please fix the Business Name errors before continuing.";
-                errorMsg.style.display = 'block';
-                return; // Stop submission
+        setupButton.disabled = true;
+        setupButton.textContent = "Processing...";
+
+        let videoData = null;
+        let finalVideoLink = videoLinkInput.value.trim() || null;
+
+        // If file is selected, read as base64
+        if (selectedVideoFile) {
+            try {
+                const base64String = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(selectedVideoFile);
+                });
+                videoData = {
+                    filename: selectedVideoFile.name,
+                    mimeType: selectedVideoFile.type,
+                    data: base64String.split(',')[1]
+                };
+                finalVideoLink = null;
+            } catch (err) {
+                alert("Error processing video file.");
+                setupButton.disabled = false;
+                return;
             }
         }
-        
-        setupButton.disabled = true;
-        setupButton.textContent = isEditMode ? "Saving..." : "Creating...";
-        errorMsg.style.display = 'none'; 
+
+        const payload = {
+            action: isEditMode ? "updateBusinessProfile" : "setupBusinessProfile",
+            deviceId,
+            businessName,
+            businessDescription,
+            videoLink: finalVideoLink,
+            videoData: videoData,
+            timestamp: new Date().toISOString()
+        };
+
+        if (!isEditMode) {
+            payload.subscribersCount = parseInt(document.getElementById('subscribersCount').value) || 0;
+            payload.ownerKey = generateOwnerKey();
+        }
 
         try {
-            
-            // 2. Proceed with API call (Setup or Update)
-            const payload = {
-                action: isEditMode ? "updateBusinessProfile" : "setupBusinessProfile",
-                deviceId,
-                businessName,
-                businessDescription,
-                videoLink, 
-                timestamp: new Date().toISOString()
-            };
-
-            if (!isEditMode) {
-                payload.subscribersCount = parseInt(document.getElementById('subscribersCount').value) || 0;
-                payload.ownerKey = generateOwnerKey();
-            }
-
             const res = await fetch(WEB_APP_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" },
@@ -665,29 +587,29 @@
 
             if (json.result === "success") {
                 localStorage.setItem(OWNER_BUSINESS_KEY, businessName);
-
                 if (!isEditMode && json.ownerKey) {
                     mainSetup.classList.add('hidden');
                     ownerKeyDisplay.textContent = json.ownerKey;
                     ownerKeySection.classList.remove('hidden');
                 } else {
-                    alert(`Profile ${isEditMode ? 'updated' : 'created'} successfully!`);
                     window.location.href = 'index.html';
                 }
             } else {
-                // Handle server errors that might include non-name related issues
-                errorMsg.textContent = json.message || "Operation failed.";
-                errorMsg.style.display = 'block';
+                alert(json.message || "Submission failed.");
             }
         } catch (err) {
-            console.error(err);
-            errorMsg.textContent = err.message || "Network or server error.";
-            errorMsg.style.display = 'block';
+            alert("Connection error.");
         } finally {
             setupButton.disabled = false;
             setupButton.textContent = isEditMode ? "Save Changes" : "Set Up Profile";
         }
     };
+
+    document.getElementById('copyKeyBtn').onclick = () => {
+        navigator.clipboard.writeText(ownerKeyDisplay.textContent);
+        alert("Key copied!");
+    };
+    document.getElementById('continueBtn').onclick = () => window.location.href = 'index.html';
 </script>
 </body>
 </html>

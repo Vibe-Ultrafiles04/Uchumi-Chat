@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwjCb8LCPPNif21SUT63g3f2hppLRohBghMiajdxvp1RMjyy852lQqpm7dfVGtqTt2c/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw-xU7NWShIF92NTVfSG_ff3nXTVJn6iDablTZHplFgZH2EJ9RS9maTNqbmK7UEjWit/exec"; 
 
 /// DOM References
 const CURRENCY_SYMBOL = "KES";
@@ -159,15 +159,15 @@ async function fetchAndRenderProducts() {
                 </div>
             `;
 
-            // Attach Stock Update Trigger
-            card.querySelector(".update-stock-btn").onclick = () => {
-                currentUpdateProductId = r.id;
-                updateProductName.textContent = r.name;
-                sellQuantityInput.value = "0";
-                restockQuantityInput.value = "0";
-                updateDialog.showModal();
-            };
-
+           // Attach Stock Update Trigger
+card.querySelector(".update-stock-btn").onclick = () => {
+    currentUpdateProductId = r.id;
+    currentProductData = r;  // ← This line is critical! Store the full product object
+    updateProductName.textContent = r.name || "Product";
+    sellQuantityInput.value = "0";
+    restockQuantityInput.value = "0";
+    updateDialog.showModal();
+};
             // Attach Delete Trigger
             card.querySelector(".delete-prod-btn").onclick = async () => {
                 if(!confirm("Delete this product?")) return;
@@ -198,7 +198,23 @@ executeUpdateButton.onclick = async () => {
     const restock = parseInt(restockQuantityInput.value) || 0;
     const adjustment = restock - sold;
 
-    if (adjustment === 0) return alert("Enter units sold or restocked.");
+    if (adjustment === 0) {
+        alert("Enter units sold or restocked.");
+        return;
+    }
+
+    if (!currentUpdateProductId) {
+        alert("Error: No product selected.");
+        return;
+    }
+
+    const currentQty = parseInt(currentProductData?.quantity || 0);
+    const newQty = currentQty + adjustment;
+
+    if (newQty < 0) {
+        alert(`Not enough stock. Current: ${currentQty}`);
+        return;
+    }
 
     executeUpdateButton.disabled = true;
     executeUpdateButton.textContent = "Updating...";
@@ -206,29 +222,30 @@ executeUpdateButton.onclick = async () => {
     try {
         const res = await fetch(WEB_APP_URL, {
             method: "POST",
-            mode: "cors",
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({
-                action: "updateStock",
-                id: currentUpdateProductId,
-                adjustment: adjustment,
+                action: "updateQuantity",
+                productId: currentUpdateProductId,
+                newQuantity: newQty,
                 deviceId: DEVICE_ID
             })
         });
+
         const json = await res.json();
+
         if (json.result === "success") {
             updateDialog.close();
             fetchAndRenderProducts();
         } else {
-            alert("Error: " + json.message);
+            alert("Error: " + (json.message || "Update failed"));
         }
-    } catch (e) { alert("Update failed."); }
-    finally {
+    } catch (e) {
+        alert("Network error");
+    } finally {
         executeUpdateButton.disabled = false;
         executeUpdateButton.textContent = "Execute Stock Update";
     }
 };
-
 /**
  * ADD PRODUCT
  */
@@ -396,49 +413,7 @@ async function deleteProduct(productId, productName, cardElement) {
     }
 }
 
-/**
- * UPDATE STOCK & CATEGORY
- */
-if (executeUpdateButton) {
-    executeUpdateButton.onclick = async () => {
-        const sold = parseInt(unformatNumber(sellQuantityInput.value)) || 0;
-        const add = parseInt(unformatNumber(restockQuantityInput.value)) || 0;
-        const newCategory = updateCategoryInput ? updateCategoryInput.value.trim() : currentProductData.category;
-        
-        // Calculate the net change in quantity
-        const change = add - sold;
 
-        executeUpdateButton.disabled = true;
-        executeUpdateButton.textContent = "Updating DB...";
-
-        try {
-            const res = await fetch(WEB_APP_URL, {
-                method: "POST",
-                mode: "cors",
-                headers: {"Content-Type":"text/plain"},
-                body: JSON.stringify({ 
-                    action: "updateStock", 
-                    productId: currentProductData.id, 
-                    quantityChange: change,
-                    category: newCategory // This updates the sheet column for Category
-                })
-            });
-            const json = await res.json();
-            if (json.result === "success") {
-                updateDialog.close();
-                fetchAndRenderProducts(); // Refresh UI
-                alert("Updated successfully!");
-            } else {
-                alert("Error: " + json.message);
-            }
-        } catch (e) {
-            alert("Update failed. Check Apps Script permissions.");
-        } finally {
-            executeUpdateButton.disabled = false;
-            executeUpdateButton.textContent = "Execute Update";
-        }
-    };
-}
 
 // --- GALLERY HELPERS ---
 function loadSavedLinks() {
@@ -729,23 +704,70 @@ function createProductCard(r) {
         menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
     });
     
-    // Handle menu item clicks (only necessary if editable)
-    if (canEdit) {
-        menu.addEventListener('click', (e) => {
-            const action = e.target.dataset.action;
-            if (action) {
-                menu.style.display = 'none'; // Hide menu after selection
-                if (action === "delete-product") {
-                    deleteProduct(productId, name, card); 
-                } else if (action === "edit-category") {
-                    openEditCategoryDialog(businessName, categoryName, r);
-                } else if (action === "delete-business") {
-                    deleteBusiness(businessName, categoryName);
-                }
-            }
-        });
-    }
+   // Handle menu item clicks (only necessary if editable)
+if (canEdit) {
+    menu.addEventListener('click', async (e) => {
+        const button = e.target.closest('button[data-action]');
+        if (!button) return;
 
+        const action = button.dataset.action;
+        menu.style.display = 'none'; // Hide menu after selection
+
+        if (action === "delete-product") {
+            if (!confirm(`Permanently delete "${name}"?`)) return;
+
+            try {
+                const res = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain" },
+                    body: JSON.stringify({
+                        action: "deleteProduct",
+                        productId: productId,
+                        deviceId: DEVICE_ID
+                    })
+                });
+                const json = await res.json();
+                if (json.result === "success") {
+                    card.remove();
+                } else {
+                    alert("Delete failed: " + (json.message || "Unknown error"));
+                }
+            } catch (err) {
+                alert("Network error during deletion.");
+            }
+
+        } else if (action === "edit-category") {
+            const newCat = prompt(`Enter new category name (current: ${categoryName}):`, categoryName);
+            if (!newCat || newCat.trim() === categoryName) return;
+
+            try {
+                const res = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain" },
+                    body: JSON.stringify({
+                        action: "editCategoryName",
+                        businessName: businessName,
+                        oldCategoryName: categoryName,
+                        newCategoryName: newCat.trim(),
+                        deviceId: DEVICE_ID
+                    })
+                });
+                const json = await res.json();
+                if (json.result === "success") {
+                    fetchAndRenderProducts(); // Refresh the list
+                } else {
+                    alert("Failed to update category: " + (json.message || "Error"));
+                }
+            } catch (err) {
+                alert("Network error while updating category.");
+            }
+
+        } else if (action === "delete-business") {
+            // Keep your existing deleteBusiness function call (assuming it already handles confirmation and deviceId)
+            deleteBusiness(businessName, categoryName);
+        }
+    });
+}
     // Append menu elements
     actionMenuWrapper.appendChild(menuBtn);
     actionMenuWrapper.appendChild(menu);
@@ -791,6 +813,7 @@ function formatNumberWithCommas(number) {
 function openUpdateDialog(product) {
     // Store the product data globally
     currentProductData = product;
+    currentUpdateProductId = product.id;  // ← Add this line!
     
     // Populate the dialog fields
     updateProductName.textContent = product.name;
@@ -804,88 +827,6 @@ function openUpdateDialog(product) {
 if (closeUpdateDialogBtn) {
     closeUpdateDialogBtn.addEventListener("click", () => {
         updateDialog.close();
-    });
-}
-
-// Handler to execute the stock update (MODIFIED to use 'id' consistently)
-if (executeUpdateButton) {
-    executeUpdateButton.addEventListener("click", async () => {
-        const sellAmount = parseInt(unformatNumber(sellQuantityInput.value) || "0", 10);
-        const restockAmount = parseInt(unformatNumber(restockQuantityInput.value) || "0", 10);
-        
-        if (sellAmount === 0 && restockAmount === 0) {
-            alert("Enter a quantity to sell or restock.");
-            return;
-        }
-
-        const product = currentProductData;
-        
-        // Use 'id' (the unique ID) as the primary key
-        const productId = product.id; 
-        const rowId = product.rowId; // Keep rowId for DOM lookup convenience
-
-        if (!productId) {
-            alert("Error: Product ID not found for update.");
-            return;
-        }
-
-        const currentQuantity = parseInt(product.quantity, 10);
-        const newQuantity = currentQuantity - sellAmount + restockAmount;
-        
-        if (newQuantity < 0) {
-            alert(`Cannot sell ${sellAmount} units. Current stock is ${currentQuantity}. New quantity would be negative.`);
-            return;
-        }
-
-        // 1. Prepare Payload for API (POST with specific action)
-        const payload = {
-            action: "updateQuantity",
-            // Send the unique ID for the backend to find the row
-            productId: productId, 
-            newQuantity: newQuantity
-        };
-
-        try {
-            // 2. Send Update to Web App
-            const res = await fetch(WEB_APP_URL, {
-                method: "POST",
-                mode: "cors",
-                headers: {"Content-Type":"text/plain"}, 
-                body: JSON.stringify(payload)
-            });
-            const json = await res.json();
-            
-            if (json && json.result === "success") {
-                // 3. Update Front-End UI
-                // Look up by data-product-id
-                const card = productsContainer.querySelector(`[data-product-id="${productId}"]`); 
-                if (card) {
-                    // Update dataset attribute
-                    card.dataset.quantity = newQuantity;
-                    
-                    // Update the visual badge
-                    const badge = card.querySelector('[data-quantity-display="true"]');
-                    if (badge) {
-                        const lowStockClass = newQuantity < 5 ? 'low-stock' : '';
-                        badge.className = `quantity-badge ${lowStockClass}`;
-                        badge.innerHTML = `<span class="icon">📦</span> ${newQuantity} in Stock`;
-                    }
-                }
-                
-                // 4. Update the currentProductData object for immediate re-updates
-                currentProductData.quantity = newQuantity; 
-                
-                // The success alert is REMOVED here to provide an instant, silent update.
-                
-                updateDialog.close();
-            } else {
-                alert("Failed to update product: " + (json && json.message ? json.message : res.status));
-            }
-
-        } catch (err) {
-            console.error(err);
-            alert("Error sending update to server: " + err.message);
-        }
     });
 }
 
