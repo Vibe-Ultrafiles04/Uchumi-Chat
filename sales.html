@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales POS - Studio</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* POS Layout Enhancements */
+        .pos-container { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 15px; max-width: 1200px; margin: auto; }
+        @media (min-width: 992px) { .pos-container { grid-template-columns: 400px 1fr; } }
+
+        .panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        
+        /* Search & Dropdown */
+        .search-box { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        #productDropdown { width: 100%; height: 300px; border: 1px solid #eee; border-radius: 8px; overflow-y: auto; }
+        .product-option { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #f9f9f9; cursor: pointer; transition: background 0.2s; }
+        .product-option:hover { background: #f0f7ff; }
+        .product-option.selected { background: #e3f2fd; border-left: 4px solid #007bff; }
+
+        /* Cart Styles */
+        .cart-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .cart-table th { background: #f8f9fa; padding: 12px; text-align: left; font-size: 0.9em; }
+        .cart-table td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .qty-input { width: 60px; padding: 8px; border-radius: 5px; border: 1px solid #ccc; text-align: center; }
+        
+        .image-preview-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid #eee; }
+        .grand-total-section { margin-top: 20px; padding-top: 15px; border-top: 2px solid #333; text-align: right; font-size: 1.4em; font-weight: bold; }
+
+        /* Status Badges */
+        .conn-status { padding: 5px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; float: right; }
+        .status-online { background: #d4edda; color: #155724; }
+        .status-offline { background: #f8d7da; color: #721c24; }
+        
+        /* History */
+        .history-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; }
+
+        /* Status Message Styling */
+        #statusMessage { margin: 10px 20px; border-radius: 8px; font-weight: bold; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    </style>
+</head>
+<body>
+
+<header style="padding: 15px 20px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <a href="studio.html" style="text-decoration: none; font-weight: bold; color: #007bff;">← Studio</a>
+        <span id="pageTitle" style="margin-left: 15px; font-weight: bold; font-size: 1.2em;">Real-Time Sales</span>
+    </div>
+    <div id="connectionStatus" class="conn-status status-online">Online</div>
+</header>
+
+<div id="statusMessage" style="display:none; padding:10px; text-align:center;"></div>
+
+<div class="pos-container">
+    <section class="panel selection-panel">
+        <h3>Product Selection</h3>
+        <input type="text" id="productSearch" class="search-box" placeholder="Search product or category..." oninput="filterProducts()">
+        <div id="productDropdown"></div>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <div style="flex-grow: 1;">
+                <label style="font-size: 0.8em; color: #666;">Quantity</label>
+                <input type="number" id="saleQty" value="1" min="1" class="search-box" style="margin-bottom:0">
+            </div>
+            <button onclick="addToCart()" class="btn-primary" style="height: 48px; margin-top: 18px; cursor: pointer;">Add to Cart</button>
+        </div>
+    </section>
+
+    <section class="panel cart-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Current Sale</h3>
+            <button onclick="clearCart()" class="btn-secondary" style="background:#eee; color:#333; border:none; padding:5px 10px; cursor: pointer;">Clear Cart</button>
+        </div>
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Stock</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="cartBody"></tbody>
+        </table>
+
+        <div class="grand-total-section">
+            Total: <span id="currencySym">KES</span> <span id="grandTotal">0</span>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button id="btnComplete" onclick="completeSale()" class="btn-success" style="width: 100%; padding: 15px; font-size: 1.1em; font-weight: bold; cursor: pointer;">
+                Complete Sale
+            </button>
+        </div>
+    </section>
+
+    <section class="panel history-panel" style="grid-column: 1 / -1;">
+        <h3>Session History</h3>
+        <div id="historyList">
+            <p style="color:#888;">No sales completed yet.</p>
+        </div>
+    </section>
+</div>
+
+<script>
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwbGNCI0wBlrLppXSkBVeTfpDPlJaQtT5yHMSu6YdP74YrQGQZQduozTVYXD94SZNXRLw/exec'; 
+    const CURRENCY_SYMBOL = "KES"; 
+    const businessName = new URLSearchParams(window.location.search).get('business') || localStorage.getItem('ownerBusinessName');
+
+    let allProducts = [];
+    let cart = [];
+    let selectedProductId = null;
+
+    // --- Utility Functions ---
+    function extractDriveId(url) {
+        if (!url) return null;
+        const matchId = url.match(/\/d\/(.*?)\/view/);
+        if (matchId && matchId[1]) return matchId[1];
+        const matchQuery = url.match(/[?&]id=([^&]+)/);
+        return (matchQuery && matchQuery[1]) ? matchQuery[1] : url;
+    }
+
+    function isDirectImageUrl(url) {
+        return /\.(jpe?g|png|gif|webp|svg)$/i.test((url || '').trim());
+    }
+
+    function getThumbnailUrl(link, size = 150) {
+        const driveId = extractDriveId(link);
+        if (driveId && !isDirectImageUrl(link)) return `https://drive.google.com/thumbnail?id=${driveId}&sz=w${size}-h${size}`;
+        return isDirectImageUrl(link) ? link : null;
+    }
+
+    function createPreviewElement(link, name) {
+        const thumb = getThumbnailUrl(link, 100);
+        const img = document.createElement('img');
+        img.className = 'image-preview-thumb';
+        img.src = thumb || 'https://via.placeholder.com/100?text=No+Image';
+        img.onclick = () => thumb && window.open(link, '_blank');
+        return img;
+    }
+
+    function formatNum(val) {
+        return new Intl.NumberFormat('en-US').format(val);
+    }
+
+    // --- Core Logic ---
+    async function loadProducts() {
+        showStatus("Updating stock data...", "loading");
+        try {
+            const res = await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "cors",
+                body: JSON.stringify({ action: "getProductsByBusiness", businessName: businessName })
+            });
+            const data = await res.json();
+            allProducts = data.rows || [];
+            renderDropdown(allProducts);
+            document.getElementById('statusMessage').style.display = 'none';
+        } catch (e) {
+            showStatus("Offline Mode: Using cached product data", "error");
+        }
+    }
+
+    function renderDropdown(products) {
+        const container = document.getElementById('productDropdown');
+        container.innerHTML = '';
+        products.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'product-option';
+            item.innerHTML = `
+                <div style="margin-right:10px" id="img-${p.id}"></div>
+                <div style="flex-grow:1">
+                    <div style="font-weight:bold">${p.name}</div>
+                    <div style="font-size:0.8em; color:#666">${p.category} • Stock: ${p.quantity}</div>
+                </div>
+                <div style="font-weight:bold">${CURRENCY_SYMBOL} ${formatNum(p.sell)}</div>
+            `;
+            item.onclick = () => selectProduct(p.id, item);
+            container.appendChild(item);
+            item.querySelector(`#img-${p.id}`).appendChild(createPreviewElement(p.driveLink, p.name));
+        });
+    }
+
+    function selectProduct(id, element) {
+        selectedProductId = id;
+        document.querySelectorAll('.product-option').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+    }
+
+    function filterProducts() {
+        const term = document.getElementById('productSearch').value.toLowerCase();
+        const filtered = allProducts.filter(p => 
+            p.name.toLowerCase().includes(term) || p.category.toLowerCase().includes(term)
+        );
+        renderDropdown(filtered);
+    }
+
+    function addToCart() {
+        if (!selectedProductId) return alert("Select a product first");
+        const product = allProducts.find(p => p.id === selectedProductId);
+        const qtyInput = document.getElementById('saleQty');
+        const qty = parseInt(qtyInput.value);
+
+        if (isNaN(qty) || qty <= 0) return alert("Enter a valid quantity");
+        if (qty > product.quantity) return alert(`Insufficient stock! Only ${product.quantity} available.`);
+
+        const existing = cart.find(c => c.id === product.id);
+        if (existing) {
+            if ((existing.qty + qty) > product.quantity) return alert("Total cart quantity exceeds stock!");
+            existing.qty += qty;
+        } else {
+            cart.push({ ...product, qty });
+        }
+        renderCart();
+        qtyInput.value = 1; // Reset input
+    }
+
+    function renderCart() {
+        const body = document.getElementById('cartBody');
+        body.innerHTML = '';
+        let total = 0;
+
+        cart.forEach((item, index) => {
+            const lineTotal = item.qty * item.sell;
+            total += lineTotal;
+            const row = body.insertRow();
+            row.innerHTML = `
+                <td><div id="cart-img-${index}" style="display:inline-block; margin-right:5px;"></div><strong>${item.name}</strong></td>
+                <td>${item.quantity}</td>
+                <td><input type="number" class="qty-input" value="${item.qty}" min="1" onchange="updateCartQty(${index}, this.value)"></td>
+                <td>${formatNum(item.sell)}</td>
+                <td>${formatNum(lineTotal)}</td>
+                <td><button onclick="removeFromCart(${index})" style="background:none; border:none; color:red; cursor:pointer; font-size:1.2em;">✕</button></td>
+            `;
+            row.querySelector(`#cart-img-${index}`).appendChild(createPreviewElement(item.driveLink, item.name));
+        });
+        document.getElementById('grandTotal').innerText = formatNum(total);
+    }
+
+    function updateCartQty(index, val) {
+        const qty = parseInt(val);
+        if (qty > cart[index].quantity) {
+            alert("Exceeds available stock!");
+            renderCart();
+            return;
+        }
+        if (qty <= 0) return removeFromCart(index);
+        cart[index].qty = qty;
+        renderCart();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    function clearCart() {
+        cart = [];
+        renderCart();
+    }
+
+    // --- Backend Sync Logic ---
+   async function completeSale() {
+    if (cart.length === 0) return alert("Cart is empty");
+
+    const updates = cart.map(item => ({
+        id: item.id,
+        quantity: item.quantity - item.qty,
+        businessName: businessName  // ← CRITICAL FIX
+    }));
+
+    const saleRecord = {
+        id: Date.now(),
+        time: new Date().toLocaleTimeString(),
+        items: cart.reduce((sum, i) => sum + i.qty, 0),
+        total: document.getElementById('grandTotal').innerText,
+        updates: updates
+    };
+
+    if (navigator.onLine) {
+        const success = await performSync(updates);
+        if (success) {
+            showStatus("Sale completed and stock updated!", "success");
+            updateHistoryUI(saleRecord);
+            clearCart();
+            loadProducts(); 
+        }
+    } else {
+        queueSale(saleRecord);
+        showStatus("Offline – Sale queued for sync", "error");
+        updateHistoryUI(saleRecord);
+        clearCart();
+    }
+}
+    async function performSync(updates) {
+        const btn = document.getElementById('btnComplete');
+        btn.disabled = true;
+        btn.innerText = "Syncing Stock...";
+        
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    action: "bulkUpdateProducts",
+                    updates: updates,
+                    adds: []
+                })
+            });
+            const result = await response.json();
+            if (result.result === "success") return true;
+            throw new Error(result.message || "Unknown Error");
+        } catch (e) {
+            console.error("Sync Error:", e);
+            showStatus("Sync failed. Sale moved to queue.", "error");
+            queueSale({ updates });
+            return false;
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Complete Sale";
+        }
+    }
+
+    function queueSale(record) {
+        let queue = JSON.parse(localStorage.getItem('pendingPOS') || '[]');
+        queue.push(record);
+        localStorage.setItem('pendingPOS', JSON.stringify(queue));
+    }
+
+    function updateHistoryUI(record) {
+        const list = document.getElementById('historyList');
+        if (list.querySelector('p')) list.innerHTML = '';
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+            <span>${record.time} (${record.items} items)</span>
+            <strong>${CURRENCY_SYMBOL} ${record.total}</strong>
+        `;
+        list.prepend(div);
+    }
+
+    // --- Network Management ---
+    window.addEventListener('online', async () => {
+        document.getElementById('connectionStatus').className = "conn-status status-online";
+        document.getElementById('connectionStatus').innerText = "Online";
+        
+        const queue = JSON.parse(localStorage.getItem('pendingPOS') || '[]');
+        if (queue.length > 0) {
+            showStatus("Syncing queued sales...", "loading");
+            let allSynced = true;
+            for (const sale of queue) {
+                const success = await performSync(sale.updates);
+                if (!success) allSynced = false;
+            }
+            if (allSynced) {
+                localStorage.removeItem('pendingPOS');
+                showStatus("All sales synced!", "success");
+                loadProducts();
+            }
+        }
+    });
+
+    window.addEventListener('offline', () => {
+        document.getElementById('connectionStatus').className = "conn-status status-offline";
+        document.getElementById('connectionStatus').innerText = "Offline Mode";
+    });
+
+    function showStatus(msg, type) {
+        const s = document.getElementById('statusMessage');
+        s.style.display = 'block';
+        s.className = type;
+        s.innerText = msg;
+        if (type === 'success') setTimeout(() => s.style.display = 'none', 3000);
+    }
+
+    // --- Init ---
+    if (!businessName) window.location.href = 'index.html';
+    loadProducts();
+</script>
+
+</body>
+</html>

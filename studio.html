@@ -37,6 +37,21 @@
             border-color: #3b6dc6;
             background: #f0f4ff;
         }
+        .btn-success {
+    background-color: #007bff;     /* Bootstrap primary blue */
+    color: white;
+    padding: 10px 20px;            /* Smaller padding = smaller button */
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;                /* Normal font size (smaller than 1.2em) */
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+.btn-success:hover {
+    background-color: #0056b3;     /* Darker blue on hover */
+}
     </style>
 </head>
 <body>
@@ -52,6 +67,12 @@
                     Pro Editor
                 </button>
             </div>
+            <div style="margin: 20px 0; text-align: center;">
+            <div style="margin: 30px 0; text-align: center;">
+    <button id="goToSalesButton" class="btn-success">
+        💰 Go to Sales / Point of Sale
+    </button>
+</div>
         </header>
 
         <!-- Toggle Form Button -->
@@ -175,6 +196,16 @@
         </dialog>
     </main>
 
+      <script>
+    document.getElementById('goToSalesButton').addEventListener('click', function() {
+        const businessName = localStorage.getItem('ownerBusinessName');
+        if (businessName) {
+            window.location.href = 'sales.html?business=' + encodeURIComponent(businessName);
+        } else {
+            alert('Please set your business name first.');
+        }
+    });
+</script>
     <script>
       // Service Worker Registration - Fixed for Blob/Preview environment
       if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
