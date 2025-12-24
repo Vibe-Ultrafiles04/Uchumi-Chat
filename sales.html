@@ -106,15 +106,15 @@
         </div>
     </section>
 </div>
-
 <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwbGNCI0wBlrLppXSkBVeTfpDPlJaQtT5yHMSu6YdP74YrQGQZQduozTVYXD94SZNXRLw/exec'; 
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwQT02R0xNgb-JI1mVGO1H_Hz_QdnKsBIlVC0YnQeTxgbjIh9fD3HjHZqLsF6VenCqzQQ/exec'; 
     const CURRENCY_SYMBOL = "KES"; 
     const businessName = new URLSearchParams(window.location.search).get('business') || localStorage.getItem('ownerBusinessName');
 
     let allProducts = [];
     let cart = [];
     let selectedProductId = null;
+    let salesHistory = []; // Loaded from backend
 
     // --- Utility Functions ---
     function extractDriveId(url) {
@@ -145,24 +145,32 @@
     }
 
     function formatNum(val) {
-        return new Intl.NumberFormat('en-US').format(val);
+        return new Intl.NumberFormat('en-US').format(val || 0);
     }
 
-    // --- Core Logic ---
-    async function loadProducts() {
-        showStatus("Updating stock data...", "loading");
+    function showStatus(msg, type) {
+        const s = document.getElementById('statusMessage');
+        s.style.display = 'block';
+        s.className = type;
+        s.innerText = msg;
+        if (type === 'success') setTimeout(() => s.style.display = 'none', 3000);
+    }
+
+    // --- Load Products ---
+        async function loadProducts(showLoading = true) {
+        if (showLoading) showStatus("Updating stock data...", "loading");
+
         try {
             const res = await fetch(WEB_APP_URL, {
                 method: "POST",
-                mode: "cors",
-                body: JSON.stringify({ action: "getProductsByBusiness", businessName: businessName })
+                body: JSON.stringify({ action: "getProductsByBusiness", businessName })
             });
             const data = await res.json();
             allProducts = data.rows || [];
             renderDropdown(allProducts);
-            document.getElementById('statusMessage').style.display = 'none';
+            if (showLoading) document.getElementById('statusMessage').style.display = 'none';
         } catch (e) {
-            showStatus("Offline Mode: Using cached product data", "error");
+            if (showLoading) showStatus("Offline – using cached data", "error");
         }
     }
 
@@ -217,7 +225,7 @@
             cart.push({ ...product, qty });
         }
         renderCart();
-        qtyInput.value = 1; // Reset input
+        qtyInput.value = 1;
     }
 
     function renderCart() {
@@ -264,106 +272,173 @@
         renderCart();
     }
 
-    // --- Backend Sync Logic ---
-   async function completeSale() {
-    if (cart.length === 0) return alert("Cart is empty");
+    // === COMPLETE SALE WITH BACKEND HISTORY ===
+    async function completeSale() {
+        if (cart.length === 0) return alert("Cart is empty");
 
-    const updates = cart.map(item => ({
-        id: item.id,
-        quantity: item.quantity - item.qty,
-        businessName: businessName  // ← CRITICAL FIX
-    }));
+        const updates = cart.map(item => ({
+            id: item.id,
+            quantity: item.quantity - item.qty,
+            businessName: businessName
+        }));
 
-    const saleRecord = {
-        id: Date.now(),
-        time: new Date().toLocaleTimeString(),
-        items: cart.reduce((sum, i) => sum + i.qty, 0),
-        total: document.getElementById('grandTotal').innerText,
-        updates: updates
-    };
+        const itemsDetails = cart.map(item => ({
+            name: item.name,
+            qty: item.qty,
+            price: item.sell,
+            lineTotal: item.qty * item.sell
+        }));
 
-    if (navigator.onLine) {
-        const success = await performSync(updates);
-        if (success) {
-            showStatus("Sale completed and stock updated!", "success");
-            updateHistoryUI(saleRecord);
-            clearCart();
-            loadProducts(); 
+        const total = cart.reduce((s, i) => s + i.qty * i.sell, 0);
+
+        const salePayload = {
+            action: "logSale",
+            businessName: businessName,
+            items: itemsDetails,
+            total: total
+        };
+
+        if (navigator.onLine) {
+            const stockSuccess = await performSync(updates);
+            await logSaleToBackend(salePayload);
+            if (stockSuccess) showStatus("Sale completed!", "success");
+        } else {
+            queueSale({ updates, salePayload });
+            showStatus("Offline – sale queued", "error");
         }
-    } else {
-        queueSale(saleRecord);
-        showStatus("Offline – Sale queued for sync", "error");
-        updateHistoryUI(saleRecord);
+
+        await loadSalesHistory(); // Refresh from backend
         clearCart();
+               loadProducts(false);  // Don't show "Updating stock data..." after sale
     }
-}
+
     async function performSync(updates) {
-        const btn = document.getElementById('btnComplete');
-        btn.disabled = true;
-        btn.innerText = "Syncing Stock...";
-        
         try {
-            const response = await fetch(WEB_APP_URL, {
+            const res = await fetch(WEB_APP_URL, {
                 method: "POST",
-                mode: "cors",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                headers: {"Content-Type": "text/plain"},
                 body: JSON.stringify({
                     action: "bulkUpdateProducts",
                     updates: updates,
                     adds: []
                 })
             });
-            const result = await response.json();
-            if (result.result === "success") return true;
-            throw new Error(result.message || "Unknown Error");
+            const json = await res.json();
+            return json.result === "success";
         } catch (e) {
-            console.error("Sync Error:", e);
-            showStatus("Sync failed. Sale moved to queue.", "error");
-            queueSale({ updates });
             return false;
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Complete Sale";
         }
     }
 
-    function queueSale(record) {
+    async function logSaleToBackend(payload) {
+        try {
+            await fetch(WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            queueSale({ salePayload: payload });
+        }
+    }
+
+    function queueSale(data) {
         let queue = JSON.parse(localStorage.getItem('pendingPOS') || '[]');
-        queue.push(record);
+        queue.push(data);
         localStorage.setItem('pendingPOS', JSON.stringify(queue));
     }
 
-    function updateHistoryUI(record) {
-        const list = document.getElementById('historyList');
-        if (list.querySelector('p')) list.innerHTML = '';
-        const div = document.createElement('div');
-        div.className = 'history-item';
-        div.innerHTML = `
-            <span>${record.time} (${record.items} items)</span>
-            <strong>${CURRENCY_SYMBOL} ${record.total}</strong>
-        `;
-        list.prepend(div);
+    // === LOAD & RENDER HISTORY FROM BACKEND ===
+    async function loadSalesHistory() {
+        try {
+            const res = await fetch(WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "getSalesHistory", businessName })
+            });
+            const json = await res.json();
+            if (json.result === "success") {
+                salesHistory = json.sales;
+            }
+        } catch (e) {
+            // Keep current list if offline
+        }
+        renderHistory();
     }
 
-    // --- Network Management ---
+    function renderHistory() {
+        const list = document.getElementById('historyList');
+        list.innerHTML = salesHistory.length ? '' : '<p style="color:#888;">No sales completed yet.</p>';
+
+        salesHistory.forEach(sale => {
+            const itemsText = sale.items.map(i => `${i.name} × ${i.qty}`).join(', ') || 'No items';
+
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.style.borderBottom = '1px solid #eee';
+            div.style.padding = '12px 0';
+            div.style.display = 'flex';
+            div.style.justifyContent = 'space-between';
+            div.style.alignItems = 'center';
+
+            div.innerHTML = `
+                <div>
+                    <div style="font-weight:bold; font-size:1em;">${sale.timestamp}</div>
+                    <div style="font-size:0.9em; color:#555; margin-top:4px;">${itemsText}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:bold; font-size:1.1em;">${CURRENCY_SYMBOL} ${formatNum(sale.total)}</div>
+                    <button onclick="deleteSale('${sale.saleId}')" style="margin-top:8px; background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.85em;">
+                        Delete
+                    </button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    async function deleteSale(saleId) {
+        if (!confirm("Permanently delete this sale from history?")) return;
+
+        showStatus("Deleting sale...", "loading");
+
+        try {
+            const res = await fetch(WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "deleteSale",
+                    saleId: saleId,
+                    businessName: businessName
+                })
+            });
+            const json = await res.json();
+
+            if (json.result === "success") {
+                await loadSalesHistory();
+                showStatus("Sale deleted", "success");
+            } else {
+                showStatus("Delete failed: " + (json.message || ""), "error");
+            }
+        } catch (e) {
+            showStatus("Offline – delete will sync later", "error");
+        }
+    }
+
+    // === OFFLINE SYNC ===
     window.addEventListener('online', async () => {
         document.getElementById('connectionStatus').className = "conn-status status-online";
         document.getElementById('connectionStatus').innerText = "Online";
-        
+
         const queue = JSON.parse(localStorage.getItem('pendingPOS') || '[]');
-        if (queue.length > 0) {
-            showStatus("Syncing queued sales...", "loading");
-            let allSynced = true;
-            for (const sale of queue) {
-                const success = await performSync(sale.updates);
-                if (!success) allSynced = false;
-            }
-            if (allSynced) {
-                localStorage.removeItem('pendingPOS');
-                showStatus("All sales synced!", "success");
-                loadProducts();
-            }
+        if (queue.length === 0) return;
+
+        showStatus(`Syncing ${queue.length} pending sale(s)...`, "loading");
+        for (const item of queue) {
+            if (item.updates) await performSync(item.updates);
+            if (item.salePayload) await logSaleToBackend(item.salePayload);
         }
+        localStorage.removeItem('pendingPOS');
+        showStatus("All synced!", "success");
+        await loadSalesHistory();
+                loadProducts(false);  // No unnecessary loading message during sync
     });
 
     window.addEventListener('offline', () => {
@@ -371,17 +446,10 @@
         document.getElementById('connectionStatus').innerText = "Offline Mode";
     });
 
-    function showStatus(msg, type) {
-        const s = document.getElementById('statusMessage');
-        s.style.display = 'block';
-        s.className = type;
-        s.innerText = msg;
-        if (type === 'success') setTimeout(() => s.style.display = 'none', 3000);
-    }
-
-    // --- Init ---
-    if (!businessName) window.location.href = 'index.html';
-    loadProducts();
+    // === INIT ===
+    if (!businessName) location.href = 'index.html';
+       loadProducts(true);  // Show loading message only on initial load
+    loadSalesHistory();
 </script>
 
 </body>

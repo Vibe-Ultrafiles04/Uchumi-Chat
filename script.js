@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwbGNCI0wBlrLppXSkBVeTfpDPlJaQtT5yHMSu6YdP74YrQGQZQduozTVYXD94SZNXRLw/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwQT02R0xNgb-JI1mVGO1H_Hz_QdnKsBIlVC0YnQeTxgbjIh9fD3HjHZqLsF6VenCqzQQ/exec"; 
 
 /// DOM References
 const CURRENCY_SYMBOL = "KES";
