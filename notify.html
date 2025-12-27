@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Notifications & Orders | Kona Mart</title>
+    <title>Notifications | Kona Mart</title>
     <link rel="stylesheet" href="style.css" />
     <meta name="theme-color" content="#3b6dc6">
     <link rel="manifest" href="./manifest.json">
@@ -15,11 +15,10 @@
         body {
             background: #f9f9f9;
             margin: 0;
-            padding: 0 0 80px 0;
-            font-family: "Segoe UI", Arial, sans-serif;
+            padding: 0 0 100px 0;
+            font-family: Arial, sans-serif;
             min-height: 100vh;
         }
-
         header {
             background: #463dc5;
             color: white;
@@ -28,41 +27,40 @@
             font-size: 20px;
             font-weight: bold;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: relative;
         }
-
-        /* Tabs */
         .tabs {
             display: flex;
-            background: #f1f1f1;
-            margin: 0;
+            background: white;
             border-bottom: 1px solid #ddd;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         .tab {
             flex: 1;
-            padding: 14px;
+            padding: 16px;
             text-align: center;
+            font-size: 16px;
             font-weight: bold;
+            color: #666;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s;
         }
         .tab.active {
-            background: white;
-            border-bottom: 3px solid #463dc5;
             color: #463dc5;
+            border-bottom: 4px solid #463dc5;
         }
-        .tab:hover:not(.active) { background: #e0e0e0; }
-
-        /* Containers */
         .tab-content {
             display: none;
-            padding: 20px 15px;
-            max-width: 900px;
-            margin: 0 auto;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 15px;
         }
-        .tab-content.active { display: block; }
+        .tab-content.active {
+            display: block;
+        }
 
-        /* Messages (original style) */
+        /* Messages */
         .message {
             background: white;
             border-radius: 12px;
@@ -76,89 +74,96 @@
             border-left-color: #463dc5;
             font-weight: bold;
         }
-        .message-date { font-size: 12px; color: #666; margin-bottom: 8px; }
-        .message-content { font-size: 16px; color: #333; line-height: 1.5; }
+        .message-type {
+            font-size: 15px;
+            font-weight: bold;
+            color: #463dc5;
+            margin-bottom: 6px;
+        }
+        .message-time {
+            font-size: 13px;
+            color: #777;
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+        .message-content {
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+        }
 
         /* Orders */
-        .order-card {
+        .order {
             background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #ea4335;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #ea4335;
         }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
+        .customer-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 6px;
         }
-        .order-id { font-weight: bold; font-size: 1.1rem; color: #ea4335; }
-        .order-date { font-size: 0.9rem; color: #666; }
+        .order-time {
+            font-size: 14px;
+            color: #777;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+        .order-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        .order-items {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 15px;
+            margin: 12px 0;
+            line-height: 1.7;
+        }
+        .order-total {
+            font-weight: bold;
+            font-size: 18px;
+            color: #ea4335;
+            margin: 12px 0;
+        }
         .status-badge {
+            display: inline-block;
             padding: 6px 14px;
             border-radius: 20px;
-            font-size: 0.9rem;
+            font-size: 14px;
             font-weight: bold;
-            text-transform: uppercase;
         }
         .status-pending { background: #fff3cd; color: #856404; }
         .status-confirmed { background: #d4edda; color: #155724; }
         .status-delivered { background: #d1ecf1; color: #0c5460; }
         .status-cancelled { background: #f8d7da; color: #721c24; }
 
-        .customer-info {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 10px;
-            margin: 15px 0;
-            font-size: 0.95rem;
-        }
-        .items-list { margin: 15px 0; }
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .total-row {
-            font-size: 1.2rem;
-            font-weight: bold;
+        .order-actions {
             margin-top: 15px;
-            text-align: right;
-            color: #ea4335;
-        }
-        .order-message {
-            background: #e9ecef;
-            padding: 12px;
-            border-radius: 10px;
-            margin: 15px 0;
-            font-style: italic;
-            color: #495057;
-        }
-        .action-buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            gap: 12px;
             flex-wrap: wrap;
         }
-        .action-buttons button {
-            flex: 1;
-            padding: 12px;
+        .order-actions button {
+            padding: 10px 20px;
             border: none;
-            border-radius: 50px;
+            border-radius: 30px;
+            color: white;
             font-weight: bold;
             cursor: pointer;
-            min-width: 120px;
+            font-size: 15px;
         }
-        .btn-confirm { background: #28a745; color: white; }
-        .btn-deliver { background: #17a2b8; color: white; }
-        .btn-cancel { background: #dc3545; color: white; }
+        .btn-confirm { background: #28a745; }
+        .btn-deliver { background: #17a2b8; }
+        .btn-cancel { background: #dc3545; }
 
-        .no-content {
+        .no-data {
             text-align: center;
             color: #888;
             font-size: 18px;
@@ -176,225 +181,229 @@
             border: none;
             border-radius: 50px;
             cursor: pointer;
+            box-shadow: 0 4px 15px rgba(59, 109, 198, 0.3);
+        }
+        #backBtn:hover {
+            background: #325a9e;
         }
     </style>
 </head>
 <body>
-
-    <header>🔔 Notifications & Orders</header>
+    <header>🔔 Your Notifications</header>
 
     <div class="tabs">
-        <div class="tab active" onclick="switchTab('messages')">Messages</div>
-        <div class="tab" onclick="switchTab('orders')">Orders</div>
+        <div class="tab active" data-tab="messages">✉️ Messages</div>
+        <div class="tab" data-tab="orders">📦 Orders</div>
     </div>
-
-    <button id="backBtn">← Back to Home</button>
 
     <!-- Messages Tab -->
     <div id="messagesTab" class="tab-content active">
         <div id="messagesContainer">
-            <div class="no-content">Loading messages...</div>
+            <div class="no-data">Loading messages...</div>
         </div>
     </div>
 
     <!-- Orders Tab -->
     <div id="ordersTab" class="tab-content">
         <div id="ordersContainer">
-            <div class="no-content">Loading orders...</div>
+            <div class="no-data">Loading orders...</div>
         </div>
     </div>
 
-    <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3nO7VltVkLmU6F2SK0EdyvvNCfYNT0RNdCPUFMDe-nvDCQp4tcuxYrVaD8lfMRjSA/exec";
+    <button id="backBtn">← Back to Home</button>
 
-        function getMyDeviceId() {
-            let id = localStorage.getItem('myDeviceId');
-            if (!id) {
-                id = 'owner_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-                localStorage.setItem('myDeviceId', id);
-            }
-            return id;
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.error('SW failed', err));
+            });
         }
-        const MY_DEVICE_ID = getMyDeviceId();
+    </script>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytKZWBTQ3DFQgln0_3XubSS8MqoJCWG2aUB4AKGJ1AD9_3Wd6x01h7YYcMLstbYRQU/exec";
+
+        // Smart timestamp formatter — handles both ISO and pre-formatted strings
+        const formatReadableDate = (timestamp) => {
+            if (!timestamp) return 'Unknown time';
+
+            const str = timestamp.toString().trim();
+
+            // If it looks like ISO (has T or Z), parse it
+            if (str.includes('T') || str.includes('Z') || str.match(/^\d{4}-\d{2}-\d{2}/)) {
+                const date = new Date(str);
+                if (isNaN(date)) return str; // fallback
+
+                return date.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                }) + ' at ' + date.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }
+
+            // Otherwise, it's already formatted (e.g., "12/27/2025, 3:45:00 PM")
+            // Clean it up a bit (remove seconds if present)
+            return str.replace(/:\d{2} (AM|PM)$/, ' $1'); // removes seconds
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('backBtn').onclick = () => location.href = 'index.html';
+            const deviceId = localStorage.getItem('uniqueDeviceId');
+            const messagesContainer = document.getElementById('messagesContainer');
+            const ordersContainer = document.getElementById('ordersContainer');
+            const backBtn = document.getElementById('backBtn');
 
-            // Load both tabs
-            loadMessages();
-            loadOrders();
-        });
+            backBtn.onclick = () => location.href = 'index.html';
 
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if (!deviceId) {
+                messagesContainer.innerHTML = ordersContainer.innerHTML =
+                    '<div class="no-data">Please open the app from your device to view notifications.</div>';
+                return;
+            }
 
-            document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
-            document.getElementById(tab + 'Tab').classList.add('active');
-        }
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+                });
+            });
 
-        // === MESSAGES (original functionality preserved) ===
-        function loadMessages() {
-            const container = document.getElementById('messagesContainer');
-
+            // Load Messages
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: "getMessagesForProfile", deviceId: MY_DEVICE_ID }),
+                body: JSON.stringify({ action: "getMessagesForProfile", deviceId }),
                 headers: { 'Content-Type': 'text/plain' }
             })
             .then(r => r.json())
             .then(data => {
                 if (data.result !== "success" || !data.data || data.data.length === 0) {
-                    container.innerHTML = '<div class="no-content">📭 No messages yet.</div>';
+                    messagesContainer.innerHTML = '<div class="no-data">📭 No messages yet.</div>';
                     return;
                 }
 
                 const messagesHTML = data.data.map(msg => {
-                    const date = new Date(msg.timestamp).toLocaleDateString('en-US', {
-                        year: 'numeric', month: 'short', day: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                    });
-
                     const unreadClass = msg.isRead ? '' : 'unread';
+                    const typeText = (msg.messageType || '').toLowerCase() === 'broadcast'
+                        ? '📢 Broadcast from Admin'
+                        : '✉️ Direct Message from Admin';
 
                     return `
                         <div class="message ${unreadClass}">
-                            <div class="message-date">${date}</div>
+                            <div class="message-type">${typeText}</div>
+                            <div class="message-time">Received on: ${formatReadableDate(msg.timestamp)}</div>
                             <div class="message-content">${msg.message.replace(/\n/g, '<br>')}</div>
                         </div>
                     `;
                 }).join('');
 
-                container.innerHTML = messagesHTML;
+                messagesContainer.innerHTML = messagesHTML;
 
                 // Mark as read
                 const hasUnread = data.data.some(msg => !msg.isRead);
                 if (hasUnread) {
                     fetch(SCRIPT_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ action: "markMessagesAsRead", deviceId: MY_DEVICE_ID }),
+                        body: JSON.stringify({ action: "markMessagesAsRead", deviceId }),
                         headers: { 'Content-Type': 'text/plain' }
                     }).catch(console.error);
                 }
             })
-            .catch(err => {
-                console.error(err);
-                container.innerHTML = '<div class="no-content">Failed to load messages.</div>';
+            .catch(() => {
+                messagesContainer.innerHTML = '<div class="no-data">Failed to load messages.</div>';
             });
-        }
 
-        // === ORDERS (new full section) ===
-        function loadOrders() {
-            const container = document.getElementById('ordersContainer');
-
+            // Load Orders
             fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "getBusinessOrders",
-                    deviceId: MY_DEVICE_ID
-                })
+                method: 'POST',
+                body: JSON.stringify({ action: "getBusinessOrders", deviceId }),
+                headers: { 'Content-Type': 'text/plain' }
             })
             .then(r => r.json())
-            .then(result => {
-                if (result.result !== "success" || !result.orders || result.orders.length === 0) {
-                    container.innerHTML = '<div class="no-content">📭 No incoming orders yet.</div>';
+            .then(res => {
+                if (res.result !== "success" || !res.orders || res.orders.length === 0) {
+                    ordersContainer.innerHTML = '<div class="no-data">📭 No orders yet.</div>';
                     return;
                 }
 
-                const ordersHTML = result.orders.map(order => {
-                    const itemsHtml = order.items.map(item => `
-                        <div class="item-row">
-                            <span class="item-name">${item.name}</span>
-                            <span class="item-price">KES ${item.price.toLocaleString()}</span>
-                        </div>
-                    `).join('');
+                const ordersHTML = res.orders.map(order => {
+                    const statusClass = {
+                        "Pending": "status-pending",
+                        "Confirmed": "status-confirmed",
+                        "Delivered": "status-delivered",
+                        "Cancelled": "status-cancelled"
+                    }[order.status] || "status-pending";
 
-                    const statusClass = `status-${order.status.toLowerCase()}`;
-                    const actionButtons = getActionButtons(order);
+                    const itemsHtml = order.items.map(item =>
+                        `• ${item.quantity} × ${item.name} — KES ${item.price * item.quantity}`
+                    ).join('<br>');
+
+                    const actions = order.status === "Pending" ? `
+                        <div class="order-actions">
+                            <button class="btn-confirm" onclick="updateOrder('${order.orderId}', 'Confirmed')">Confirm Order</button>
+                            <button class="btn-cancel" onclick="updateOrder('${order.orderId}', 'Cancelled')">Cancel Order</button>
+                        </div>
+                    ` : order.status === "Confirmed" ? `
+                        <div class="order-actions">
+                            <button class="btn-deliver" onclick="updateOrder('${order.orderId}', 'Delivered')">Mark Delivered</button>
+                        </div>
+                    ` : '';
 
                     return `
-                        <div class="order-card">
-                            <div class="order-header">
-                                <div class="order-id">${order.orderId}</div>
-                                <div>
-                                    <span class="order-date">${order.timestamp}</span>
-                                    <span class="status-badge ${statusClass}">${order.status}</span>
-                                </div>
+                        <div class="order">
+                            <div class="customer-name">${order.customerName || 'Anonymous Customer'}</div>
+                            <div class="order-time">Placed on: ${formatReadableDate(order.timestamp)}</div>
+                            <div class="order-meta">Location: ${order.customerLocation || 'Not provided'}</div>
+                            <div class="order-items">${itemsHtml}</div>
+                            <div class="order-total">Total: KES ${order.total}</div>
+                            ${order.message ? `<div class="message-content"><strong>Customer Note:</strong><br>${order.message.replace(/\n/g, '<br>')}</div>` : ''}
+                            <div style="margin-top:12px;">
+                                <span class="status-badge ${statusClass}">${order.status}</span>
                             </div>
-
-                            <div class="customer-info">
-                                <strong>Customer:</strong> ${order.customerName}<br>
-                                <strong>Location:</strong> ${order.customerLocation || "Not provided"}
-                            </div>
-
-                            <div class="items-list">
-                                <strong>Items:</strong>
-                                ${itemsHtml}
-                                <div class="total-row">
-                                    Total: KES ${order.total.toLocaleString()}
-                                </div>
-                            </div>
-
-                            ${order.message ? `
-                                <div class="order-message">
-                                    <strong>Customer Message:</strong><br>
-                                    ${order.message.replace(/\n/g, '<br>')}
-                                </div>
-                            ` : ''}
-
-                            ${actionButtons}
+                            ${actions}
                         </div>
                     `;
                 }).join('');
 
-                container.innerHTML = ordersHTML;
+                ordersContainer.innerHTML = ordersHTML;
             })
-            .catch(err => {
-                console.error(err);
-                container.innerHTML = '<div class="no-content">Failed to load orders.</div>';
+            .catch(() => {
+                ordersContainer.innerHTML = '<div class="no-data">Failed to load orders.</div>';
             });
-        }
 
-        function getActionButtons(order) {
-            if (order.status === "Delivered" || order.status === "Cancelled") {
-                return '<div style="color:#666; font-style:italic; margin-top:15px;">Order completed or cancelled</div>';
-            }
+            // Update order status
+            window.updateOrder = function(orderId, newStatus) {
+                if (!confirm(`Change order ${orderId} to "${newStatus}"?`)) return;
 
-            let buttons = '';
-            if (order.status === "Pending") {
-                buttons += `<button class="btn-confirm" onclick="updateOrderStatus('${order.orderId}', 'Confirmed')">Confirm Order</button>`;
-            }
-            if (order.status === "Confirmed") {
-                buttons += `<button class="btn-deliver" onclick="updateOrderStatus('${order.orderId}', 'Delivered')">Mark Delivered</button>`;
-            }
-            buttons += `<button class="btn-cancel" onclick="updateOrderStatus('${order.orderId}', 'Cancelled')">Cancel Order</button>`;
-
-            return `<div class="action-buttons">${buttons}</div>`;
-        }
-
-        function updateOrderStatus(orderId, newStatus) {
-            if (!confirm(`Mark order ${orderId} as ${newStatus}?`)) return;
-
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "updateOrderStatus",
-                    orderId: orderId,
-                    deviceId: MY_DEVICE_ID,
-                    newStatus: newStatus
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: "updateOrderStatus",
+                        orderId,
+                        deviceId,
+                        newStatus
+                    }),
+                    headers: { 'Content-Type': 'text/plain' }
                 })
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.result === "success") {
-                    alert("Order status updated!");
-                    loadOrders(); // Refresh orders
-                } else {
-                    alert("Failed: " + (res.message || "Unknown error"));
-                }
-            })
-            .catch(() => alert("Network error"));
-        }
+                .then(r => r.json())
+                .then(res => {
+                    if (res.result === "success") {
+                        alert("Order status updated!");
+                        location.reload();
+                    } else {
+                        alert("Failed: " + (res.message || "Try again"));
+                    }
+                })
+                .catch(() => alert("Network error"));
+            };
+        });
     </script>
 </body>
 </html>
