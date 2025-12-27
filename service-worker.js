@@ -13,6 +13,7 @@ const ASSETS_TO_CACHE = [
   "./setup.html",
   "./business.html",
   "./studio.html",
+  "./sales.html",
   "./saved.html",
   "./notify.html",
   "./Admin.html",

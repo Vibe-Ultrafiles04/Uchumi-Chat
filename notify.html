@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Notifications | Kona Mart</title>
+    <title>Notifications & Orders | Kona Mart</title>
     <link rel="stylesheet" href="style.css" />
-   <meta name="theme-color" content="#3b6dc6">
-<link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#3b6dc6">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="inventory192.png">
 
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="inventory192.png">
     <style>
         body {
             background: #f9f9f9;
             margin: 0;
             padding: 0 0 80px 0;
-            font-family: Arial, sans-serif;
+            font-family: "Segoe UI", Arial, sans-serif;
             min-height: 100vh;
         }
 
@@ -28,14 +28,41 @@
             font-size: 20px;
             font-weight: bold;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
         }
 
-        #messagesContainer {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 15px;
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: #f1f1f1;
+            margin: 0;
+            border-bottom: 1px solid #ddd;
         }
+        .tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .tab.active {
+            background: white;
+            border-bottom: 3px solid #463dc5;
+            color: #463dc5;
+        }
+        .tab:hover:not(.active) { background: #e0e0e0; }
 
+        /* Containers */
+        .tab-content {
+            display: none;
+            padding: 20px 15px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .tab-content.active { display: block; }
+
+        /* Messages (original style) */
         .message {
             background: white;
             border-radius: 12px;
@@ -43,29 +70,95 @@
             margin-bottom: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             border-left: 4px solid #463dc5;
-            opacity: 1;
-            transition: opacity 0.3s;
         }
-
         .message.unread {
             background: #f0e6ff;
             border-left-color: #463dc5;
             font-weight: bold;
         }
+        .message-date { font-size: 12px; color: #666; margin-bottom: 8px; }
+        .message-content { font-size: 16px; color: #333; line-height: 1.5; }
 
-        .message-date {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
+        /* Orders */
+        .order-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #ea4335;
         }
-
-        .message-content {
-            font-size: 16px;
-            color: #333;
-            line-height: 1.5;
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
+        .order-id { font-weight: bold; font-size: 1.1rem; color: #ea4335; }
+        .order-date { font-size: 0.9rem; color: #666; }
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
+        .status-delivered { background: #d1ecf1; color: #0c5460; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
 
-        .no-messages {
+        .customer-info {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-size: 0.95rem;
+        }
+        .items-list { margin: 15px 0; }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .total-row {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 15px;
+            text-align: right;
+            color: #ea4335;
+        }
+        .order-message {
+            background: #e9ecef;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-style: italic;
+            color: #495057;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .action-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: 120px;
+        }
+        .btn-confirm { background: #28a745; color: white; }
+        .btn-deliver { background: #17a2b8; color: white; }
+        .btn-cancel { background: #dc3545; color: white; }
+
+        .no-content {
             text-align: center;
             color: #888;
             font-size: 18px;
@@ -83,61 +176,76 @@
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(59, 109, 198, 0.3);
-        }
-
-        #backBtn:hover {
-            background: #325a9e;
         }
     </style>
 </head>
 <body>
 
-    <header>🔔 Your Notifications</header>
- <button id="backBtn">← Back to Home</button>
-    <div id="messagesContainer">
-        <div class="no-messages">Loading messages...</div>
+    <header>🔔 Notifications & Orders</header>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('messages')">Messages</div>
+        <div class="tab" onclick="switchTab('orders')">Orders</div>
     </div>
 
-   <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(registration => {
-          console.log('✅ Kona Mart SW Registered: ', registration.scope);
-        })
-        .catch(error => {
-          console.error('❌ Kona Mart SW Registration failed: ', error);
-        });
-    });
-  }
-</script>
+    <button id="backBtn">← Back to Home</button>
+
+    <!-- Messages Tab -->
+    <div id="messagesTab" class="tab-content active">
+        <div id="messagesContainer">
+            <div class="no-content">Loading messages...</div>
+        </div>
+    </div>
+
+    <!-- Orders Tab -->
+    <div id="ordersTab" class="tab-content">
+        <div id="ordersContainer">
+            <div class="no-content">Loading orders...</div>
+        </div>
+    </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQT02R0xNgb-JI1mVGO1H_Hz_QdnKsBIlVC0YnQeTxgbjIh9fD3HjHZqLsF6VenCqzQQ/exec"; // ← Replace with your actual deployed web app URL
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3nO7VltVkLmU6F2SK0EdyvvNCfYNT0RNdCPUFMDe-nvDCQp4tcuxYrVaD8lfMRjSA/exec";
+
+        function getMyDeviceId() {
+            let id = localStorage.getItem('myDeviceId');
+            if (!id) {
+                id = 'owner_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+                localStorage.setItem('myDeviceId', id);
+            }
+            return id;
+        }
+        const MY_DEVICE_ID = getMyDeviceId();
 
         document.addEventListener('DOMContentLoaded', () => {
-            const deviceId = localStorage.getItem('uniqueDeviceId');
-            const messagesContainer = document.getElementById('messagesContainer');
-            const backBtn = document.getElementById('backBtn');
+            document.getElementById('backBtn').onclick = () => location.href = 'index.html';
 
-            backBtn.onclick = () => location.href = 'index.html';
+            // Load both tabs
+            loadMessages();
+            loadOrders();
+        });
 
-            if (!deviceId) {
-                messagesContainer.innerHTML = '<div class="no-messages">Please log in to view messages.</div>';
-                return;
-            }
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-            // Fetch messages
-            fetch(`${SCRIPT_URL}?action=getMessagesForProfile`, {
+            document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+
+        // === MESSAGES (original functionality preserved) ===
+        function loadMessages() {
+            const container = document.getElementById('messagesContainer');
+
+            fetch(SCRIPT_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: "getMessagesForProfile", deviceId }),
+                body: JSON.stringify({ action: "getMessagesForProfile", deviceId: MY_DEVICE_ID }),
                 headers: { 'Content-Type': 'text/plain' }
             })
             .then(r => r.json())
             .then(data => {
                 if (data.result !== "success" || !data.data || data.data.length === 0) {
-                    messagesContainer.innerHTML = '<div class="no-messages">📭 No messages yet.</div>';
+                    container.innerHTML = '<div class="no-content">📭 No messages yet.</div>';
                     return;
                 }
 
@@ -157,23 +265,136 @@
                     `;
                 }).join('');
 
-                messagesContainer.innerHTML = messagesHTML;
+                container.innerHTML = messagesHTML;
 
-                // Mark all as read if there are unread ones
+                // Mark as read
                 const hasUnread = data.data.some(msg => !msg.isRead);
                 if (hasUnread) {
-                    fetch(`${SCRIPT_URL}?action=markMessagesAsRead`, {
+                    fetch(SCRIPT_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ action: "markMessagesAsRead", deviceId }),
+                        body: JSON.stringify({ action: "markMessagesAsRead", deviceId: MY_DEVICE_ID }),
                         headers: { 'Content-Type': 'text/plain' }
                     }).catch(console.error);
                 }
             })
             .catch(err => {
                 console.error(err);
-                messagesContainer.innerHTML = '<div class="no-messages">Failed to load messages.</div>';
+                container.innerHTML = '<div class="no-content">Failed to load messages.</div>';
             });
-        });
+        }
+
+        // === ORDERS (new full section) ===
+        function loadOrders() {
+            const container = document.getElementById('ordersContainer');
+
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "getBusinessOrders",
+                    deviceId: MY_DEVICE_ID
+                })
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (result.result !== "success" || !result.orders || result.orders.length === 0) {
+                    container.innerHTML = '<div class="no-content">📭 No incoming orders yet.</div>';
+                    return;
+                }
+
+                const ordersHTML = result.orders.map(order => {
+                    const itemsHtml = order.items.map(item => `
+                        <div class="item-row">
+                            <span class="item-name">${item.name}</span>
+                            <span class="item-price">KES ${item.price.toLocaleString()}</span>
+                        </div>
+                    `).join('');
+
+                    const statusClass = `status-${order.status.toLowerCase()}`;
+                    const actionButtons = getActionButtons(order);
+
+                    return `
+                        <div class="order-card">
+                            <div class="order-header">
+                                <div class="order-id">${order.orderId}</div>
+                                <div>
+                                    <span class="order-date">${order.timestamp}</span>
+                                    <span class="status-badge ${statusClass}">${order.status}</span>
+                                </div>
+                            </div>
+
+                            <div class="customer-info">
+                                <strong>Customer:</strong> ${order.customerName}<br>
+                                <strong>Location:</strong> ${order.customerLocation || "Not provided"}
+                            </div>
+
+                            <div class="items-list">
+                                <strong>Items:</strong>
+                                ${itemsHtml}
+                                <div class="total-row">
+                                    Total: KES ${order.total.toLocaleString()}
+                                </div>
+                            </div>
+
+                            ${order.message ? `
+                                <div class="order-message">
+                                    <strong>Customer Message:</strong><br>
+                                    ${order.message.replace(/\n/g, '<br>')}
+                                </div>
+                            ` : ''}
+
+                            ${actionButtons}
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = ordersHTML;
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = '<div class="no-content">Failed to load orders.</div>';
+            });
+        }
+
+        function getActionButtons(order) {
+            if (order.status === "Delivered" || order.status === "Cancelled") {
+                return '<div style="color:#666; font-style:italic; margin-top:15px;">Order completed or cancelled</div>';
+            }
+
+            let buttons = '';
+            if (order.status === "Pending") {
+                buttons += `<button class="btn-confirm" onclick="updateOrderStatus('${order.orderId}', 'Confirmed')">Confirm Order</button>`;
+            }
+            if (order.status === "Confirmed") {
+                buttons += `<button class="btn-deliver" onclick="updateOrderStatus('${order.orderId}', 'Delivered')">Mark Delivered</button>`;
+            }
+            buttons += `<button class="btn-cancel" onclick="updateOrderStatus('${order.orderId}', 'Cancelled')">Cancel Order</button>`;
+
+            return `<div class="action-buttons">${buttons}</div>`;
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            if (!confirm(`Mark order ${orderId} as ${newStatus}?`)) return;
+
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "updateOrderStatus",
+                    orderId: orderId,
+                    deviceId: MY_DEVICE_ID,
+                    newStatus: newStatus
+                })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.result === "success") {
+                    alert("Order status updated!");
+                    loadOrders(); // Refresh orders
+                } else {
+                    alert("Failed: " + (res.message || "Unknown error"));
+                }
+            })
+            .catch(() => alert("Network error"));
+        }
     </script>
 </body>
 </html>

@@ -106,8 +106,19 @@
         </div>
     </section>
 </div>
+</script>
+    <script>
+      // Service Worker Registration - Fixed for Blob/Preview environment
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.warn("ServiceWorker registration skipped or failed:", err.message);
+          });
+        });
+      }
+    </script>
 <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwQT02R0xNgb-JI1mVGO1H_Hz_QdnKsBIlVC0YnQeTxgbjIh9fD3HjHZqLsF6VenCqzQQ/exec'; 
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz3nO7VltVkLmU6F2SK0EdyvvNCfYNT0RNdCPUFMDe-nvDCQp4tcuxYrVaD8lfMRjSA/exec'; 
     const CURRENCY_SYMBOL = "KES"; 
     const businessName = new URLSearchParams(window.location.search).get('business') || localStorage.getItem('ownerBusinessName');
 
