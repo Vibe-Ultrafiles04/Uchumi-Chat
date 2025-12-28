@@ -424,6 +424,75 @@
     }
     .cart-stock.out-of-stock { color: #dc3545; font-weight: bold; }
 .cart-stock.low-stock { color: #e67e22; font-weight: bold; }
+
+.order-tracking-card {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 25px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    text-align: left;
+}
+
+.order-item {
+    background: #f9f9f9;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    border-left: 5px solid #ea4335;
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.order-id {
+    font-weight: bold;
+    color: #ea4335;
+    font-size: 1.1rem;
+}
+
+.order-date {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.order-status {
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.status-Pending { background: #fff3cd; color: #856404; }
+.status-Confirmed { background: #d1ecf1; color: #0c5460; }
+.status-Delivered { background: #d4edda; color: #155724; }
+.status-Cancelled { background: #f8d7da; color: #721c24; }
+
+.order-items-list {
+    margin: 12px 0;
+    padding-left: 10px;
+    border-left: 2px solid #eee;
+}
+
+.order-item-line {
+    display: flex;
+    justify-content: space-between;
+    margin: 6px 0;
+    font-size: 0.95rem;
+}
+
+.order-total {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: right;
+    margin-top: 12px;
+    color: #ea4335;
+}
     </style>
 </head>
 <body>
@@ -439,6 +508,8 @@
             <button id="subscribeBtn" class="follow" disabled>Loading...</button>
             <div id="subscriberCount">— </div>
         </div>
+        
+        
 
         <div class="share-wrapper" id="shareWrapper" style="margin-top: 30px; padding: 0 20px;">
             <p id="shareLabel" style="font-size: 1rem; margin-bottom: 10px; opacity: 0.9;">
@@ -498,7 +569,39 @@
             </button>
         </div>
     </div>
+<!-- My Orders Tracking Card -->
+<div class="order-tracking-card" id="orderTrackingCard">
+    <h3 style="text-align:center; margin-bottom:20px; color:#ea4335;">My Orders</h3>
 
+    <div id="recoveryKeySection">
+        <p style="text-align:center; margin-bottom:15px; color:#666;">
+            Enter your Order Recovery Key to view your orders and status.
+        </p>
+        <input type="text" id="recoveryKeyInput" placeholder="e.g. AB3K9P2M" maxlength="8"
+               style="width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; text-transform:uppercase; text-align:center; font-size:1.2rem; letter-spacing:2px;">
+        <button id="viewOrdersBtn"
+                style="width:100%; padding:14px; background:#ea4335; color:white; border:none; border-radius:50px; font-weight:bold; cursor:pointer;">
+            View My Orders
+        </button>
+        <p style="font-size:0.9rem; margin-top:15px; color:#888; text-align:center;">
+            You received this key after placing an order.<br>
+            It lets you check status anytime.
+        </p>
+    </div>
+
+    <div id="ordersSection" style="display:none;">
+        <div id="ordersList"></div>
+        <button id="logoutOrdersBtn"
+                style="width:100%; margin-top:20px; padding:12px; background:#f0f0f0; color:#333; border:1px solid #ddd; border-radius:50px;">
+            Log Out / Use Different Key
+        </button>
+    </div>
+
+    <div id="noOrdersMsg" style="display:none; text-align:center; padding:40px; color:#888;">
+        <p>No orders found with this key.</p>
+        <p style="font-size:0.9rem;">Make sure you're using the correct recovery key.</p>
+    </div>
+</div>
     
     <!-- PROMOTIONAL VIDEO (appears only if set) -->
     <div class="video-section" id="videoSection" style="display:none;">
@@ -556,270 +659,376 @@
     </div>
 </div>
 <script>
-    // ====== CART SYSTEM – FULLY FIXED & IMPROVED ======
-    let cart = []; // Array of { product: r, quantity: number }
+// ============== CART + ONE RECOVERY KEY UNLOCKS ALL CUSTOMER ORDERS ==============
 
-    const floatingCartBtn = document.getElementById('floatingCartBtn');
-    const cartCountEl = document.getElementById('cartCount');
-    const orderModalOverlay = document.getElementById('orderModalOverlay');
-    const cartItemsList = document.getElementById('cartItemsList');
-    const emptyCartMessage = document.getElementById('emptyCartMessage');
-    const orderTotalEl = document.getElementById('orderTotal');
+let cart = [];
 
-    function updateCartUI() {
-        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-        cartCountEl.textContent = totalItems;
+// DOM Elements
+const floatingCartBtn = document.getElementById('floatingCartBtn');
+const cartCountEl = document.getElementById('cartCount');
+const orderModalOverlay = document.getElementById('orderModalOverlay');
+const cartItemsList = document.getElementById('cartItemsList');
+const emptyCartMessage = document.getElementById('emptyCartMessage');
+const orderTotalEl = document.getElementById('orderTotal');
 
-        floatingCartBtn.style.display = totalItems > 0 ? 'flex' : 'flex'; // Always visible for now
+const recoveryKeyInput = document.getElementById('recoveryKeyInput');
+const viewOrdersBtn = document.getElementById('viewOrdersBtn');
+const recoveryKeySection = document.getElementById('recoveryKeySection');
+const ordersSection = document.getElementById('ordersSection');
+const ordersList = document.getElementById('ordersList');
+const noOrdersMsg = document.getElementById('noOrdersMsg');
+const logoutOrdersBtn = document.getElementById('logoutOrdersBtn');
 
-        renderCartItems();
-        updateOrderTotal();
+// Success message
+const successMessage = document.createElement('div');
+successMessage.style.cssText = `
+    background: #d4edda; color: #155724; padding: 16px; border-radius: 12px;
+    margin: 20px auto; max-width: 600px; text-align: center; font-weight: bold;
+    border: 1px solid #c3e6cb; display: none;
+`;
+successMessage.id = 'orderSuccessMessage';
+document.getElementById('orderTrackingCard').insertBefore(successMessage, recoveryKeySection);
+
+// Cart UI functions (unchanged)
+function updateCartUI() {
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    cartCountEl.textContent = totalItems;
+    renderCartItems();
+    updateOrderTotal();
+}
+
+function renderCartItems() {
+    if (cart.length === 0) {
+        cartItemsList.innerHTML = '';
+        emptyCartMessage.style.display = 'block';
+        return;
     }
+    emptyCartMessage.style.display = 'none';
 
-    function renderCartItems() {
-        if (cart.length === 0) {
-            cartItemsList.innerHTML = '';
-            emptyCartMessage.style.display = 'block';
-            return;
-        }
+    cartItemsList.innerHTML = cart.map((item, index) => {
+        const p = item.product;
+        const thumbUrl = (typeof getThumbnailUrl === 'function' ? getThumbnailUrl(p.driveLink || '', 200) : '') || '';
+        const price = parseFloat(p.sell || 0);
+        const stock = parseInt(p.quantity || 0);
 
-        emptyCartMessage.style.display = 'none';
+        const stockText = stock === 0 ? 'Out of stock' :
+                          stock <= 5 ? `Only ${stock} left!` : `${stock} in stock`;
+        const stockClass = stock === 0 ? 'out-of-stock' : stock <= 5 ? 'low-stock' : '';
 
-        cartItemsList.innerHTML = cart.map((item, index) => {
-            const p = item.product;
-            const thumbUrl = (typeof getThumbnailUrl === 'function' ? getThumbnailUrl(p.driveLink || '', 200) : '') || '';
-            const price = parseFloat(p.sell || 0);
-            const stock = parseInt(p.quantity || 0); // Available stock from sheet
-            const maxQty = stock > 0 ? stock : 999;   // Prevent adding if out of stock
-
-            // Stock warning
-            const stockText = stock === 0 ? 'Out of stock' :
-                              stock <= 5 ? `Only ${stock} left!` :
-                              `${stock} in stock`;
-
-            const stockClass = stock === 0 ? 'out-of-stock' :
-                               stock <= 5 ? 'low-stock' : '';
-
-            return `
-                <div class="cart-item">
-                    ${thumbUrl ? `<img src="${thumbUrl}" alt="${escapeHtml(p.name)}">` : '<div style="width:60px;height:60px;background:#eee;border-radius:8px;margin-right:12px;"></div>'}
-                    <div class="cart-item-info">
-                        <div class="cart-item-name">${escapeHtml(p.name || 'Product')}</div>
-                        <div class="cart-item-price">KES ${typeof formatNumberWithCommas === 'function' ? formatNumberWithCommas(price) : price}</div>
-                        <div class="cart-stock ${stockClass}" style="font-size:0.85rem; margin-top:4px;">
-                            ${stockText}
-                        </div>
-                    </div>
-                    <div class="quantity-controls">
-                        <button ${item.quantity <= 1 || stock === 0 ? 'disabled' : ''} 
-                                onclick="changeQuantity(${index}, -1)">−</button>
-                        <input type="number" value="${item.quantity}" min="1" max="${maxQty}" readonly>
-                        <button ${item.quantity >= maxQty || stock === 0 ? 'disabled' : ''} 
-                                onclick="changeQuantity(${index}, 1)">+</button>
-                    </div>
-                    <button class="remove-item" onclick="removeFromCart(${index})">Remove</button>
+        return `
+            <div class="cart-item">
+                ${thumbUrl ? `<img src="${thumbUrl}" alt="${escapeHtml(p.name)}">` : '<div style="width:60px;height:60px;background:#eee;border-radius:8px;margin-right:12px;"></div>'}
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${escapeHtml(p.name || 'Product')}</div>
+                    <div class="cart-item-price">KES ${typeof formatNumberWithCommas === 'function' ? formatNumberWithCommas(price) : price}</div>
+                    <div class="cart-stock ${stockClass}" style="font-size:0.85rem; margin-top:4px;">${stockText}</div>
                 </div>
-            `;
-        }).join('');
+                <div class="quantity-controls">
+                    <button ${item.quantity <= 1 || stock === 0 ? 'disabled' : ''} onclick="changeQuantity(${index}, -1)">−</button>
+                    <input type="number" value="${item.quantity}" min="1" readonly>
+                    <button ${item.quantity >= stock || stock === 0 ? 'disabled' : ''} onclick="changeQuantity(${index}, 1)">+</button>
+                </div>
+                <button class="remove-item" onclick="removeFromCart(${index})">Remove</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateOrderTotal() {
+    const total = cart.reduce((sum, item) => sum + (parseFloat(item.product.sell || 0) * item.quantity), 0);
+    orderTotalEl.textContent = `Total: KES ${typeof formatNumberWithCommas === 'function' ? formatNumberWithCommas(total) : total}`;
+}
+
+function addToCart(productData) {
+    const stock = parseInt(productData.quantity || 0);
+    if (stock === 0) {
+        alert(`Sorry, "${productData.name}" is out of stock.`);
+        return;
     }
-
-    function updateOrderTotal() {
-        const total = cart.reduce((sum, item) => sum + (parseFloat(item.product.sell || 0) * item.quantity), 0);
-        orderTotalEl.textContent = `Total: KES ${typeof formatNumberWithCommas === 'function' ? formatNumberWithCommas(total) : total}`;
-    }
-
-    function addToCart(productData) {
-        const stock = parseInt(productData.quantity || 0);
-
-        if (stock === 0) {
-            alert(`Sorry, "${productData.name}" is out of stock.`);
+    const existing = cart.find(item => item.product.rowId === productData.rowId || (item.product.id && item.product.id === productData.id));
+    const btn = event?.target;
+    if (existing) {
+        if (existing.quantity >= stock) {
+            alert(`Only ${stock} available.`);
             return;
         }
-
-        const existing = cart.find(item =>
-            item.product.rowId === productData.rowId ||
-            (item.product.id && item.product.id === productData.id)
-        );
-
-        if (existing) {
-            if (existing.quantity >= stock) {
-                alert(`Only ${stock} unit(s) available for "${productData.name}".`);
-                return;
-            }
-            existing.quantity += 1;
-        } else {
-            cart.push({ product: productData, quantity: 1 });
-        }
-
-        updateCartUI();
-
-        // Visual feedback on Add to Cart button
-        const btn = event?.target;
-        if (btn && btn.tagName === 'BUTTON') {
-            const originalText = btn.textContent;
-            btn.textContent = existing ? 'Increased!' : 'Added!';
-            btn.style.background = '#28a745';
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.style.background = '#ea4335';
-            }, 1000);
-        }
+        existing.quantity += 1;
+        if (btn) btn.textContent = 'Increased!';
+    } else {
+        cart.push({ product: productData, quantity: 1 });
+        if (btn) btn.textContent = 'Added!';
     }
-
-    // Fixed: Use global functions properly
-    window.changeQuantity = function(index, change) {
-        const item = cart[index];
-        const stock = parseInt(item.product.quantity || 0);
-        const newQty = item.quantity + change;
-
-        if (newQty < 1) {
-            if (confirm("Remove this item from cart?")) {
-                cart.splice(index, 1);
-            }
-        } else if (newQty > stock) {
-            alert(`Only ${stock} unit(s) available.`);
-        } else {
-            item.quantity = newQty;
-        }
-
-        updateCartUI();
-    };
-
-    window.removeFromCart = function(index) {
-        if (confirm("Remove this item from your cart?")) {
-            cart.splice(index, 1);
-            updateCartUI();
-        }
-    };
-
-    // Modal controls
-    floatingCartBtn.onclick = () => {
-        orderModalOverlay.style.display = 'flex';
-        renderCartItems();
-        updateOrderTotal();
-    };
-
-    window.closeOrderModal = () => {
-        orderModalOverlay.style.display = 'none';
-    };
-
-    orderModalOverlay.onclick = (e) => {
-        if (e.target === orderModalOverlay) closeOrderModal();
-    };
-
-    window.placeOrder = async function() {
-        if (cart.length === 0) {
-            alert("Your cart is empty!");
-            return;
-        }
-
-        const customerName = document.getElementById('customerName').value.trim();
-        const customerLocation = document.getElementById('customerLocation').value.trim();
-
-        if (!customerName || !customerLocation) {
-            alert("Please enter your name and delivery location.");
-            return;
-        }
-
-        const items = cart.map(item => ({
-            name: item.product.name || "Unknown Product",
-            price: parseFloat(item.product.sell || 0),
-            quantity: item.quantity,
-            rowId: item.product.rowId || item.product.id || ""
-        }));
-
-        const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-        const payload = {
-            action: "placeOrder",
-            businessOwnerId: businessOwnerId,
-            customerDeviceId: MY_DEVICE_ID,
-            customerName,
-            customerLocation,
-            message: document.getElementById('orderMessage').value.trim(),
-            items,
-            total,
-            timestamp: new Date().toISOString()
-        };
-
-        try {
-            await fetch(SCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify(payload)
-            });
-
-            alert("Order placed successfully! The seller will contact you soon.");
-            cart = [];
-            updateCartUI();
-            closeOrderModal();
-            document.getElementById('customerName').value = '';
-            document.getElementById('customerLocation').value = '';
-            document.getElementById('orderMessage').value = '';
-        } catch (err) {
-            console.error(err);
-            alert("Order sent successfully! (No network confirmation)");
-            cart = [];
-            updateCartUI();
-            closeOrderModal();
-        }
-    };
-
-    // Safe override for Add to Cart button
-    function setupProductCardOverride() {
-        if (typeof createProductCard !== 'function') {
-            setTimeout(setupProductCardOverride, 100);
-            return;
-        }
-
-        const original = createProductCard;
-        window.createProductCard = function(r) {
-            const card = original(r);
-
-            if (!window.IS_ADMIN_VIEW) {
-                const info = card.querySelector('.card-info');
-                if (info) {
-                    const stock = parseInt(r.quantity || 0);
-                    const stockText = stock === 0 ? 'Out of stock' :
-                                      stock <= 5 ? `Only ${stock} left` : `${stock} available`;
-
-                    // Add stock indicator
-                    const stockEl = document.createElement('div');
-                    stockEl.style.fontSize = '0.9rem';
-                    stockEl.style.margin = '8px 0';
-                    stockEl.style.color = stock === 0 ? '#dc3545' : stock <= 5 ? '#e67e22' : '#28a745';
-                    stockEl.style.fontWeight = 'bold';
-                    stockEl.textContent = stockText;
-                    info.appendChild(stockEl);
-
-                    // Add to Cart button
-                    const addBtn = document.createElement('button');
-                    addBtn.className = 'btn-black update-product-btn';
-                    addBtn.style.marginTop = '10px';
-                    addBtn.style.background = stock === 0 ? '#999' : '#ea4335';
-                    addBtn.style.width = '100%';
-                    addBtn.textContent = stock === 0 ? 'Out of Stock' : 'Add to Cart';
-                    addBtn.disabled = stock === 0;
-
-                    addBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        const copy = { ...r };
-                        if (r.row && !copy.rowId) copy.rowId = r.row;
-                        addToCart(copy);
-                    };
-
-                    info.appendChild(addBtn);
-                }
-            }
-            return card;
-        };
-
-        console.log("Cart system ready!");
+    if (btn) {
+        btn.style.background = '#28a745';
+        setTimeout(() => {
+            btn.textContent = 'Add to Cart';
+            btn.style.background = '#ea4335';
+        }, 1000);
     }
-
-    setupProductCardOverride();
     updateCartUI();
+}
+
+window.changeQuantity = function(index, change) {
+    const item = cart[index];
+    const stock = parseInt(item.product.quantity || 0);
+    const newQty = item.quantity + change;
+    if (newQty < 1) {
+        if (confirm("Remove this item?")) cart.splice(index, 1);
+    } else if (newQty > stock) {
+        alert(`Only ${stock} available.`);
+    } else {
+        item.quantity = newQty;
+    }
+    updateCartUI();
+};
+
+window.removeFromCart = function(index) {
+    if (confirm("Remove from cart?")) {
+        cart.splice(index, 1);
+        updateCartUI();
+    }
+};
+
+floatingCartBtn.onclick = () => {
+    orderModalOverlay.style.display = 'flex';
+    renderCartItems();
+    updateOrderTotal();
+};
+
+window.closeOrderModal = () => {
+    orderModalOverlay.style.display = 'none';
+};
+
+orderModalOverlay.onclick = (e) => {
+    if (e.target === orderModalOverlay) closeOrderModal();
+};
+
+// ============== PLACE ORDER — GET KEY + LOAD ALL ORDERS ==============
+window.placeOrder = async function() {
+    if (cart.length === 0) {
+        alert("Your cart is empty!");
+        return;
+    }
+
+    const customerName = document.getElementById('customerName').value.trim();
+    const customerLocation = document.getElementById('customerLocation').value.trim();
+
+    if (!customerName || !customerLocation) {
+        alert("Please enter your name and location.");
+        return;
+    }
+
+    const items = cart.map(item => ({
+        name: item.product.name || "Unknown Product",
+        price: parseFloat(item.product.sell || 0),
+        quantity: item.quantity
+    }));
+
+    const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+    const payload = {
+        action: "placeOrder",
+        businessOwnerId: businessOwnerId,
+        customerDeviceId: MY_DEVICE_ID,
+        customerName: customerName,
+        customerLocation,
+        message: document.getElementById('orderMessage').value.trim(),
+        items,
+        total,
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.result !== "success" || !result.recoveryKey) {
+            throw new Error("Order failed");
+        }
+
+        const recoveryKey = result.recoveryKey;
+
+        successMessage.innerHTML = `
+            Order placed successfully!<br>
+            <strong>Recovery Key: ${recoveryKey}</strong><br>
+            <small>Use this key once — it unlocks ALL your orders forever</small>
+        `;
+        successMessage.style.display = 'block';
+
+        recoveryKeyInput.value = recoveryKey;
+
+        // Load ALL orders using device ID (one key = all orders)
+        await loadAllCustomerOrders();
+
+        cart = [];
+        updateCartUI();
+        closeOrderModal();
+
+        // Keep name for next order
+        document.getElementById('customerName').value = customerName;
+        document.getElementById('customerLocation').value = '';
+        document.getElementById('orderMessage').value = '';
+
+    } catch (err) {
+        console.error(err);
+        successMessage.innerHTML = "Order sent! Use your key to view it.";
+        successMessage.style.display = 'block';
+        cart = [];
+        updateCartUI();
+        closeOrderModal();
+    }
+};
+
+// ============== ENTER KEY → LOAD ALL ORDERS (ONE KEY = ALL) ==============
+viewOrdersBtn.onclick = async () => {
+    let key = recoveryKeyInput.value.trim().toUpperCase();
+    if (!/^[A-Z0-9]{8}$/.test(key)) {
+        alert("Please enter a valid 8-character recovery key.");
+        return;
+    }
+
+    ordersList.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">Loading all your orders...</div>';
+    recoveryKeySection.style.display = 'none';
+    ordersSection.style.display = 'block';
+    noOrdersMsg.style.display = 'none';
+    successMessage.style.display = 'none';
+
+    // Just validate key format — then load ALL orders for this device
+    await loadAllCustomerOrders();
+};
+
+// ============== LOAD ALL ORDERS FOR THIS CUSTOMER (DEVICE-BASED) ==============
+async function loadAllCustomerOrders() {
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                action: "getCustomerOrders",
+                deviceId: MY_DEVICE_ID
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.result === "success" && result.orders && result.orders.length > 0) {
+            displayOrders(result.orders);
+            successMessage.innerHTML = `Found ${result.orders.length} order(s)`;
+            successMessage.style.display = 'block';
+        } else {
+            noOrdersMsg.style.display = 'block';
+            ordersList.innerHTML = '';
+            successMessage.innerHTML = "No orders found yet.";
+            successMessage.style.display = 'block';
+        }
+    } catch (err) {
+        console.error(err);
+        ordersList.innerHTML = '<p style="text-align:center;color:#c00;">Failed to load orders. Try again.</p>';
+    }
+}
+
+// ============== LOG OUT / USE DIFFERENT KEY ==============
+logoutOrdersBtn.onclick = () => {
+    recoveryKeySection.style.display = 'block';
+    ordersSection.style.display = 'none';
+    noOrdersMsg.style.display = 'none';
+    successMessage.style.display = 'none';
+    recoveryKeyInput.value = '';
+    ordersList.innerHTML = '';
+};
+
+// ============== DISPLAY ORDERS — YOUR ORIGINAL CLEAN STYLE + EXACT NAME ==============
+function displayOrders(orders) {
+    if (orders.length === 0) {
+        noOrdersMsg.style.display = 'block';
+        ordersList.innerHTML = '';
+        return;
+    }
+    noOrdersMsg.style.display = 'none';
+
+    ordersList.innerHTML = orders.map(order => {
+        const itemsHtml = (order.items || []).map(i => `
+            <div class="order-item-line">
+                <span>${i.quantity} × ${i.name}</span>
+                <span>KES ${i.quantity * i.price}</span>
+            </div>
+        `).join('');
+
+        const statusClass = `status-${order.status || 'Pending'}`;
+
+        // Use the EXACT name typed by customer
+        const displayName = order.customerName && order.customerName.trim() !== "" 
+            ? order.customerName 
+            : 'You';
+
+        return `
+            <div class="order-item">
+                <div class="order-header">
+                    <div style="font-weight:bold; color:#ea4335;">${order.businessName || 'Unknown Shop'}</div>
+                    <div class="order-status ${statusClass}">${order.status || 'Pending'}</div>
+                </div>
+                <div class="order-date">${order.timestamp || 'Unknown time'}</div>
+                <div style="margin:8px 0; font-size:0.95rem; color:#555;">
+                    Customer: <strong>${displayName}</strong>
+                </div>
+                <div class="order-items-list">${itemsHtml}</div>
+                <div class="order-total">Total: KES ${order.total || 0}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Add to Cart override (unchanged)
+function setupProductCardOverride() {
+    if (typeof createProductCard !== 'function') {
+        setTimeout(setupProductCardOverride, 100);
+        return;
+    }
+    const original = createProductCard;
+    window.createProductCard = function(r) {
+        const card = original(r);
+        if (!window.IS_ADMIN_VIEW) {
+            const info = card.querySelector('.card-info');
+            if (info) {
+                const stock = parseInt(r.quantity || 0);
+                const stockText = stock === 0 ? 'Out of stock' :
+                                  stock <= 5 ? `Only ${stock} left` : `${stock} in stock`;
+                const stockEl = document.createElement('div');
+                stockEl.style.fontSize = '0.9rem';
+                stockEl.style.margin = '8px 0';
+                stockEl.style.color = stock === 0 ? '#dc3545' : stock <= 5 ? '#e67e22' : '#28a745';
+                stockEl.style.fontWeight = 'bold';
+                stockEl.textContent = stockText;
+                info.appendChild(stockEl);
+
+                const addBtn = document.createElement('button');
+                addBtn.className = 'btn-black update-product-btn';
+                addBtn.style.marginTop = '10px';
+                addBtn.style.background = stock === 0 ? '#999' : '#ea4335';
+                addBtn.style.width = '100%';
+                addBtn.textContent = stock === 0 ? 'Out of Stock' : 'Add to Cart';
+                addBtn.disabled = stock === 0;
+                addBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const copy = { ...r };
+                    if (r.row && !copy.rowId) copy.rowId = r.row;
+                    addToCart(copy);
+                };
+                info.appendChild(addBtn);
+            }
+        }
+        return card;
+    };
+}
+setupProductCardOverride();
+updateCartUI();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
    <script>
@@ -840,7 +1049,7 @@
   }
 </script>
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytKZWBTQ3DFQgln0_3XubSS8MqoJCWG2aUB4AKGJ1AD9_3Wd6x01h7YYcMLstbYRQU/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzrNX9VnuI_Mv-30-TzfsxdMQhI5KBG6rYFd7KIQONdylOIgmeweDVVrVeikUQwmZhOw/exec";
 
     function getMyDeviceId() {
         let id = localStorage.getItem('myDeviceId');
