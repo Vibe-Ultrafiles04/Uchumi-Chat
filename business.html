@@ -493,6 +493,48 @@
     margin-top: 12px;
     color: #ea4335;
 }
+/* Big bold customer name at the top (exactly like seller notifications) */
+.customer-name {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #333;
+    margin: 12px 0 8px 0;
+    text-align: left;
+}
+
+/* Delivery location line — same style as other meta info */
+.order-meta {
+    font-size: 0.95rem;
+    color: #666;
+    margin: 8px 0;
+    padding-left: 2px;
+}
+
+/* Customer note box — highlighted but still clean */
+.message-content {
+    background: #f8f9fa;
+    border-left: 4px solid #ea4335;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin: 14px 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #333;
+}
+
+.message-content strong {
+    color: #ea4335;
+    font-size: 1rem;
+    display: block;
+    margin-bottom: 6px;
+}
+
+/* Slight spacing adjustment for better flow */
+.order-items-list {
+    margin: 14px 0;
+    padding-left: 10px;
+    border-left: 2px solid #eee;
+}
     </style>
 </head>
 <body>
@@ -569,37 +611,67 @@
             </button>
         </div>
     </div>
-<!-- My Orders Tracking Card -->
+<!-- My Orders Tracking Card - Collapsible -->
 <div class="order-tracking-card" id="orderTrackingCard">
-    <h3 style="text-align:center; margin-bottom:20px; color:#ea4335;">My Orders</h3>
+    <!-- Toggle Button -->
+    <button id="toggleOrdersBtn" style="
+        width: 100%;
+        padding: 16px;
+        background: #ea4335;
+        color: white;
+        border: none;
+        border-radius: 16px 16px 0 0;
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 0;
+    ">
+        <span>My Orders</span>
+        <span id="toggleArrow" style="font-size: 1.4rem; transition: transform 0.3s ease;">▼</span>
+    </button>
 
-    <div id="recoveryKeySection">
-        <p style="text-align:center; margin-bottom:15px; color:#666;">
-            Enter your Order Recovery Key to view your orders and status.
-        </p>
-        <input type="text" id="recoveryKeyInput" placeholder="e.g. AB3K9P2M" maxlength="8"
-               style="width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; text-transform:uppercase; text-align:center; font-size:1.2rem; letter-spacing:2px;">
-        <button id="viewOrdersBtn"
-                style="width:100%; padding:14px; background:#ea4335; color:white; border:none; border-radius:50px; font-weight:bold; cursor:pointer;">
-            View My Orders
-        </button>
-        <p style="font-size:0.9rem; margin-top:15px; color:#888; text-align:center;">
-            You received this key after placing an order.<br>
-            It lets you check status anytime.
-        </p>
-    </div>
+    <!-- Collapsible Content -->
+    <div id="ordersContent" style="
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+        border-radius: 0 0 20px 20px;
+    ">
+        <div style="padding: 25px;">
+            <div id="recoveryKeySection">
+                <p style="text-align:center; margin-bottom:15px; color:#666;">
+                    Enter your Order Recovery Key to view your orders and status.
+                </p>
+                <input type="text" id="recoveryKeyInput" placeholder="e.g. AB3K9P2M" maxlength="8"
+                       style="width:100%; padding:14px; margin-bottom:12px; border-radius:12px; border:1px solid #ccc; box-sizing:border-box; text-transform:uppercase; text-align:center; font-size:1.2rem; letter-spacing:2px;">
+                <button id="viewOrdersBtn"
+                        style="width:100%; padding:14px; background:#ea4335; color:white; border:none; border-radius:50px; font-weight:bold; cursor:pointer;">
+                    View My Orders
+                </button>
+                <p style="font-size:0.9rem; margin-top:15px; color:#888; text-align:center;">
+                    You received this key after placing an order.<br>
+                    It lets you check status anytime.
+                </p>
+            </div>
 
-    <div id="ordersSection" style="display:none;">
-        <div id="ordersList"></div>
-        <button id="logoutOrdersBtn"
-                style="width:100%; margin-top:20px; padding:12px; background:#f0f0f0; color:#333; border:1px solid #ddd; border-radius:50px;">
-            Log Out / Use Different Key
-        </button>
-    </div>
+            <div id="ordersSection" style="display:none;">
+                <div id="ordersList"></div>
+                <button id="logoutOrdersBtn"
+                        style="width:100%; margin-top:20px; padding:12px; background:#f0f0f0; color:#333; border:1px solid #ddd; border-radius:50px;">
+                    Log Out / Use Different Key
+                </button>
+            </div>
 
-    <div id="noOrdersMsg" style="display:none; text-align:center; padding:40px; color:#888;">
-        <p>No orders found with this key.</p>
-        <p style="font-size:0.9rem;">Make sure you're using the correct recovery key.</p>
+            <div id="noOrdersMsg" style="display:none; text-align:center; padding:40px; color:#888;">
+                <p>No orders found with this key.</p>
+                <p style="font-size:0.9rem;">Make sure you're using the correct recovery key.</p>
+            </div>
+        </div>
     </div>
 </div>
     
@@ -658,6 +730,72 @@
         </div>
     </div>
 </div>
+
+<script>
+// ============== RECOVERY KEY AUTO-SAVE & AUTO-FILL ==============
+
+const RECOVERY_KEY_STORAGE = 'konaMartRecoveryKey';
+
+// Function to save the key
+function saveRecoveryKey(key) {
+    if (key && /^[A-Z0-9]{8}$/.test(key.trim().toUpperCase())) {
+        localStorage.setItem(RECOVERY_KEY_STORAGE, key.trim().toUpperCase());
+    }
+}
+
+// Function to load and autofill the key on page load
+function loadSavedRecoveryKey() {
+    const savedKey = localStorage.getItem(RECOVERY_KEY_STORAGE);
+    if (savedKey && recoveryKeyInput) {
+        recoveryKeyInput.value = savedKey;
+        // Optional: Auto-expand the card so user sees it's already filled
+        // expandOrdersCard(); // Uncomment if you want card open by default when key exists
+    }
+}
+
+// Auto-fill when page loads
+document.addEventListener('DOMContentLoaded', loadSavedRecoveryKey);
+
+// Save the key immediately after a successful order
+// (We modify the placeOrder success block)
+</script>
+<script>
+// === COLLAPSIBLE MY ORDERS CARD - WITH AUTO-LOAD ON OPEN ===
+const toggleOrdersBtn = document.getElementById('toggleOrdersBtn');
+const ordersContent = document.getElementById('ordersContent');
+const toggleArrow = document.getElementById('toggleArrow');
+
+toggleOrdersBtn.addEventListener('click', function() {
+    if (ordersContent.style.maxHeight && ordersContent.style.maxHeight !== '0px') {
+        // Collapse
+        ordersContent.style.maxHeight = '0px';
+        toggleArrow.textContent = '▼';
+    } else {
+        // Expand
+        ordersContent.style.maxHeight = ordersContent.scrollHeight + 100 + 'px';
+        toggleArrow.textContent = '▲';
+
+        // AUTO-LOAD ORDERS IF KEY IS SAVED AND ORDERS NOT YET VISIBLE
+        const savedKey = localStorage.getItem('konaMartRecoveryKey');
+        if (savedKey && ordersSection.style.display === 'none') {
+            recoveryKeyInput.value = savedKey;
+            viewOrdersBtn.click(); // This automatically loads the orders
+        }
+    }
+});
+
+// Helper functions (keep these if not already present)
+function expandOrdersCard() {
+    ordersContent.style.maxHeight = ordersContent.scrollHeight + 100 + 'px';
+    toggleArrow.textContent = '▲';
+}
+
+function refreshOrdersHeight() {
+    if (ordersContent.style.maxHeight !== '0px') {
+        ordersContent.style.maxHeight = ordersContent.scrollHeight + 100 + 'px';
+    }
+}
+</script>
 <script>
 // ============== CART + ONE RECOVERY KEY UNLOCKS ALL CUSTOMER ORDERS ==============
 
@@ -687,7 +825,9 @@ successMessage.style.cssText = `
     border: 1px solid #c3e6cb; display: none;
 `;
 successMessage.id = 'orderSuccessMessage';
-document.getElementById('orderTrackingCard').insertBefore(successMessage, recoveryKeySection);
+// Place success message inside the collapsible content (so it's hidden when card is closed)
+const contentPaddingDiv = document.querySelector('#ordersContent > div');
+contentPaddingDiv.insertBefore(successMessage, recoveryKeySection);
 
 // Cart UI functions (unchanged)
 function updateCartUI() {
@@ -852,20 +992,23 @@ window.placeOrder = async function() {
             throw new Error("Order failed");
         }
 
-        const recoveryKey = result.recoveryKey;
+       const recoveryKey = result.recoveryKey.toUpperCase();
 
-        successMessage.innerHTML = `
-            Order placed successfully!<br>
-            <strong>Recovery Key: ${recoveryKey}</strong><br>
-            <small>Use this key once — it unlocks ALL your orders forever</small>
-        `;
-        successMessage.style.display = 'block';
+successMessage.innerHTML = `
+    Order placed successfully!<br>
+    <strong>Recovery Key: ${recoveryKey}</strong><br>
+    <small>Saved automatically — you can close and come back anytime!</small>
+`;
+successMessage.style.display = 'block';
 
-        recoveryKeyInput.value = recoveryKey;
+// Auto-fill input AND save to localStorage
+recoveryKeyInput.value = recoveryKey;
+saveRecoveryKey(recoveryKey);  // ← This saves it permanently for this device
 
         // Load ALL orders using device ID (one key = all orders)
         await loadAllCustomerOrders();
-
+        expandOrdersCard();
+setTimeout(refreshOrdersHeight, 300);
         cart = [];
         updateCartUI();
         closeOrderModal();
@@ -893,16 +1036,22 @@ viewOrdersBtn.onclick = async () => {
         return;
     }
 
-    ordersList.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">Loading all your orders...</div>';
+    // Show loading state
+    ordersList.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">Loading your orders...</div>';
     recoveryKeySection.style.display = 'none';
     ordersSection.style.display = 'block';
     noOrdersMsg.style.display = 'none';
     successMessage.style.display = 'none';
 
-    // Just validate key format — then load ALL orders for this device
-    await loadAllCustomerOrders();
-};
+    // Expand the card first so user sees what's happening
+    expandOrdersCard();
 
+    // Load orders
+    await loadAllCustomerOrders();
+
+    // After orders load, refresh height in case content grew
+    setTimeout(refreshOrdersHeight, 200);
+};
 // ============== LOAD ALL ORDERS FOR THIS CUSTOMER (DEVICE-BASED) ==============
 async function loadAllCustomerOrders() {
     try {
@@ -953,38 +1102,67 @@ function displayOrders(orders) {
     }
     noOrdersMsg.style.display = 'none';
 
-    ordersList.innerHTML = orders.map(order => {
-        const itemsHtml = (order.items || []).map(i => `
-            <div class="order-item-line">
-                <span>${i.quantity} × ${i.name}</span>
-                <span>KES ${i.quantity * i.price}</span>
-            </div>
-        `).join('');
+    let html = '';
 
-        const statusClass = `status-${order.status || 'Pending'}`;
+    const grouped = {};
+    orders.forEach(order => {
+        const name = order.businessName || "Unknown Shop";
+        if (!grouped[name]) grouped[name] = [];
+        grouped[name].push(order);
+    });
 
-        // Use the EXACT name typed by customer
-        const displayName = order.customerName && order.customerName.trim() !== "" 
-            ? order.customerName 
-            : 'You';
+    Object.keys(grouped).sort().forEach(businessName => {
+        html += `<h4 style="color:#ea4335; margin:20px 0 10px; text-align:center;">${businessName}</h4>`;
 
-        return `
-            <div class="order-item">
-                <div class="order-header">
-                    <div style="font-weight:bold; color:#ea4335;">${order.businessName || 'Unknown Shop'}</div>
-                    <div class="order-status ${statusClass}">${order.status || 'Pending'}</div>
+        grouped[businessName].forEach(order => {
+            const itemsHtml = (order.items || []).map(i => `
+                <div class="order-item-line">
+                    <span>${i.quantity} × ${i.name}</span>
+                    <span>KES ${formatNumberWithCommas(i.quantity * i.price)}</span>
                 </div>
-                <div class="order-date">${order.timestamp || 'Unknown time'}</div>
-                <div style="margin:8px 0; font-size:0.95rem; color:#555;">
-                    Customer: <strong>${displayName}</strong>
+            `).join('');
+
+            const statusClass = `status-${order.status || 'Pending'}`;
+
+            const customerNote = order.message ? 
+                `<div class="message-content"><strong>Your Note to Seller:</strong>${order.message.replace(/\n/g, '<br>')}</div>` : '';
+
+            html += `
+                <div class="order-item">
+                    <div class="order-header">
+                        <div class="order-status ${statusClass}">${order.status || 'Pending'}</div>
+                    </div>
+                    <div class="order-date">Placed on: ${order.timestamp || 'Unknown time'}</div>
+                    
+                    <div class="customer-name">${order.customerName || 'You'}</div>
+                    
+                    <div class="order-meta">Delivery Location: ${order.customerLocation || 'Not provided'}</div>
+                    
+                    <div class="order-items-list">${itemsHtml}</div>
+                    
+                    <div class="order-total">Total: KES ${formatNumberWithCommas(order.total || 0)}</div>
+                    
+                    ${customerNote}
                 </div>
-                <div class="order-items-list">${itemsHtml}</div>
-                <div class="order-total">Total: KES ${order.total || 0}</div>
-            </div>
-        `;
-    }).join('');
+            `;
+        });
+    });
+
+    ordersList.innerHTML = html;
+    expandOrdersCard();
+    setTimeout(refreshOrdersHeight, 200);
 }
-
+// ==== NUMBER FORMATTING WITH COMMAS (for KES prices) ====
+function formatNumberWithCommas(number, decimals = 0) {
+    if (number == null || isNaN(number)) return '0';
+    
+    const num = parseFloat(number);
+    const fixed = num.toFixed(decimals);
+    const parts = fixed.split('.');
+    const whole = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    return decimals > 0 && parts.length > 1 ? whole + '.' + parts[1] : whole;
+}
 // Add to Cart override (unchanged)
 function setupProductCardOverride() {
     if (typeof createProductCard !== 'function') {
@@ -1049,7 +1227,7 @@ updateCartUI();
   }
 </script>
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzrNX9VnuI_Mv-30-TzfsxdMQhI5KBG6rYFd7KIQONdylOIgmeweDVVrVeikUQwmZhOw/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_yNzXeF9S8gVaW7tfCmkjOz_xDHy7uZxLrnSS9oAr2sgeOv_bM40h4w5irrIhmvA0xw/exec";
 
     function getMyDeviceId() {
         let id = localStorage.getItem('myDeviceId');

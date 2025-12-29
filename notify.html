@@ -195,7 +195,7 @@
         <div class="tab active" data-tab="messages">✉️ Messages</div>
         <div class="tab" data-tab="orders">📦 Orders</div>
     </div>
-
+<button id="backBtn">← Back to Home</button>
     <!-- Messages Tab -->
     <div id="messagesTab" class="tab-content active">
         <div id="messagesContainer">
@@ -210,7 +210,7 @@
         </div>
     </div>
 
-    <button id="backBtn">← Back to Home</button>
+    
 
     <script>
         if ('serviceWorker' in navigator) {
@@ -223,7 +223,7 @@
     </script>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzrNX9VnuI_Mv-30-TzfsxdMQhI5KBG6rYFd7KIQONdylOIgmeweDVVrVeikUQwmZhOw/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_yNzXeF9S8gVaW7tfCmkjOz_xDHy7uZxLrnSS9oAr2sgeOv_bM40h4w5irrIhmvA0xw/exec";
 
         // Smart timestamp formatter — handles both ISO and pre-formatted strings
         const formatReadableDate = (timestamp) => {
@@ -333,7 +333,7 @@
                     return;
                 }
 
-                const ordersHTML = res.orders.map(order => {
+                              const ordersHTML = res.orders.map(order => {
                     const statusClass = {
                         "Pending": "status-pending",
                         "Confirmed": "status-confirmed",
@@ -341,20 +341,37 @@
                         "Cancelled": "status-cancelled"
                     }[order.status] || "status-pending";
 
-                    const itemsHtml = order.items.map(item =>
-                        `• ${item.quantity} × ${item.name} — KES ${item.price * item.quantity}`
-                    ).join('<br>');
+                    const itemsHtml = order.items.map(item => {
+                        const lineTotal = item.quantity * parseFloat(item.price || 0);
+                        return `• ${item.quantity} × ${item.name} — KES ${formatNumberWithCommas(lineTotal)}`;
+                    }).join('<br>');
 
-                    const actions = order.status === "Pending" ? `
-                        <div class="order-actions">
+                    // Status-specific actions (Confirm, Deliver, Cancel)
+                    let statusActions = '';
+                    if (order.status === "Pending") {
+                        statusActions = `
                             <button class="btn-confirm" onclick="updateOrder('${order.orderId}', 'Confirmed')">Confirm Order</button>
                             <button class="btn-cancel" onclick="updateOrder('${order.orderId}', 'Cancelled')">Cancel Order</button>
-                        </div>
-                    ` : order.status === "Confirmed" ? `
-                        <div class="order-actions">
+                        `;
+                    } else if (order.status === "Confirmed") {
+                        statusActions = `
                             <button class="btn-deliver" onclick="updateOrder('${order.orderId}', 'Delivered')">Mark Delivered</button>
+                        `;
+                    }
+
+                    // Always show the permanent Delete button
+                    const deleteButton = `
+                        <button class="btn-cancel" style="background:#c82333;" onclick="deleteOrder('${order.orderId}')">
+                            Delete Order
+                        </button>
+                    `;
+
+                    const actions = `
+                        <div class="order-actions">
+                            ${statusActions}
+                            ${deleteButton}
                         </div>
-                    ` : '';
+                    `;
 
                     return `
                         <div class="order">
@@ -362,7 +379,7 @@
                             <div class="order-time">Placed on: ${formatReadableDate(order.timestamp)}</div>
                             <div class="order-meta">Location: ${order.customerLocation || 'Not provided'}</div>
                             <div class="order-items">${itemsHtml}</div>
-                            <div class="order-total">Total: KES ${order.total}</div>
+                            <div class="order-total">Total: KES ${formatNumberWithCommas(order.total || 0)}</div>
                             ${order.message ? `<div class="message-content"><strong>Customer Note:</strong><br>${order.message.replace(/\n/g, '<br>')}</div>` : ''}
                             <div style="margin-top:12px;">
                                 <span class="status-badge ${statusClass}">${order.status}</span>
@@ -378,6 +395,32 @@
                 ordersContainer.innerHTML = '<div class="no-data">Failed to load orders.</div>';
             });
 
+                        // Permanently delete an order
+            window.deleteOrder = function(orderId) {
+                if (!confirm(`⚠️ PERMANENTLY DELETE order ${orderId}?\n\nThis action CANNOT be undone.`)) {
+                    return;
+                }
+
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: "deleteOrder",     // Make sure your Google Apps Script supports this action
+                        orderId: orderId,
+                        deviceId: deviceId
+                    }),
+                    headers: { 'Content-Type': 'text/plain' }
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.result === "success") {
+                        alert("Order permanently deleted.");
+                        location.reload();
+                    } else {
+                        alert("Delete failed: " + (res.message || "Unknown error"));
+                    }
+                })
+                .catch(() => alert("Network error while deleting order"));
+            };
             // Update order status
             window.updateOrder = function(orderId, newStatus) {
                 if (!confirm(`Change order ${orderId} to "${newStatus}"?`)) return;
@@ -404,6 +447,19 @@
                 .catch(() => alert("Network error"));
             };
         });
+        // ==== NUMBER FORMATTING WITH COMMAS (for KES prices and totals) ====
+function formatNumberWithCommas(number, decimals = 0) {
+    if (number == null || number === '' || isNaN(number)) return '0';
+    
+    const num = parseFloat(number);
+    if (isNaN(num)) return '0';
+    
+    const fixed = num.toFixed(decimals);
+    const parts = fixed.split('.');
+    const whole = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    return decimals > 0 && parts.length > 1 ? whole + '.' + parts[1] : whole;
+}
     </script>
 </body>
 </html>
