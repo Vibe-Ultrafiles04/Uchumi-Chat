@@ -1601,55 +1601,88 @@ async function countVideoView() {
         return (p.businessName || p["Business Name"] || p.BusinessName || p.businessname || "").trim();
     }
 
-    // This function is kept separate to handle DOM manipulation (Separation of Concerns)
-    window.renderProductsToDOM = function(products) {
-        const container = businessProductsContainer;
-        container.innerHTML = ''; 
-        
-        // ⭐ CRITICAL FIX RE-APPLIED: Re-introducing the client-side filter as a safety net.
-        const filtered = products.filter(p => {
-            // Normalize both names for comparison (case-insensitive)
-            const productName = getBusinessName(p).toLowerCase();
-            const targetName = targetBusiness.toLowerCase();
-            return productName === targetName;
+// This function is kept separate to handle DOM manipulation (Separation of Concerns)
+window.renderProductsToDOM = function(products) {
+    const container = businessProductsContainer;
+
+    // Set up smooth fade-in transition only once
+    if (!container.dataset.transitionSet) {
+        container.style.opacity = '0';
+        container.style.transition = 'opacity 0.5s ease';
+        container.dataset.transitionSet = 'true';
+    }
+
+    // Hide container while rebuilding to prevent any flash of wrong order
+    container.style.opacity = '0';
+    container.innerHTML = '';
+
+    if (!Array.isArray(products) || products.length === 0) {
+        container.innerHTML = `<div class="hint" style="padding:80px;text-align:center;font-size:1.2rem;">
+            No products found for <strong>${targetBusiness}</strong>.
+        </div>`;
+        requestAnimationFrame(() => container.style.opacity = '1');
+        return;
+    }
+
+    // Client-side filter (safety net)
+    const filtered = products.filter(p => {
+        const productName = getBusinessName(p).toLowerCase();
+        const targetName = targetBusiness.toLowerCase();
+        return productName === targetName;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="hint" style="padding:80px;text-align:center;font-size:1.2rem;">
+            No products found for <strong>${targetBusiness}</strong>.
+        </div>`;
+        requestAnimationFrame(() => container.style.opacity = '1');
+        return;
+    }
+
+    // NEW: REVERSE ORDER — NEWEST PRODUCTS FIRST (smooth, no jump)
+    const reversedProducts = filtered.slice().reverse();
+
+    // Update categories
+    const cats = [...new Set(reversedProducts.map(p => p.category || 'General').filter(Boolean))];
+    const categoriesEl = document.getElementById('businessCategories');
+    if (categoriesEl) {
+        categoriesEl.textContent = cats.join(' • ');
+    }
+
+    // Group by category
+    const byCategory = {};
+    reversedProducts.forEach(p => {
+        const cat = p.category || 'General';
+        if (!byCategory[cat]) byCategory[cat] = [];
+        byCategory[cat].push(p);
+    });
+
+    // Build full structure while hidden
+    for (const [category, items] of Object.entries(byCategory)) {
+        const header = document.createElement('h4');
+        header.className = 'category-group-header-small';
+        header.textContent = category;
+        container.appendChild(header);
+
+        const row = document.createElement('div');
+        row.className = 'product-group-wrapper';
+
+        items.forEach(p => {
+            if (!p.rowId && p.row) p.rowId = p.row;
+            const card = createProductCard(p);
+            row.appendChild(card);
         });
 
-        if (filtered.length === 0) {
-            container.innerHTML = `<div class="hint" style="padding:80px;text-align:center;font-size:1.2rem;">
-                No products found for <strong>${targetBusiness}</strong>.
-            </div>`;
-            return;
-        }
+        container.appendChild(row);
+    }
 
-        const cats = [...new Set(filtered.map(p => p.category || 'General').filter(Boolean))];
-        document.getElementById('businessCategories').textContent = cats.join(' • ');
-
-        const byCategory = {};
-        filtered.forEach(p => {
-            const cat = p.category || 'General';
-            if (!byCategory[cat]) byCategory[cat] = [];
-            byCategory[cat].push(p);
+    // Smooth fade-in after everything is ready
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            container.style.opacity = '1';
         });
-
-        for (const [category, items] of Object.entries(byCategory)) {
-            const header = document.createElement('h4');
-            header.className = 'category-group-header-small';
-            header.textContent = category;
-            container.appendChild(header);
-
-            const row = document.createElement('div');
-            row.className = 'product-group-wrapper';
-
-            items.forEach(p => {
-                if (!p.rowId && p.row) p.rowId = p.row;
-                const card = createProductCard(p); // Assuming createProductCard is a global function
-                row.appendChild(card);
-            });
-
-            container.appendChild(row);
-        }
-    };
-
+    });
+};
     // Sharing functions - NOW POINTS TO business.html
     function generateShareableLink(businessName) {
         if (!businessName?.trim()) return '';
