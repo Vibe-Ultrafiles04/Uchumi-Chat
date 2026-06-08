@@ -626,7 +626,21 @@ function renderProductsToDOM(productsToRender) {
         productsContainer.appendChild(businessGroupContainer);
     }
 }
+// ** 1. Global Callback Function (Handles JSONP Response) **
+function handleInventoryData(json) {
+    productsContainer.innerHTML = "";
 
+    if (!Array.isArray(json.rows) || json.rows.length === 0) {
+        productsContainer.innerHTML = '<div class="hint">No products returned or invalid response format.</div>';
+        return;
+    }
+    
+    // 🆕 NEW: Store the full, reversed list of products globally
+    allProducts = json.rows.slice().reverse(); 
+    
+    // Initial render uses all products
+    renderProductsToDOM(allProducts);
+}
 
 // 🆕 NEW: Filtering Logic
 function filterProducts() {
@@ -651,60 +665,27 @@ function filterProducts() {
 }
 
 
-// ==================== FIXED PRODUCT LOADING ====================
+// ** 2. Fetch Function (Uses JSONP via Script Tag Injection) **
+function fetchAndRenderProducts(){
+    productsContainer.innerHTML = '<div class="hint">Loading products...</div>';
+    
+    const callbackName = 'handleInventoryData'; 
+    const url = `${WEB_APP_URL}?action=list&callback=${callbackName}`;
 
-async function fetchAndRenderProducts() {
-    const container = document.getElementById("productsContainer");
-    container.innerHTML = '<div class="hint">Loading products...</div>';
+    const script = document.createElement('script');
+    script.src = url;
+    
+    script.onload = () => {
+        setTimeout(() => script.remove(), 100); 
+    };
 
-    try {
-        const payload = {
-            action: "list"
-        };
-
-        const response = await fetch(WEB_APP_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "text/plain"   // Important: avoids preflight issues
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const text = await response.text();
-        let data;
-
-        // Handle both possible response formats
-        if (text.startsWith('handleInventoryData(')) {
-            // JSONP-style wrapper
-            const jsonStr = text.slice(text.indexOf('(') + 1, -1);
-            data = JSON.parse(jsonStr);
-        } else {
-            data = JSON.parse(text);
-        }
-
-        if (data && Array.isArray(data.rows)) {
-            allProducts = data.rows.slice().reverse(); 
-            renderProductsToDOM(allProducts);
-        } else {
-            container.innerHTML = '<div class="hint">No products found.</div>';
-        }
-
-    } catch (err) {
-        console.error("Product loading error:", err);
-        container.innerHTML = `
-            <div class="hint" style="color:#d32f2f; padding:20px; text-align:center;">
-                ❌ Error loading products<br>
-                <small>${err.message}</small><br><br>
-                <button onclick="fetchAndRenderProducts()" 
-                        style="padding:10px 20px; font-size:16px;">
-                    🔄 Retry
-                </button>
-            </div>`;
-    }
+    script.onerror = (err) => {
+        console.error("JSONP Request Failed:", err);
+        productsContainer.innerHTML = '<div class="hint">Error loading products (Failed to connect or script error). Check console.</div>';
+        script.remove();
+    };
+    
+    document.head.appendChild(script);
 }
 
 // ----------------------------------------------------------------------
@@ -1012,9 +993,7 @@ if (IS_ADMIN_VIEW) {
 // ----------------------------------------------------------------------
 
 // initial load
-document.addEventListener('DOMContentLoaded', () => {
-    fetchAndRenderProducts();
-});
+fetchAndRenderProducts();
 
 // 🆕 NEW: Add event listener for the filter input to enable filtering
 if(businessFilterInput) {
