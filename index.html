@@ -1,454 +1,458 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kona Mart | Find Business Products</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#3b6dc6" />
-    <link rel="apple-touch-icon" href="inventory192.png" />
-    
-    <meta property="og:title" content="Kona Mart: Find Local Businesses & Products">
-    <meta property="og:url" content="https://vibe-ultrafiles04.github.io/Kona-Mart/index.html">
-    <meta property="og:description" content="Search local business profiles, compare products, and connect instantly via chat!">
-    <meta property="og:image" content="https://raw.githubusercontent.com/Vibe-Ultrafiles04/Uchumi-Chat/main/Kona101.png">
-    <meta property="og:type" content="website">
-    
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://raw.githubusercontent.com/Vibe-Ultrafiles04/Uchumi-Chat/main/Kona101.png">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Kona Mart | Find Business Products</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#3b6dc6" />
+<link rel="apple-touch-icon" href="inventory192.png" />
 
-    <style>
-        body {
-            background: #f9f9f9;
-            margin: 0;
-            padding: 0 0 100px 0;
-            min-height: 100vh;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
+<meta property="og:title" content="Kona Mart: Find Local Businesses & Products">
+<meta property="og:url" content="https://vibe-ultrafiles04.github.io/Kona-Mart/index.html">
+<meta property="og:description" content="Search local business profiles, compare products, and connect instantly via chat!">
+<meta property="og:image" content="https://raw.githubusercontent.com/Vibe-Ultrafiles04/Uchumi-Chat/main/Kona101.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Vibe-Ultrafiles04/Uchumi-Chat/main/Kona101.png">
 
-        h1 {
-            text-align: center;
-            color: #3b6dc6;
-            margin: 30px 0;
-            font-size: 24px;
-        }
+<style>
+  :root{
+    --primary:#3b6dc6;
+    --primary-dark:#2c539e;
+    --accent:#463dc5;
+    --pink:#e91e63;
+    --bg:#f7f8fb;
+    --card-bg:#ffffff;
+    --text:#1c2230;
+    --muted:#6b7280;
+    --border:#e6e8ee;
+    --danger:#ff5252;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing:border-box;
+  }
+  *{box-sizing:inherit;}
+  html,body{
+    background:var(--bg);
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    color:var(--text);
+    -webkit-text-size-adjust:100%;
+  }
+  body{
+    padding-top:var(--safe-top);
+    padding-bottom:calc(var(--safe-bottom) + 24px);
+    min-height:100vh;
+  }
+  img{max-width:100%;}
+  button{font-family:inherit;}
 
-        /* Profile Header */
-        #profileHeader {
-            text-align: center;
-            padding: 15px;
-            background: #e9f0fa;
-            border-bottom: 2px solid #3b6dc6;
-            margin-bottom: 20px;
-            display: none;
-        }
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky;
+    top:0;
+    z-index:50;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:calc(12px + var(--safe-top)) 16px 12px;
+    margin-top:calc(var(--safe-top) * -1);
+    background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+    color:#fff;
+    box-shadow:0 2px 10px rgba(0,0,0,0.12);
+  }
+  .topbar h1{
+    font-size:19px;
+    margin:0;
+    font-weight:700;
+    letter-spacing:.2px;
+  }
+  #installBtn{
+    display:none;
+    width:40px;height:40px;
+    border-radius:50%;
+    border:none;
+    background:rgba(255,255,255,0.18);
+    color:#fff;
+    font-size:18px;
+    cursor:pointer;
+    flex-shrink:0;
+    align-items:center;justify-content:center;
+  }
+  #installBtn:active{background:rgba(255,255,255,0.3);}
 
-        #ownerBusinessNameDisplay {
-            font-size: 18px;
-            font-weight: bold;
-            color: #3b6dc6;
-            margin-bottom: 8px;
-        }
+  /* ---------- Profile bar ---------- */
+  #profileHeader{
+    display:none;
+    padding:14px 16px;
+    background:#eaf1fc;
+    border-bottom:1px solid var(--border);
+  }
+  #ownerBusinessNameDisplay{
+    font-size:15px;
+    font-weight:700;
+    color:var(--primary-dark);
+    margin-bottom:10px;
+  }
+  .profile-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .profile-actions button{
+    flex:1 1 auto;
+    min-height:40px;
+    padding:8px 12px;
+    font-size:13px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:#444;
+    cursor:pointer;
+  }
+  .profile-actions button:active{background:#f0f0f0;}
+  #logoutBtn{background:var(--danger)!important;color:#fff!important;border:none!important;font-weight:600;}
 
-        #editProfileBtn, #logoutBtn {
-            background: #f0f0f0;
-            color: #555;
-            border: 1px solid #ccc;
-            padding: 6px 12px;
-            font-size: 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-            transition: background 0.2s;
-        }
+  /* ---------- Quick actions ---------- */
+  #buttonContainer{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    padding:14px 16px 6px;
+  }
+  #buttonContainer .action-btn{
+    flex:1 1 auto;
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:10px 16px;
+    font-size:14px;
+    font-weight:600;
+    border:none;
+    border-radius:50px;
+    cursor:pointer;
+    color:#fff;
+    text-decoration:none;
+    white-space:nowrap;
+    box-shadow:0 3px 10px rgba(0,0,0,0.12);
+  }
+  #myStudioBtn{display:none;background:var(--primary);}
+  #notificationsBtn{display:none;background:var(--accent);position:relative;}
+  #favoriteBusinessesLink{background:var(--pink);}
+  .action-btn:active{transform:scale(0.97);}
 
-        #editProfileBtn:hover, #logoutBtn:hover {
-            background: #e0e0e0;
-        }
+  #unreadBadge{
+    background:#ff3b30;
+    color:#fff;
+    font-size:11px;
+    font-weight:700;
+    padding:2px 6px;
+    border-radius:10px;
+    line-height:1.4;
+  }
+  #unreadBadge.zero{display:none;}
 
-        /* Filter Bar */
-        .filter-bar {
-            text-align: center;
-            margin: 20px auto;
-            max-width: 90%;
-        }
+  /* ---------- Search ---------- */
+  .search-wrap{
+    position:sticky;
+    top:calc(var(--safe-top) + 56px);
+    z-index:40;
+    background:var(--bg);
+    padding:10px 16px 14px;
+  }
+  .search-wrap label{
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    color:var(--muted);
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+  }
+  .search-wrap input{
+    width:100%;
+    min-height:46px;
+    padding:0 14px;
+    font-size:16px; /* prevents iOS auto-zoom on focus */
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:#fff;
+    outline:none;
+  }
+  .search-wrap input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,109,198,0.15);}
 
-        .filter-bar label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #444;
-        }
+  /* ---------- Products area ---------- */
+  main{padding:0 16px;}
+  .products-area{min-height:200px;}
+  .hint{
+    text-align:center;
+    color:var(--muted);
+    padding:40px 16px;
+    font-size:14px;
+  }
+  .hint.error{color:var(--danger);font-weight:600;}
+  .retry-btn{
+    display:inline-block;
+    margin-top:12px;
+    padding:10px 20px;
+    border-radius:8px;
+    border:none;
+    background:var(--primary);
+    color:#fff;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+  }
 
-        .filter-bar input {
-            width: 100%;
-            max-width: 400px;
-            padding: 12px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-sizing: border-box;
-        }
-
-/* --- New Flex Container for Buttons --- */
-#buttonContainer {
-    display: flex;
-    flex-direction: row; /* Horizontal arrangement */
-    justify-content: center; /* Center buttons horizontally */
-    align-items: center; /* Vertically align them */
-    gap: 8px; /* Space between the buttons/link */
-    padding: 10px;
-    margin: 10px auto;
-    max-width: 100%;
-}
-
-/* My Studio Button */
-#myStudioBtn {
-    display: none;
-    /* Removed margin: 5px auto 0; for Flexbox */
-    padding: 12px 28px; /* Adjusted to match notification button for uniformity */
-    background: #3b6dc6;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(59, 109, 198, 0.3);
-    transition: all 0.3s ease;
-    flex-shrink: 1;
-}
-
-#myStudioBtn:hover {
-    background: #325a9e;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(59, 109, 198, 0.4);
-}
-
-/* Notifications Button */
-#notificationsBtn {
-    display: none;
-    /* Removed margin: 10px auto 20px; for Flexbox */
-    padding: 12px 28px;
-    background: #463dc5;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(70, 61, 197, 0.3);
-    transition: all 0.3s ease;
-    position: relative;
-    flex-shrink: 1;
-}
-
-#notificationsBtn:hover {
-    background: #3a31a8;
-    transform: translateY(-2px);
-}
-
-/* Favorite Businesses Link (New Styles for Flexbox) */
-#favoriteBusinessesLink {
-    background: #e91e63;
-    color: white;
-    padding: 12px 28px; /* Matched button padding/size */
-    border-radius: 50px; /* Matched button border-radius */
-    font-size: 16px; /* Matched button font size */
-    font-weight: 600;
-    box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
-    text-decoration: none; /* Removed underline */
-    transition: all 0.3s ease;
-    display: inline-block;
-    flex-shrink: 1; /* Essential for padding/sizing */
-}
-
-#favoriteBusinessesLink:hover {
-    background: #c2185b;
-    transform: translateY(-2px);
-}
-
-
-/* --- Responsive Design: Stack buttons on smallest screens --- */
-@media (max-width: 550px) {
-    #buttonContainer {
-        flex-direction: column; /* Stack vertically */
-        gap: 5px; 
-    }
-
-    /* Make buttons full width on small screens for easy tapping */
-   /* Decrease size of all buttons and link */
-    #myStudioBtn, 
-    #notificationsBtn, 
-    #favoriteBusinessesLink {
-        padding: 8px 16px; /* Decreased padding (smaller button size) */
-        font-size: 14px; /* Decreased font size */
-        max-width: none; /* Remove max-width restriction */
-        width: auto; /* Ensure width is content-based, allowing shrink */
-    }
-    
-    /* Decrease size of the notification badge */
-    #unreadBadge {
-        font-size: 10px;
-        padding: 3px 6px;
-    }
-}
-
-#unreadBadge.zero {
-    display: none;
-}
-    </style>
+  /* Skeleton loading cards */
+  .skeleton-grid{display:flex;flex-direction:column;gap:14px;padding:10px 0;}
+  .skeleton-card{
+    height:120px;
+    border-radius:14px;
+    background:linear-gradient(90deg,#eceff4 25%,#f6f7fa 37%,#eceff4 63%);
+    background-size:400% 100%;
+    animation:shimmer 1.4s ease infinite;
+  }
+  @keyframes shimmer{
+    0%{background-position:100% 50%;}
+    100%{background-position:0 50%;}
+  }
+</style>
 </head>
 <body>
 
-    <!-- Profile Header Section -->
-    <section id="profileHeader">
-        <div id="ownerBusinessNameDisplay">Loading profile...</div>
-       <div>
-            <button id="shareAppBtn">Share App Link</button> 
-            <button id="editProfileBtn">Edit Profile</button>
-            <button id="logoutBtn">Logout</button>
-        </div>
-    </section>
+<header class="topbar">
+  <h1>Kona Mart</h1>
+  <button id="installBtn" title="Install App">⬇️</button>
+</header>
 
-    <!-- Main Content -->
-    <main class="page">
-         <div id="buttonContainer">
-    <button id="myStudioBtn">My Studio</button>
-    
-    <button id="notificationsBtn">🔔 Notifications <span id="unreadBadge" class="badge">0</span></button>
-    
-    <a href="saved.html" id="favoriteBusinessesLink">
-        ♥ favorite businesses
-    </a>
-</div>
-   
-         
-        <div class="filter-bar">
-            <label for="businessFilterInput">Search Business:</label>
-            <input type="text" id="businessFilterInput" placeholder="Type the business name...">
-        </div>
+<section id="profileHeader">
+  <div id="ownerBusinessNameDisplay">Loading profile...</div>
+  <div class="profile-actions">
+    <button id="shareAppBtn">Share App Link</button>
+    <button id="editProfileBtn">Edit Profile</button>
+    <button id="logoutBtn">Logout</button>
+  </div>
+</section>
 
-        <section id="productsContainer" class="products-area">
-            <div class="hint">Loading products...</div>
-        </section>
-    </main>
+<main class="page">
+  <div id="buttonContainer">
+    <button id="myStudioBtn" class="action-btn">My Studio</button>
+    <button id="notificationsBtn" class="action-btn">🔔 Notifications <span id="unreadBadge">0</span></button>
+    <a href="saved.html" id="favoriteBusinessesLink" class="action-btn">♥ Favorite Businesses</a>
+  </div>
 
-   <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(registration => {
-          console.log('✅ Kona Mart SW Registered: ', registration.scope);
-        })
-        .catch(error => {
-          console.error('❌ Kona Mart SW Registration failed: ', error);
-        });
+  <div class="search-wrap">
+    <label for="businessFilterInput">Search Business</label>
+    <input type="text" id="businessFilterInput" placeholder="Type the business name...">
+  </div>
+
+  <section id="productsContainer" class="products-area">
+    <div class="skeleton-grid">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Single source of truth for the deployed Apps Script URL.
+  // If you redeploy and the URL changes, update it here only.
+  window.APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-oZolRrce8eLzimjQErooqJFFPoneKGMvYp4nfpxv-wcUJDbrQ0G3P_2XOd_jglptjg/exec";
+</script>
+
+<!-- Single, consolidated service worker registration -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(reg => console.log("✅ SW registered:", reg.scope))
+        .catch(err => console.error("❌ SW registration failed:", err));
     });
   }
 </script>
 
-    <!-- Service Worker & PWA Install Button -->
-    <script>
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("service-worker.js");
-        }
-
-        let deferredPrompt;
-        const INSTALL_KEY = "appInstalledOrDismissed";
-
-        if (localStorage.getItem(INSTALL_KEY) !== "true") {
-            const btn = document.createElement("button");
-            btn.textContent = "⬇️";
-            btn.title = "Install App";
-            btn.style = `
-                position:fixed;top:12px;right:12px;background:#3b6dc6;color:white;border:none;
-                width:36px;height:36px;font-size:18px;line-height:36px;border-radius:50%;
-                cursor:pointer;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.25);
-                transition:all 0.2s ease;display:none;text-align:center;
-            `;
-            btn.onmouseover = () => btn.style.transform = "scale(1.1)";
-            btn.onmouseout  = () => btn.style.transform = "scale(1)";
-            document.body.appendChild(btn);
-
-            window.addEventListener("beforeinstallprompt", e => {
-                e.preventDefault();
-                deferredPrompt = e;
-                btn.style.display = "block";
-            });
-
-            btn.onclick = () => {
-                btn.style.display = "none";
-                localStorage.setItem(INSTALL_KEY, "true");
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-                }
-            };
-
-            window.addEventListener("appinstalled", () => {
-                localStorage.setItem(INSTALL_KEY, "true");
-            });
-        }
-    </script>
-
-    <!-- Business Profile & One-Click "Start New Business" Button -->
+<!-- Install prompt (safe-area aware, no longer floats over notch) -->
 <script>
-    const DEVICE_ID_KEY = 'uniqueDeviceId';
-    const OWNER_BUSINESS_KEY = 'ownerBusinessName';
+  let deferredPrompt;
+  const INSTALL_KEY = "appInstalledOrDismissed";
+  const installBtn = document.getElementById("installBtn");
 
-    const profileHeader = document.getElementById('profileHeader');
-    const ownerBusinessNameDisplay = document.getElementById('ownerBusinessNameDisplay');
-    const editProfileBtn = document.getElementById('editProfileBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const myStudioBtn = document.getElementById('myStudioBtn');
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const ownerBusinessName = localStorage.getItem(OWNER_BUSINESS_KEY);
-
-        if (ownerBusinessName) {
-            // You're logged in as a business owner
-            ownerBusinessNameDisplay.textContent = `Active: ${ownerBusinessName}`;
-            profileHeader.style.background = "#e3f2fd";
-            profileHeader.style.display = 'block';
-
-            // Edit Profile Button
-            editProfileBtn.textContent = "Edit Profile";
-            editProfileBtn.onclick = () => location.href = 'setup.html?mode=edit';
-
-            // ONE BUTTON TO RULE THEM ALL: "Start New Business"
-            logoutBtn.textContent = "Start New Business";
-            logoutBtn.style.cssText = `
-                background: #ff5252 !important;
-                color: white15px;
-                font-weight: bold;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 6px;
-                cursor: pointer;
-            `;
-            logoutBtn.onclick = () => {
-                if (confirm("Start a completely new business?\n\nThis will delete your current profile and device link.\nYou’ll be able to create a fresh one.")) {
-                    // FULL CLEAN SLATE
-                    localStorage.removeItem(OWNER_BUSINESS_KEY);
-                    localStorage.removeItem(DEVICE_ID_KEY);
-                    sessionStorage.clear();
-
-                    alert("All clear! Taking you to setup a new business...");
-                    location.href = "setup.html";
-                }
-            };
-
-            // My Studio Button
-            myStudioBtn.style.display = "block";
-            myStudioBtn.textContent = "My Studio";
-            myStudioBtn.onclick = () => {
-                sessionStorage.setItem('ownerStudioAccess', ownerBusinessName);
-                location.href = "studio.html";
-            };
-
-        } else {
-            // No profile yet — first-time user
-            profileHeader.style.display = 'block';
-            ownerBusinessNameDisplay.textContent = "No business yet";
-            editProfileBtn.textContent = "Create Your Business";
-            editProfileBtn.onclick = () => location.href = 'setup.html';
-
-            logoutBtn.style.display = "none";
-            myStudioBtn.style.display = "none";
-        }
+  if (localStorage.getItem(INSTALL_KEY) !== "true") {
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = "inline-flex";
     });
-</script>
-<script>
-    // ===================================
-    // SIMPLIFIED SHARE APP LOGIC (COPY TO CLIPBOARD ONLY)
-    // ===================================
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        const shareAppBtn = document.getElementById('shareAppBtn');
-        const appLink = "https://vibe-ultrafiles04.github.io/Uchumi-Chat/";
-        
-        // Ensure the button exists before attaching the listener
-        if (!shareAppBtn) return; 
 
-        shareAppBtn.onclick = () => {
-            copyToClipboard(appLink);
+    installBtn.onclick = () => {
+      installBtn.style.display = "none";
+      localStorage.setItem(INSTALL_KEY, "true");
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+      }
+    };
+
+    window.addEventListener("appinstalled", () => {
+      localStorage.setItem(INSTALL_KEY, "true");
+      installBtn.style.display = "none";
+    });
+  }
+</script>
+
+<!-- Business profile / logout / my studio -->
+<script>
+  const DEVICE_ID_KEY = 'uniqueDeviceId';
+  const OWNER_BUSINESS_KEY = 'ownerBusinessName';
+
+  const profileHeader = document.getElementById('profileHeader');
+  const ownerBusinessNameDisplay = document.getElementById('ownerBusinessNameDisplay');
+  const editProfileBtn = document.getElementById('editProfileBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const myStudioBtn = document.getElementById('myStudioBtn');
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const ownerBusinessName = localStorage.getItem(OWNER_BUSINESS_KEY);
+
+    if (ownerBusinessName) {
+      ownerBusinessNameDisplay.textContent = `Active: ${ownerBusinessName}`;
+      profileHeader.style.display = 'block';
+
+      editProfileBtn.textContent = "Edit Profile";
+      editProfileBtn.onclick = () => location.href = 'setup.html?mode=edit';
+
+      logoutBtn.textContent = "Start New Business";
+      logoutBtn.onclick = () => {
+        if (confirm("Start a completely new business?\n\nThis will delete your current profile and device link.\nYou'll be able to create a fresh one.")) {
+          localStorage.removeItem(OWNER_BUSINESS_KEY);
+          localStorage.removeItem(DEVICE_ID_KEY);
+          sessionStorage.clear();
+          alert("All clear! Taking you to setup a new business...");
+          location.href = "setup.html";
+        }
+      };
+
+      myStudioBtn.style.display = "inline-flex";
+      myStudioBtn.onclick = () => {
+        sessionStorage.setItem('ownerStudioAccess', ownerBusinessName);
+        location.href = "studio.html";
+      };
+    } else {
+      profileHeader.style.display = 'block';
+      ownerBusinessNameDisplay.textContent = "No business yet";
+      editProfileBtn.textContent = "Create Your Business";
+      editProfileBtn.onclick = () => location.href = 'setup.html';
+
+      logoutBtn.style.display = "none";
+      myStudioBtn.style.display = "none";
+    }
+  });
+</script>
+
+<!-- Share app link -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const shareAppBtn = document.getElementById('shareAppBtn');
+    const appLink = "https://vibe-ultrafiles04.github.io/Uchumi-Chat/";
+    if (!shareAppBtn) return;
+
+    shareAppBtn.onclick = () => {
+      if (navigator.share) {
+        // Native share sheet on mobile — better UX than clipboard-only
+        navigator.share({ title: "Kona Mart", url: appLink }).catch(() => {});
+        return;
+      }
+      navigator.clipboard.writeText(appLink)
+        .then(() => {
+          const original = shareAppBtn.textContent;
+          shareAppBtn.textContent = "✅ Link Copied!";
+          setTimeout(() => { shareAppBtn.textContent = original; }, 2000);
+        })
+        .catch(() => alert('Could not copy link. Please copy manually: ' + appLink));
+    };
+  });
+</script>
+
+<!-- Notifications badge -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const ownerBusinessName = localStorage.getItem('ownerBusinessName');
+    const notificationsBtn = document.getElementById('notificationsBtn');
+    const unreadBadge = document.getElementById('unreadBadge');
+
+    if (ownerBusinessName && notificationsBtn) {
+      notificationsBtn.style.display = "inline-flex";
+      notificationsBtn.onclick = () => location.href = 'notify.html';
+
+      const deviceId = localStorage.getItem('uniqueDeviceId');
+      if (deviceId) {
+        fetch(`${window.APP_SCRIPT_URL}?action=getUnreadMessageCount`, {
+          method: 'POST',
+          body: JSON.stringify({ action: "getUnreadMessageCount", deviceId }),
+          headers: { 'Content-Type': 'text/plain' }
+        })
+        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+        .then(data => {
+          if (data.result === "success" && data.data && data.data.count > 0) {
+            unreadBadge.textContent = data.data.count;
+            unreadBadge.classList.remove('zero');
+          } else {
+            unreadBadge.classList.add('zero');
+          }
+        })
+        .catch(err => {
+          console.error("Failed to load unread count:", err);
+          unreadBadge.classList.add('zero');
+        });
+      }
+    }
+  });
+</script>
+
+<script src="index.js" defer></script>
+
+<!-- Watchdog: if index.js's JSONP load never resolves (common in mobile
+     in-app browsers where script.onerror doesn't fire), show a retry button
+     instead of hanging forever on "Loading products..." -->
+<script>
+  (function () {
+    const WATCHDOG_MS = 10000;
+    let resolved = false;
+
+    const origHandler = window.handleInventoryData;
+    const markResolved = () => { resolved = true; };
+    // Patch once index.js defines it, on next tick
+    setTimeout(() => {
+      if (typeof window.handleInventoryData === 'function') {
+        const wrapped = window.handleInventoryData;
+        window.handleInventoryData = function (json) {
+          markResolved();
+          wrapped(json);
         };
-        
-        function copyToClipboard(link) {
-            // Use the modern navigator.clipboard API
-            navigator.clipboard.writeText(link)
-                .then(() => {
-                    // Provide user feedback
-                    const originalText = shareAppBtn.textContent;
-                    shareAppBtn.textContent = "✅ Link Copied!";
-                    
-                    // Revert the button text after 2 seconds
-                    setTimeout(() => { 
-                        shareAppBtn.textContent = originalText; 
-                    }, 2000);
-                })
-                .catch(err => {
-                    // Fallback alert if clipboard access is denied
-                    alert('Could not copy link to clipboard. Please copy manually: ' + link);
-                    console.error('Copy failed:', err);
-                });
-        }
-    });
+      }
+    }, 0);
+
+    setTimeout(() => {
+      if (resolved) return;
+      const container = document.getElementById('productsContainer');
+      if (container && container.innerHTML.includes('skeleton-grid')) {
+        container.innerHTML = `
+          <div class="hint error">
+            Couldn't load products. This can happen on slow or restricted mobile connections.
+            <br>
+            <button class="retry-btn" onclick="location.reload()">Retry</button>
+          </div>`;
+      }
+    }, WATCHDOG_MS);
+  })();
 </script>
 
-<script>
-    // 🎯 FIX: Define the SCRIPT_URL variable here, using the URL from your working notify.html
-    // Replace the URL below with YOUR actual deployed Apps Script URL
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-oZolRrce8eLzimjQErooqJFFPoneKGMvYp4nfpxv-wcUJDbrQ0G3P_2XOd_jglptjg/exec"; 
-    
-    // Show notifications button and fetch unread count for logged-in owners
-    document.addEventListener('DOMContentLoaded', () => {
-        const ownerBusinessName = localStorage.getItem('ownerBusinessName');
-        const notificationsBtn = document.getElementById('notificationsBtn');
-        const unreadBadge = document.getElementById('unreadBadge');
-    
-        if (ownerBusinessName && notificationsBtn) {
-            notificationsBtn.style.display = "block";
-            notificationsBtn.onclick = () => location.href = 'notify.html';
-    
-            // Fetch unread count
-            const deviceId = localStorage.getItem('uniqueDeviceId');
-            if (deviceId) {
-                // The URL is now correctly formed using the defined SCRIPT_URL
-                fetch(`${SCRIPT_URL}?action=getUnreadMessageCount`, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "getUnreadMessageCount", deviceId }),
-                    headers: { 'Content-Type': 'text/plain' }
-                })
-                .then(r => {
-                    // Check if the response is valid JSON before parsing
-                    if (!r.ok) {
-                        throw new Error(`HTTP error! status: ${r.status}`);
-                    }
-                    return r.json();
-                })
-                .then(data => {
-                    // Ensure the data structure is correct (data.data.count)
-                    if (data.result === "success" && data.data && data.data.count > 0) {
-                        unreadBadge.textContent = data.data.count;
-                        unreadBadge.classList.remove('zero');
-                    } else {
-                        unreadBadge.classList.add('zero');
-                        unreadBadge.textContent = '0'; // Reset to 0 when hidden
-                    }
-                })
-                .catch(err => {
-                    console.error("Failed to load unread count. Check SCRIPT_URL and Apps Script deployment:", err);
-                    // Critical: if the fetch fails, hide the badge and log the error
-                    unreadBadge.classList.add('zero');
-                });
-            }
-        }
-    });
-</script>
-    <script src="index.js" defer></script>
 </body>
 </html>
