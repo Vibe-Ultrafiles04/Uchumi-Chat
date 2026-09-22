@@ -1,5 +1,5 @@
 // ====== CONFIG: set this to your deployed Apps Script web app URL ======
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz-oZolRrce8eLzimjQErooqJFFPoneKGMvYp4nfpxv-wcUJDbrQ0G3P_2XOd_jglptjg/exec"; // <- REPLACE THIS
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw8WpTFrd4yBXfD75vVPKcGEOgy1OSJofsLVoJE7uShKjLadhQoUfokOWITzbqq7-rIvg/exec"; // <- REPLACE THIS
 
 // ** GLOBAL FLAG: Read the flag set in the HTML files **
 const IS_ADMIN_VIEW = window.IS_ADMIN_VIEW === true;
@@ -364,48 +364,55 @@ function createDriveEmbedUrl(driveLink) {
  * Now returns an object: { videoLink: string, ownerId: string, subscribers: number }
  * Assumes WEB_APP_URL is globally available.
  */
+let _jsonpCounter = 0;
+function jsonpRequest(url) {
+    return new Promise((resolve, reject) => {
+        const callbackName = `_jsonp_cb_${Date.now()}_${_jsonpCounter++}`;
+        const script = document.createElement('script');
+
+        const cleanup = () => {
+            delete window[callbackName];
+            script.remove();
+        };
+
+        window[callbackName] = (data) => {
+            cleanup();
+            resolve(data);
+        };
+
+        script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callbackName}`;
+        script.onerror = () => { cleanup(); reject(new Error('JSONP request failed')); };
+        document.head.appendChild(script);
+
+        setTimeout(() => {
+            if (window[callbackName]) { cleanup(); reject(new Error('JSONP timeout')); }
+        }, 10000);
+    });
+}
+
 async function fetchBusinessProfileData(businessName) {
-    // 1. Get the Owner ID first (since the profile is stored by ID)
-    const url_find_owner = `${WEB_APP_URL}?action=findOwnerByName&name=${encodeURIComponent(businessName)}`;
-    let ownerId = null;
-
     try {
-        const resp = await fetch(url_find_owner);
-        const json = await resp.json();
-
-        if (json.result === "success" && json.deviceId) {
-            ownerId = json.deviceId;
-        } else {
+        const ownerJson = await jsonpRequest(
+            `${WEB_APP_URL}?action=findOwnerByName&name=${encodeURIComponent(businessName)}`
+        );
+        if (ownerJson.result !== "success" || !ownerJson.deviceId) {
             console.warn(`Owner ID not found for business: ${businessName}`);
             return null;
         }
-    } catch (e) {
-        console.error("Error finding owner by name:", e);
-        return null;
-    }
 
-    // 2. Use the Owner ID to get the full profile data (including videoLink and subscribers)
-    if (ownerId) {
-        const url_get_profile = `${WEB_APP_URL}?action=getBusinessProfile&deviceId=${ownerId}`;
-
-        try {
-            const profileResp = await fetch(url_get_profile);
-            const profileJson = await profileResp.json();
-
-            if (profileJson.result === "success" && profileJson.data) {
-                // Return the necessary fields
-                return {
-                    videoLink:   profileJson.data.videoLink   || null,
-                    subscribers: profileJson.data.subscribers || 0,
-                    ownerId:     ownerId
-                };
-            }
-        } catch (e) {
-            console.error(`Error fetching profile for ID: ${ownerId}`, e);
+        const profileJson = await jsonpRequest(
+            `${WEB_APP_URL}?action=getBusinessProfile&deviceId=${ownerJson.deviceId}`
+        );
+        if (profileJson.result === "success" && profileJson.data) {
+            return {
+                videoLink: profileJson.data.videoLink || null,
+                subscribers: profileJson.data.subscribers || 0,
+                ownerId: ownerJson.deviceId
+            };
         }
+    } catch (e) {
+        console.error(`Error fetching profile for business: ${businessName}`, e);
     }
-
-    // If anything went wrong above, return null
     return null;
 }
 // NOTE: The old 'fetchBusinessProfileVideo' is removed/replaced by the above.

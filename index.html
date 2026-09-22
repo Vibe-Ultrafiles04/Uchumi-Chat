@@ -264,7 +264,7 @@
 <script>
   // Single source of truth for the deployed Apps Script URL.
   // If you redeploy and the URL changes, update it here only.
-  window.APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-oZolRrce8eLzimjQErooqJFFPoneKGMvYp4nfpxv-wcUJDbrQ0G3P_2XOd_jglptjg/exec";
+  window.APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8WpTFrd4yBXfD75vVPKcGEOgy1OSJofsLVoJE7uShKjLadhQoUfokOWITzbqq7-rIvg/exec";
 </script>
 
 <!-- Single, consolidated service worker registration -->
@@ -382,38 +382,39 @@
 
 <!-- Notifications badge -->
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const ownerBusinessName = localStorage.getItem('ownerBusinessName');
-    const notificationsBtn = document.getElementById('notificationsBtn');
-    const unreadBadge = document.getElementById('unreadBadge');
+    document.addEventListener('DOMContentLoaded', () => {
+        const ownerBusinessName = localStorage.getItem('ownerBusinessName');
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        const unreadBadge = document.getElementById('unreadBadge');
 
-    if (ownerBusinessName && notificationsBtn) {
-      notificationsBtn.style.display = "inline-flex";
-      notificationsBtn.onclick = () => location.href = 'notify.html';
+        if (ownerBusinessName && notificationsBtn) {
+            notificationsBtn.style.display = "inline-flex";
+            notificationsBtn.onclick = () => location.href = 'notify.html';
 
-      const deviceId = localStorage.getItem('uniqueDeviceId');
-      if (deviceId) {
-        fetch(`${window.APP_SCRIPT_URL}?action=getUnreadMessageCount`, {
-          method: 'POST',
-          body: JSON.stringify({ action: "getUnreadMessageCount", deviceId }),
-          headers: { 'Content-Type': 'text/plain' }
-        })
-        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-        .then(data => {
-          if (data.result === "success" && data.data && data.data.count > 0) {
-            unreadBadge.textContent = data.data.count;
-            unreadBadge.classList.remove('zero');
-          } else {
-            unreadBadge.classList.add('zero');
-          }
-        })
-        .catch(err => {
-          console.error("Failed to load unread count:", err);
-          unreadBadge.classList.add('zero');
-        });
-      }
-    }
-  });
+            const deviceId = localStorage.getItem('uniqueDeviceId');
+            if (deviceId) {
+                const cbName = '_notif_cb_' + Date.now();
+                const script = document.createElement('script');
+                window[cbName] = (data) => {
+                    if (data.result === "success" && data.data && data.data.count > 0) {
+                        unreadBadge.textContent = data.data.count;
+                        unreadBadge.classList.remove('zero');
+                    } else {
+                        unreadBadge.classList.add('zero');
+                    }
+                    delete window[cbName];
+                    script.remove();
+                };
+                script.src = `${window.APP_SCRIPT_URL}?action=getUnreadMessageCount&deviceId=${encodeURIComponent(deviceId)}&callback=${cbName}`;
+                script.onerror = () => {
+                    console.error("Failed to load unread count.");
+                    unreadBadge.classList.add('zero');
+                    delete window[cbName];
+                };
+                document.head.appendChild(script);
+            }
+        }
+    });
 </script>
 
 <script src="index.js" defer></script>
